@@ -5,7 +5,35 @@ export const broadcastersChile = ["DSPORTS", "DGO"];
 export const scoringRules = [
   { title: "Resultado exacto", points: "5 pts" },
   { title: "Ganador o empate", points: "3 pts" },
-  { title: "País favorito", points: "+1 / +2" },
+  { title: "Equipo favorito", points: "+1 pt" },
+];
+
+export const scoringExamples = [
+  {
+    title: "Exacto con ganador",
+    example: "Pronóstico: España 3-2 Holanda · Real: España 3-2 Holanda",
+    points: "5 puntos",
+  },
+  {
+    title: "Ganador correcto, no exacto",
+    example: "Pronóstico: España 2-1 Holanda · Real: España 3-2 Holanda",
+    points: "3 puntos",
+  },
+  {
+    title: "Empate exacto",
+    example: "Pronóstico: 0-0 · Real: 0-0",
+    points: "5 puntos",
+  },
+  {
+    title: "Empate correcto, no exacto",
+    example: "Pronóstico: 1-1 · Real: 2-2",
+    points: "3 puntos",
+  },
+  {
+    title: "Bonus favorito",
+    example: "Si juega tu favorito y ya sumaste puntos, agregas +1 extra",
+    points: "+1 punto",
+  },
 ];
 
 export const sampleUser = {

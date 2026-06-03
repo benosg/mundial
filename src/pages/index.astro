@@ -1,6 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { dashboardStats, groupedMatches, quickSummary, ranking, sampleUser, scoringRules } from "../data/site";
+import { dashboardStats, groupedMatches, quickSummary, ranking, sampleUser, scoringExamples, scoringRules } from "../data/site";
 
 const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.length, 0);
 ---
@@ -83,8 +83,8 @@ const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.l
         </article>
 
         <article class="panel compact-panel" id="reglas">
-          <span class="eyebrow">Tu resumen</span>
-          <h2 class="section-title">Tus puntos</h2>
+          <span class="eyebrow">Reglas oficiales</span>
+          <h2 class="section-title">Puntaje simple para que nadie reclame</h2>
           <div class="compact-stats">
             {dashboardStats.map((stat) => (
               <div class="compact-stat">
@@ -100,11 +100,34 @@ const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.l
             Transmisión mostrada por FIFA: <strong>DSPORTS</strong> y <strong>DGO</strong>.
           </div>
 
+          <div class="rules-highlight">
+            <p><strong>Reglamento corto:</strong></p>
+            <ul>
+              <li><strong>5 puntos</strong> si aciertas el marcador exacto.</li>
+              <li><strong>3 puntos</strong> si aciertas ganador o empate, aunque no sea exacto.</li>
+              <li><strong>+1 punto</strong> si juega tu equipo favorito y ese pronóstico ya sumó puntos.</li>
+              <li><strong>0 puntos</strong> si fallas el signo del partido.</li>
+            </ul>
+          </div>
+
           <div class="rules-box">
             {scoringRules.map((rule) => (
               <div class="rule-line">
                 <strong>{rule.points}</strong>
                 <span>{rule.title}</span>
+              </div>
+            ))}
+          </div>
+
+          <div class="examples-box">
+            <p class="examples-title">Ejemplos para evitar discusiones</p>
+            {scoringExamples.map((item) => (
+              <div class="example-line">
+                <strong>{item.points}</strong>
+                <div>
+                  <div>{item.title}</div>
+                  <span class="muted">{item.example}</span>
+                </div>
               </div>
             ))}
           </div>
