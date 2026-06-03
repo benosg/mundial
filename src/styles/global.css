@@ -739,6 +739,17 @@ tbody tr:last-child td {
   line-height: 1.6;
 }
 
+.table-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+
+.small-note {
+  font-size: 0.86rem;
+}
+
 .name-button {
   border: 1px solid transparent;
   background: transparent;
@@ -759,6 +770,43 @@ tbody tr:last-child td {
 
 .player-panels {
   margin-top: 1rem;
+}
+
+.player-dialog {
+  width: min(1120px, calc(100% - 1.5rem));
+  max-width: 1120px;
+  max-height: calc(100vh - 2rem);
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  background: transparent;
+}
+
+.player-dialog::backdrop {
+  background: rgba(8, 17, 31, 0.6);
+  backdrop-filter: blur(6px);
+}
+
+.player-dialog-shell {
+  background: linear-gradient(180deg, #f9fcff 0%, #eef4f7 100%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 24px;
+  box-shadow: 0 30px 80px rgba(8, 17, 31, 0.25);
+  padding: 1.25rem;
+  overflow: auto;
+  max-height: calc(100vh - 2rem);
+}
+
+.player-dialog-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dialog-close {
+  flex-shrink: 0;
 }
 
 .player-panel {
@@ -934,7 +982,9 @@ tbody tr:last-child td {
   .simple-match-main,
   .simple-match-footer,
   .player-panel-head,
-  .readonly-row {
+  .readonly-row,
+  .player-dialog-head,
+  .table-actions {
     flex-direction: column;
     align-items: flex-start;
   }

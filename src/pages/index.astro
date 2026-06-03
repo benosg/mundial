@@ -82,7 +82,10 @@ const playerBoards = ranking.map((player) => ({
               <span class="eyebrow">Cómo vamos</span>
               <h2 class="section-title" id="tabla-title">Tabla del grupo</h2>
             </div>
-            <span class="tag success">Haz click en un nombre</span>
+            <div class="table-actions">
+              <span class="tag success">Haz click en un nombre</span>
+              <span class="muted small-note">Se abre en una ventana aparte</span>
+            </div>
           </div>
 
           <table>
@@ -173,63 +176,6 @@ const playerBoards = ranking.map((player) => ({
       </div>
     </section>
 
-    <section class="page-section simple-section" id="transparencia" aria-labelledby="transparencia-title">
-      <div class="site-shell">
-        <div class="table-row-head">
-          <div>
-            <span class="eyebrow">Transparencia</span>
-            <h2 class="section-title" id="transparencia-title">Pronósticos cargados por cada jugador</h2>
-          </div>
-          <span class="muted">Solo lectura · haz click en un nombre de la tabla</span>
-        </div>
-
-        <div class="player-panels">
-          {playerBoards.map((player, playerIndex) => (
-            <article class={`player-panel ${playerIndex === 0 ? "is-active" : ""}`} id={`panel-${player.name}`} data-player-panel={player.name} aria-label={`Pronósticos de ${player.name}`} hidden={playerIndex !== 0}>
-              <div class="player-panel-head">
-                <div>
-                  <span class="eyebrow">Jugador seleccionado</span>
-                  <h3>{player.name}</h3>
-                  <p class="muted">Favorito: {player.favorite}</p>
-                </div>
-                <span class="tag">Solo lectura</span>
-              </div>
-
-              <div class="player-groups-grid">
-                {player.predictions.map((group) => (
-                  <section class="player-group-card" aria-label={`Grupo ${group.group} de ${player.name}`}>
-                    <div class="group-head compact">
-                      <div>
-                        <span class="eyebrow">Grupo {group.group}</span>
-                        <h4>6 pronósticos</h4>
-                      </div>
-                    </div>
-
-                    <div class="readonly-list">
-                      {group.matches.map((match) => (
-                        <div class="readonly-row">
-                          <div class="fixture-cell">
-                            <span>{match.homeFlag} {match.home}</span>
-                            <span class="muted">vs</span>
-                            <span>{match.awayFlag} {match.away}</span>
-                          </div>
-                          <div class="readonly-score">
-                            <span class="readonly-pill" data-readonly-score={player.name === sampleUser.name ? `${match.id}-home` : undefined}>{match.homePrediction}</span>
-                            <span class="muted">-</span>
-                            <span class="readonly-pill" data-readonly-score={player.name === sampleUser.name ? `${match.id}-away` : undefined}>{match.awayPrediction}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-
     <section class="page-section simple-section" id="grupos" aria-labelledby="grupos-title">
       <div class="site-shell">
         <div class="table-row-head">
@@ -296,6 +242,64 @@ const playerBoards = ranking.map((player) => ({
     </section>
   </div>
 
+  <dialog class="player-dialog" data-player-dialog aria-labelledby="player-dialog-title">
+    <div class="player-dialog-shell">
+      <div class="player-dialog-head">
+        <div>
+          <span class="eyebrow">Transparencia</span>
+          <h2 class="section-title" id="player-dialog-title">Pronósticos cargados por cada jugador</h2>
+          <p class="muted">Vista separada del ingreso principal · solo lectura</p>
+        </div>
+        <button class="button-secondary dialog-close" type="button" data-close-player-dialog>Cerrar</button>
+      </div>
+
+      <div class="player-panels">
+        {playerBoards.map((player, playerIndex) => (
+          <article class={`player-panel ${playerIndex === 0 ? "is-active" : ""}`} id={`panel-${player.name}`} data-player-panel={player.name} aria-label={`Pronósticos de ${player.name}`} hidden={playerIndex !== 0}>
+            <div class="player-panel-head">
+              <div>
+                <span class="eyebrow">Jugador seleccionado</span>
+                <h3>{player.name}</h3>
+                <p class="muted">Favorito: {player.favorite}</p>
+              </div>
+              <span class="tag">Solo lectura</span>
+            </div>
+
+            <div class="player-groups-grid">
+              {player.predictions.map((group) => (
+                <section class="player-group-card" aria-label={`Grupo ${group.group} de ${player.name}`}>
+                  <div class="group-head compact">
+                    <div>
+                      <span class="eyebrow">Grupo {group.group}</span>
+                      <h4>6 pronósticos</h4>
+                    </div>
+                  </div>
+
+                  <div class="readonly-list">
+                    {group.matches.map((match) => (
+                      <div class="readonly-row">
+                        <div class="fixture-cell">
+                          <span>{match.homeFlag} {match.home}</span>
+                          <span class="muted">vs</span>
+                          <span>{match.awayFlag} {match.away}</span>
+                        </div>
+                        <div class="readonly-score">
+                          <span class="readonly-pill" data-readonly-score={player.name === sampleUser.name ? `${match.id}-home` : undefined}>{match.homePrediction}</span>
+                          <span class="muted">-</span>
+                          <span class="readonly-pill" data-readonly-score={player.name === sampleUser.name ? `${match.id}-away` : undefined}>{match.awayPrediction}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </dialog>
+
   <script is:inline>
     const STORAGE_KEY = "mundial-2026-picks";
     const inputs = Array.from(document.querySelectorAll("[data-score-input]"));
@@ -303,6 +307,8 @@ const playerBoards = ranking.map((player) => ({
     const saveButton = document.querySelector("[data-save-all]");
     const clearButton = document.querySelector("[data-clear-all]");
     const saveStatus = document.querySelector("[data-save-status]");
+    const playerDialog = document.querySelector("[data-player-dialog]");
+    const closePlayerDialogButton = document.querySelector("[data-close-player-dialog]");
     const playerButtons = Array.from(document.querySelectorAll("[data-player-button]"));
     const playerPanels = Array.from(document.querySelectorAll("[data-player-panel]"));
 
@@ -385,11 +391,28 @@ const playerBoards = ranking.map((player) => ({
       announce(`Viendo pronósticos de ${playerName}.`);
     };
 
+    const openPlayerDialog = (playerName) => {
+      showPlayerPanel(playerName);
+      if (playerDialog && !playerDialog.open) playerDialog.showModal();
+    };
+
+    const closePlayerDialog = () => {
+      if (playerDialog?.open) playerDialog.close();
+    };
+
     inputs.forEach((input) => input.addEventListener("input", persist));
     playerButtons.forEach((button) => {
-      button.addEventListener("click", () => showPlayerPanel(button.dataset.playerButton));
+      button.addEventListener("click", () => openPlayerDialog(button.dataset.playerButton));
     });
     if (saveButton) saveButton.addEventListener("click", persist);
+    if (closePlayerDialogButton) closePlayerDialogButton.addEventListener("click", closePlayerDialog);
+    if (playerDialog) {
+      playerDialog.addEventListener("click", (event) => {
+        const rect = playerDialog.getBoundingClientRect();
+        const inside = rect.top <= event.clientY && event.clientY <= rect.top + rect.height && rect.left <= event.clientX && event.clientX <= rect.left + rect.width;
+        if (!inside) closePlayerDialog();
+      });
+    }
     if (clearButton) {
       clearButton.addEventListener("click", () => {
         localStorage.removeItem(STORAGE_KEY);
