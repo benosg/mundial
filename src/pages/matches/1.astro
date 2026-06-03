@@ -1,0 +1,61 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { matches } from "../../data/site";
+
+const match = matches[0];
+---
+
+<Layout title={`${match.home} vs ${match.away}`} currentPath="/matches" description="Detalle de partido demo con pronóstico, bonus por favorito y señales para Chile.">
+  <main class="page-section">
+    <div class="site-shell">
+      <span class="eyebrow">Detalle de partido</span>
+      <h1 class="page-title">{match.home} vs {match.away}</h1>
+      <p class="section-copy">{match.stage} · {match.kickoffChile} · {match.venue}, {match.city}</p>
+
+      <section class="match-layout spaced">
+        <article class="panel">
+          <span class="eyebrow">Información del encuentro</span>
+          <h2 class="section-title">Lo que necesita ver el jugador antes de pronosticar.</h2>
+          <ul class="list-clean">
+            <li><strong>Sede:</strong> {match.venue}</li>
+            <li><strong>Ciudad:</strong> {match.city}</li>
+            <li><strong>Hora Chile:</strong> {match.kickoffChile}</li>
+            <li><strong>Transmite en Chile:</strong> {match.broadcasters.join(", ")}</li>
+          </ul>
+          <div class="chip-row spaced">
+            <span class="tag success">Bonus favorito activo</span>
+            <span class="tag">Login con Google en fase 2</span>
+          </div>
+        </article>
+
+        <article class="prediction-card">
+          <span class="eyebrow">Tu pronóstico</span>
+          <h2 class="section-title">Marcador demo listo para enviar.</h2>
+          <div class="prediction-row">
+            <strong>{match.home}</strong>
+            <strong>{match.away}</strong>
+          </div>
+          <div class="score-grid">
+            <div class="fake-input">
+              <span class="muted">Local</span>
+              <strong>2</strong>
+            </div>
+            <div class="fake-input">
+              <span class="muted">Visita</span>
+              <strong>1</strong>
+            </div>
+          </div>
+          <ul class="list-clean">
+            <li><strong>Si termina 2-1:</strong> ganas 5 puntos + 2 bonus.</li>
+            <li><strong>Si gana España por cualquier marcador:</strong> ganas 3 puntos + 1 bonus.</li>
+            <li><strong>Se cierra:</strong> al inicio del partido.</li>
+          </ul>
+          <div class="inline-actions spaced">
+            <a class="button" href="/groups/demo">Guardar pronóstico</a>
+            <a class="button-secondary" href="/matches">Volver al fixture</a>
+          </div>
+        </article>
+      </section>
+    </div>
+  </main>
+</Layout>

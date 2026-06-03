@@ -1,11 +1,96 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import Layout from "../layouts/Layout.astro";
+import { dashboardStats, features, matches, scoringRules } from "../data/site";
 ---
 
-<Layout>
-	<Welcome />
+<Layout
+  title="Inicio"
+  currentPath="/"
+  description="Pronósticos del Mundial 2026: juega con tus amigos, elige tu país favorito y compite con puntaje por exactos y ganador o empate."
+>
+  <main>
+    <section class="hero">
+      <div class="site-shell hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow">MVP visual · Chile 2026</span>
+          <h1>Juega el Mundial 2026 con tu grupo y gana por leer mejor cada partido.</h1>
+          <p class="section-copy">
+            Un sitio para organizar pronósticos entre amigos con login por Google, grupos privados,
+            horarios en Chile, ranking en vivo y bonus por tu selección favorita.
+          </p>
+          <div class="hero-actions">
+            <a class="button" href="/dashboard">Ver demo del dashboard</a>
+            <a class="button-secondary" href="/matches">Revisar fixture</a>
+          </div>
+          <div class="chip-row spaced">
+            {features.map((feature) => <span class="tag">{feature}</span>)}
+          </div>
+        </div>
+
+        <aside class="hero-card">
+          <span class="tag success">Tu favorito suma bonus</span>
+          <h2 class="section-title">Sistema de puntaje simple y entretenido</h2>
+          <div class="scoreboard">
+            {scoringRules.map((rule) => (
+              <div class="score-pill">
+                <div>
+                  <strong>{rule.points}</strong>
+                  <div>{rule.title}</div>
+                </div>
+                <span class="meta">{rule.body}</span>
+              </div>
+            ))}
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="page-section">
+      <div class="site-shell stats-grid">
+        {dashboardStats.map((stat) => (
+          <article class="mini-card">
+            <div class="eyebrow">Estado demo</div>
+            <div class="stat-number">{stat.value}</div>
+            <p>{stat.label}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="page-section">
+      <div class="site-shell two-column">
+        <article class="panel">
+          <span class="eyebrow">Cómo funciona</span>
+          <h2 class="section-title">Entra con Google, únete a tu grupo y deja tus marcadores.</h2>
+          <ul class="list-clean">
+            <li><strong>1.</strong> Inicias sesión con Google y eliges tu país favorito.</li>
+            <li><strong>2.</strong> Entras a un grupo privado con código o link.</li>
+            <li><strong>3.</strong> Pronosticas cada partido antes de que arranque.</li>
+            <li><strong>4.</strong> Ganas puntos por exacto, por acertar ganador/empate y por bonus de favorito.</li>
+          </ul>
+        </article>
+
+        <article class="panel">
+          <span class="eyebrow">Próximos destacados</span>
+          <h2 class="section-title">Fixture listo para ver horarios, sede y transmisión en Chile.</h2>
+          <div class="cards-grid">
+            {matches.slice(0, 3).map((match) => (
+              <article class="match-card">
+                <div class="match-top">
+                  <span class="tag">{match.stage}</span>
+                  <span class="meta">{match.kickoffChile}</span>
+                </div>
+                <p class="versus">{match.home} vs {match.away}</p>
+                <p class="muted">{match.venue} · {match.city}</p>
+                <div class="match-bottom">
+                  <span class="tag warning">{match.broadcasters[0]}</span>
+                  <a class="accent" href={`/matches/${match.id}`}>Ver partido →</a>
+                </div>
+              </article>
+            ))}
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
 </Layout>

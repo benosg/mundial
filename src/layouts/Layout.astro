@@ -1,23 +1,72 @@
-<!doctype html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
-	</head>
-	<body>
-		<slot />
-	</body>
-</html>
+---
+import "../styles/global.css";
+import { siteName } from "../data/site";
 
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-</style>
+interface Props {
+  title: string;
+  description?: string;
+  currentPath?: string;
+}
+
+const {
+  title,
+  description = "Demo visual de un juego de pronósticos del Mundial 2026 con grupos privados, puntajes y bonus por selección favorita.",
+  currentPath = "/",
+} = Astro.props;
+
+const navigation = [
+  { href: "/", label: "Inicio" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/groups/demo", label: "Grupo" },
+  { href: "/matches", label: "Partidos" },
+  { href: "/profile", label: "Perfil" },
+];
+
+const pageTitle = `${title} | ${siteName}`;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    <title>{pageTitle}</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="/">
+          <span class="brand-mark">⚽</span>
+          <span class="brand-copy">
+            <span>{siteName}</span>
+            <small>Mundial 2026 · Demo MVP</small>
+          </span>
+        </a>
+
+        <nav class="nav-links" aria-label="Principal">
+          {navigation.map((item) => (
+            <a href={item.href} aria-current={currentPath === item.href ? "page" : undefined}>
+              {item.label}
+            </a>
+          ))}
+          <a class="button-secondary" href="/dashboard">Entrar con Google</a>
+        </nav>
+      </div>
+    </header>
+
+    <slot />
+
+    <footer class="footer">
+      <div class="footer-inner">
+        <p>{siteName} · Prototipo estático para validar el look & feel antes de conectar login real y base de datos.</p>
+        <div class="list-inline">
+          <a href="/matches">Fixture 2026</a>
+          <a href="/groups/demo">Ranking demo</a>
+          <a href="/profile">País favorito</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

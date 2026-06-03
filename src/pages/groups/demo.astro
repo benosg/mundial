@@ -1,0 +1,66 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { ranking, sampleUser } from "../../data/site";
+---
+
+<Layout title="Grupo demo" currentPath="/groups/demo" description="Vista del grupo privado con ranking, reglas y actividad reciente.">
+  <main class="page-section">
+    <div class="site-shell">
+      <span class="eyebrow">Grupo privado</span>
+      <h1 class="page-title">La banda del Mundial</h1>
+      <p class="section-copy">El grupo donde compites con tus compañeros. Código demo: <strong>MUNDIAL-2026</strong>.</p>
+
+      <section class="two-column spaced">
+        <article class="panel ranking-table">
+          <div class="table-row-head">
+            <div>
+              <span class="eyebrow">Ranking</span>
+              <h2 class="section-title">Tabla de posiciones</h2>
+            </div>
+            <span class="tag success">{sampleUser.points} pts tuyos</span>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Jugador</th>
+                <th>Puntos</th>
+                <th>Exactos</th>
+                <th>Signo</th>
+                <th>Bonus</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ranking.map((player) => (
+                <tr>
+                  <td class="rank">{player.position}</td>
+                  <td>{player.name}</td>
+                  <td>{player.points}</td>
+                  <td>{player.exact}</td>
+                  <td>{player.outcomes}</td>
+                  <td>+{player.bonus}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </article>
+
+        <article class="panel">
+          <span class="eyebrow">Reglas rápidas</span>
+          <h2 class="section-title">Lo que ve tu grupo al entrar.</h2>
+          <ul class="list-clean">
+            <li><strong>5 puntos</strong> por marcador exacto.</li>
+            <li><strong>3 puntos</strong> por acertar ganador o empate.</li>
+            <li><strong>+1 o +2</strong> si juega tu país favorito.</li>
+            <li>Pronósticos cerrados al inicio del partido.</li>
+          </ul>
+          <div class="inline-actions spaced">
+            <a class="button" href="/matches">Ir a pronosticar</a>
+            <a class="button-secondary" href="/profile">Ver mi perfil</a>
+          </div>
+        </article>
+      </section>
+    </div>
+  </main>
+</Layout>

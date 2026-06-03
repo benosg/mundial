@@ -1,0 +1,40 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { profileStats, sampleUser } from "../data/site";
+---
+
+<Layout title="Perfil" currentPath="/profile" description="Perfil demo del jugador con selección favorita, email Google y rendimiento.">
+  <main class="page-section">
+    <div class="site-shell">
+      <span class="eyebrow">Perfil de usuario</span>
+      <h1 class="page-title">{sampleUser.name}</h1>
+      <p class="section-copy">Cuenta demo conectada con Google: <strong>{sampleUser.email}</strong>.</p>
+
+      <section class="profile-layout spaced">
+        <article class="panel">
+          <span class="eyebrow">Resumen</span>
+          <h2 class="section-title">Tu identidad dentro del juego.</h2>
+          <ul class="list-clean">
+            {profileStats.map((stat) => (
+              <li><strong>{stat.label}:</strong> {stat.value}</li>
+            ))}
+          </ul>
+        </article>
+
+        <article class="panel">
+          <span class="eyebrow">Actividad</span>
+          <h2 class="section-title">Lo que este MVP quiere mostrar.</h2>
+          <ul class="list-clean">
+            <li>Tu selección favorita queda bloqueada al iniciar el torneo.</li>
+            <li>El bonus se refleja en la tabla del grupo.</li>
+            <li>Luego se conectará login real con Google y base de datos.</li>
+          </ul>
+          <div class="inline-actions spaced">
+            <a class="button" href="/groups/demo">Ver grupo</a>
+            <a class="button-secondary" href="/dashboard">Ir al dashboard</a>
+          </div>
+        </article>
+      </section>
+    </div>
+  </main>
+</Layout>
