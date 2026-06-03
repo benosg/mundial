@@ -3,6 +3,31 @@ import Layout from "../layouts/Layout.astro";
 import { dashboardStats, groupedMatches, quickSummary, ranking, sampleUser, scoringExamples, scoringRules } from "../data/site";
 
 const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.length, 0);
+
+const createDemoPredictions = (playerName: string) => {
+  const seed = [...playerName].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+
+  return groupedMatches.map((group, groupIndex) => ({
+    group: group.group,
+    matches: group.matches.map((match, matchIndex) => {
+      const base = seed + groupIndex * 7 + matchIndex * 11;
+      const home = base % 4;
+      const away = (base + playerName.length + match.id.length) % 4;
+
+      return {
+        ...match,
+        homePrediction: home,
+        awayPrediction: away,
+      };
+    }),
+  }));
+};
+
+const playerBoards = ranking.map((player) => ({
+  name: player.name,
+  favorite: player.favorite,
+  predictions: createDemoPredictions(player.name),
+}));
 ---
 
 <Layout
@@ -10,13 +35,18 @@ const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.l
   currentPath="/"
   description="Pronósticos del Mundial 2026: juega con tus amigos, elige tu país favorito y compite con puntaje por exactos y ganador o empate."
 >
-  <main class="simple-main">
-    <section class="simple-top">
+  <div class="simple-main">
+    <section class="simple-top" aria-labelledby="hero-title">
       <div class="site-shell simple-stack">
-        <div>
+        <div class="hero-copy-block">
           <span class="eyebrow">Grupo privado · Mundial 2026</span>
-          <h1 class="simple-title">Carga toda la fase de grupos en una sola planilla.</h1>
-          <p class="section-copy">Todos los partidos reales de FIFA 2026, con hora Chile, sede y banderas. Pensado para llenar rápido, no día a día.</p>
+          <h1 class="simple-title" id="hero-title">Carga toda la fase de grupos en una sola planilla.</h1>
+          <p class="section-copy">Todos los partidos reales de FIFA 2026, con hora Chile, sede y banderas. Pensado para llenar rápido, comparar amigos y revisar cada pronóstico con transparencia.</p>
+          <div class="hero-badges" aria-label="Resumen rápido del producto">
+            <span class="hero-badge">72 partidos reales</span>
+            <span class="hero-badge">Horario Chile</span>
+            <span class="hero-badge">Bonus por favorito</span>
+          </div>
         </div>
 
         <div class="summary-grid">
@@ -35,6 +65,7 @@ const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.l
 
         <div class="toolbar-row">
           <div class="progress-pill">Progreso: <strong data-progress-count>0/{totalMatches}</strong> partidos completos</div>
+          <p class="save-status" data-save-status role="status" aria-live="polite">Tus cambios se guardan en este navegador.</p>
           <div class="inline-actions">
             <button class="button" type="button" data-save-all>Guardar todo</button>
             <button class="button-secondary" type="button" data-clear-all>Limpiar</button>
@@ -43,18 +74,19 @@ const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.l
       </div>
     </section>
 
-    <section class="page-section simple-section" id="tabla">
+    <section class="page-section simple-section" id="tabla" aria-labelledby="tabla-title">
       <div class="site-shell simple-grid">
         <article class="panel">
           <div class="table-row-head">
             <div>
               <span class="eyebrow">Cómo vamos</span>
-              <h2 class="section-title">Tabla del grupo</h2>
+              <h2 class="section-title" id="tabla-title">Tabla del grupo</h2>
             </div>
-            <span class="tag success">Todos</span>
+            <span class="tag success">Haz click en un nombre</span>
           </div>
 
           <table>
+            <caption class="visually-hidden">Tabla de posiciones del grupo con puntos, exactos, aciertos y avance de cada jugador.</caption>
             <thead>
               <tr>
                 <th>#</th>
@@ -70,7 +102,11 @@ const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.l
               {ranking.map((player) => (
                 <tr>
                   <td class="rank">{player.position}</td>
-                  <td>{player.name}</td>
+                  <td>
+                    <button class="name-button" type="button" data-player-button={player.name} data-player-controls={`panel-${player.name}`} aria-controls={`panel-${player.name}`} aria-pressed={player.name === sampleUser.name ? "true" : "false"}>
+                      {player.name}
+                    </button>
+                  </td>
                   <td>{player.favorite}</td>
                   <td>{player.points}</td>
                   <td>{player.exact}</td>
@@ -82,9 +118,9 @@ const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.l
           </table>
         </article>
 
-        <article class="panel compact-panel" id="reglas">
+        <article class="panel compact-panel" id="reglas" aria-labelledby="reglas-title">
           <span class="eyebrow">Reglas oficiales</span>
-          <h2 class="section-title">Puntaje simple para que nadie reclame</h2>
+          <h2 class="section-title" id="reglas-title">Puntaje claro y transparente para todo el grupo</h2>
           <div class="compact-stats">
             {dashboardStats.map((stat) => (
               <div class="compact-stat">
@@ -120,7 +156,7 @@ const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.l
           </div>
 
           <div class="examples-box">
-            <p class="examples-title">Ejemplos para evitar discusiones</p>
+            <p class="examples-title">Ejemplos con partidos reales del fixture</p>
             {scoringExamples.map((item) => (
               <div class="example-line">
                 <strong>{item.points}</strong>
@@ -131,16 +167,75 @@ const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.l
               </div>
             ))}
           </div>
+
+          <p class="fair-note">Estas reglas se aplican igual para todos los jugadores y buscan que el juego sea simple, claro y fácil de revisar.</p>
         </article>
       </div>
     </section>
 
-    <section class="page-section simple-section" id="grupos">
+    <section class="page-section simple-section" id="transparencia" aria-labelledby="transparencia-title">
+      <div class="site-shell">
+        <div class="table-row-head">
+          <div>
+            <span class="eyebrow">Transparencia</span>
+            <h2 class="section-title" id="transparencia-title">Pronósticos cargados por cada jugador</h2>
+          </div>
+          <span class="muted">Solo lectura · haz click en un nombre de la tabla</span>
+        </div>
+
+        <div class="player-panels">
+          {playerBoards.map((player, playerIndex) => (
+            <article class={`player-panel ${playerIndex === 0 ? "is-active" : ""}`} id={`panel-${player.name}`} data-player-panel={player.name} aria-label={`Pronósticos de ${player.name}`} hidden={playerIndex !== 0}>
+              <div class="player-panel-head">
+                <div>
+                  <span class="eyebrow">Jugador seleccionado</span>
+                  <h3>{player.name}</h3>
+                  <p class="muted">Favorito: {player.favorite}</p>
+                </div>
+                <span class="tag">Solo lectura</span>
+              </div>
+
+              <div class="player-groups-grid">
+                {player.predictions.map((group) => (
+                  <section class="player-group-card" aria-label={`Grupo ${group.group} de ${player.name}`}>
+                    <div class="group-head compact">
+                      <div>
+                        <span class="eyebrow">Grupo {group.group}</span>
+                        <h4>6 pronósticos</h4>
+                      </div>
+                    </div>
+
+                    <div class="readonly-list">
+                      {group.matches.map((match) => (
+                        <div class="readonly-row">
+                          <div class="fixture-cell">
+                            <span>{match.homeFlag} {match.home}</span>
+                            <span class="muted">vs</span>
+                            <span>{match.awayFlag} {match.away}</span>
+                          </div>
+                          <div class="readonly-score">
+                            <span class="readonly-pill" data-readonly-score={player.name === sampleUser.name ? `${match.id}-home` : undefined}>{match.homePrediction}</span>
+                            <span class="muted">-</span>
+                            <span class="readonly-pill" data-readonly-score={player.name === sampleUser.name ? `${match.id}-away` : undefined}>{match.awayPrediction}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="page-section simple-section" id="grupos" aria-labelledby="grupos-title">
       <div class="site-shell">
         <div class="table-row-head">
           <div>
             <span class="eyebrow">Ingresa pronósticos</span>
-            <h2 class="section-title">Planilla completa de grupos A–L</h2>
+            <h2 class="section-title" id="grupos-title">Planilla completa de grupos A–L</h2>
           </div>
           <span class="muted">Horario Chile · sede · DSPORTS / DGO</span>
         </div>
@@ -158,6 +253,7 @@ const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.l
 
               <div class="group-table-wrap">
                 <table class="prediction-table">
+                  <caption class="visually-hidden">Pronósticos del grupo {group.group} con marcador, horario de Chile y sede.</caption>
                   <thead>
                     <tr>
                       <th>Partido</th>
@@ -198,7 +294,7 @@ const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.l
         </div>
       </div>
     </section>
-  </main>
+  </div>
 
   <script is:inline>
     const STORAGE_KEY = "mundial-2026-picks";
@@ -206,6 +302,13 @@ const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.l
     const progressNode = document.querySelector("[data-progress-count]");
     const saveButton = document.querySelector("[data-save-all]");
     const clearButton = document.querySelector("[data-clear-all]");
+    const saveStatus = document.querySelector("[data-save-status]");
+    const playerButtons = Array.from(document.querySelectorAll("[data-player-button]"));
+    const playerPanels = Array.from(document.querySelectorAll("[data-player-panel]"));
+
+    const announce = (message) => {
+      if (saveStatus) saveStatus.textContent = message;
+    };
 
     const readScores = () => {
       try {
@@ -242,6 +345,7 @@ const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.l
         if (scores[key] !== undefined) input.value = scores[key];
       });
       updateProgress();
+      announce(Object.keys(scores).length ? "Pronósticos recuperados desde este navegador." : "Tus cambios se guardan en este navegador.");
     };
 
     const persist = () => {
@@ -252,18 +356,52 @@ const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.l
       });
       writeScores(scores);
       updateProgress();
+      updateReadonlyCurrentUser(scores);
+      announce("Pronósticos guardados localmente.");
+    };
+
+    const updateReadonlyCurrentUser = (scores = readScores()) => {
+      const readonlyNodes = Array.from(document.querySelectorAll("[data-readonly-score]"));
+      readonlyNodes.forEach((node) => {
+        const key = node.dataset.readonlyScore;
+        if (!key) return;
+        node.textContent = scores[key] ?? "-";
+      });
+    };
+
+    const showPlayerPanel = (playerName) => {
+      playerPanels.forEach((panel) => {
+        const active = panel.dataset.playerPanel === playerName;
+        panel.hidden = !active;
+        panel.classList.toggle("is-active", active);
+      });
+
+      playerButtons.forEach((button) => {
+        const active = button.dataset.playerButton === playerName;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+
+      announce(`Viendo pronósticos de ${playerName}.`);
     };
 
     inputs.forEach((input) => input.addEventListener("input", persist));
+    playerButtons.forEach((button) => {
+      button.addEventListener("click", () => showPlayerPanel(button.dataset.playerButton));
+    });
     if (saveButton) saveButton.addEventListener("click", persist);
     if (clearButton) {
       clearButton.addEventListener("click", () => {
         localStorage.removeItem(STORAGE_KEY);
         inputs.forEach((input) => (input.value = ""));
         updateProgress();
+        updateReadonlyCurrentUser({});
+        announce("Pronósticos borrados de este navegador.");
       });
     }
 
     hydrate();
+    updateReadonlyCurrentUser();
+    showPlayerPanel("Beno");
   </script>
 </Layout>

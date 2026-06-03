@@ -1,0 +1,24 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="1200" height="630" rx="32" fill="#08111F"/>
+<rect x="28" y="28" width="1144" height="574" rx="28" fill="url(#bg)" stroke="rgba(255,255,255,0.18)"/>
+<circle cx="1012" cy="132" r="116" fill="#0EA5A4" fill-opacity="0.18"/>
+<circle cx="201" cy="510" r="160" fill="#2563EB" fill-opacity="0.18"/>
+<path d="M140 136C140 113.909 157.909 96 180 96H484C506.091 96 524 113.909 524 136V210C524 232.091 506.091 250 484 250H180C157.909 250 140 232.091 140 210V136Z" fill="#F3FCF8" fill-opacity="0.08"/>
+<text x="140" y="340" fill="#F8FAFC" font-family="Georgia, serif" font-size="78" font-weight="700">Pronósticos</text>
+<text x="140" y="420" fill="#F8FAFC" font-family="Georgia, serif" font-size="78" font-weight="700">del Mundial 2026</text>
+<text x="140" y="486" fill="#C7D2FE" font-family="Arial, sans-serif" font-size="30">Planilla simple, tabla transparente y bonus por favorito.</text>
+<g>
+<rect x="704" y="156" width="320" height="244" rx="28" fill="#FFFFFF" fill-opacity="0.08" stroke="rgba(255,255,255,0.16)"/>
+<text x="752" y="228" fill="#F8FAFC" font-family="Arial, sans-serif" font-size="28" font-weight="700">72 partidos</text>
+<text x="752" y="274" fill="#CBD5E1" font-family="Arial, sans-serif" font-size="22">Fase de grupos completa</text>
+<text x="752" y="332" fill="#34D399" font-family="Arial, sans-serif" font-size="48" font-weight="700">5 pts</text>
+<text x="752" y="372" fill="#CBD5E1" font-family="Arial, sans-serif" font-size="22">Marcador exacto</text>
+</g>
+<text x="140" y="190" fill="#5EEAD4" font-family="Arial, sans-serif" font-size="28" font-weight="700">⚽ Grupo privado · Chile · FIFA 2026</text>
+<defs>
+<linearGradient id="bg" x1="42" y1="22" x2="1144" y2="608" gradientUnits="userSpaceOnUse">
+<stop stop-color="#10233C"/>
+<stop offset="1" stop-color="#0B5F59"/>
+</linearGradient>
+</defs>
+</svg>

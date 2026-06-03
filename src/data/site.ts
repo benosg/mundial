@@ -1,5 +1,9 @@
 export const siteName = "Pronósticos del Mundial";
 
+export const siteDescription = "Pronósticos del Mundial 2026 con grupos privados, tabla transparente, bonus por favorito y carga rápida de toda la fase de grupos en una sola planilla.";
+
+export const siteOgImage = "/og/world-picks-cover.svg";
+
 export const broadcastersChile = ["DSPORTS", "DGO"];
 
 export const scoringRules = [
@@ -11,27 +15,27 @@ export const scoringRules = [
 export const scoringExamples = [
   {
     title: "Exacto con ganador",
-    example: "Pronóstico: España 3-2 Holanda · Real: España 3-2 Holanda",
+    example: "México vs Sudáfrica · Pronóstico: 2-1 · Resultado real: 2-1",
     points: "5 puntos",
   },
   {
     title: "Ganador correcto, no exacto",
-    example: "Pronóstico: España 2-1 Holanda · Real: España 3-2 Holanda",
+    example: "España vs Arabia Saudita · Pronóstico: 2-1 · Resultado real: 3-2",
     points: "3 puntos",
   },
   {
     title: "Empate exacto",
-    example: "Pronóstico: 0-0 · Real: 0-0",
+    example: "Canadá vs Qatar · Pronóstico: 0-0 · Resultado real: 0-0",
     points: "5 puntos",
   },
   {
     title: "Empate correcto, no exacto",
-    example: "Pronóstico: 1-1 · Real: 2-2",
+    example: "Bélgica vs Egipto · Pronóstico: 1-1 · Resultado real: 2-2",
     points: "3 puntos",
   },
   {
     title: "Bonus favorito",
-    example: "Si juega tu favorito y ya sumaste puntos, agregas +1 extra",
+    example: "Uruguay vs España · Si tu favorito es España y acertaste, sumas +1 extra",
     points: "+1 punto",
   },
 ];

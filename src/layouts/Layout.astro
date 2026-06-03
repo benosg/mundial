@@ -1,46 +1,92 @@
 ---
 import "../styles/global.css";
-import { siteName } from "../data/site";
+import { siteDescription, siteName, siteOgImage } from "../data/site";
 
 interface Props {
   title: string;
   description?: string;
   currentPath?: string;
+  image?: string;
+  noindex?: boolean;
 }
 
 const {
   title,
-  description = "Demo visual de un juego de pronósticos del Mundial 2026 con grupos privados, puntajes y bonus por selección favorita.",
+  description = siteDescription,
   currentPath = "/",
+  image = siteOgImage,
+  noindex = false,
 } = Astro.props;
 
 const navigation = [
   { href: "/", label: "Inicio" },
   { href: "/#tabla", label: "Tabla" },
+  { href: "/#transparencia", label: "Transparencia" },
   { href: "/#grupos", label: "Grupos" },
   { href: "/#reglas", label: "Reglas" },
 ];
 
 const pageTitle = `${title} | ${siteName}`;
+const canonicalURL = Astro.site ? new URL(Astro.url.pathname, Astro.site) : undefined;
+const socialImageURL = image ? new URL(image, Astro.site ?? Astro.url).toString() : undefined;
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      name: siteName,
+      description,
+      url: canonicalURL?.toString() ?? Astro.url.toString(),
+      inLanguage: "es",
+    },
+    {
+      "@type": "WebPage",
+      name: pageTitle,
+      description,
+      url: canonicalURL?.toString() ?? Astro.url.toString(),
+      isPartOf: {
+        "@type": "WebSite",
+        name: siteName,
+      },
+    },
+  ],
+};
 ---
 
 <!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
+    <meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow"} />
+    <meta name="theme-color" content="#08111f" />
+    {canonicalURL && <link rel="canonical" href={canonicalURL.toString()} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_CL" />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL?.toString() ?? Astro.url.toString()} />
+    {socialImageURL && <meta property="og:image" content={socialImageURL} />}
+    {socialImageURL && <meta property="og:image:alt" content="Vista previa del juego de pronósticos del Mundial 2026" />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    {socialImageURL && <meta name="twitter:image" content={socialImageURL} />}
     <title>{pageTitle}</title>
+    <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Saltar al contenido</a>
     <header class="site-header">
       <div class="header-inner">
         <a class="brand" href="/">
           <span class="brand-mark">⚽</span>
           <span class="brand-copy">
             <span>{siteName}</span>
-            <small>Fase de grupos · Planilla simple</small>
+            <small>Fase de grupos · Planilla clara · Chile</small>
           </span>
         </a>
 
@@ -50,18 +96,21 @@ const pageTitle = `${title} | ${siteName}`;
               {item.label}
             </a>
           ))}
-          <a class="button-secondary" href="#grupos">Guardar todo</a>
+          <a class="button-secondary nav-cta" href="#grupos">Ir a la planilla</a>
         </nav>
       </div>
     </header>
 
-    <slot />
+    <main id="main-content">
+      <slot />
+    </main>
 
     <footer class="footer">
       <div class="footer-inner">
         <p>{siteName} · Fixture oficial de fase de grupos 2026 armado sobre datos de FIFA y horarios mostrados para Chile.</p>
         <div class="list-inline">
           <a href="#tabla">Tabla del grupo</a>
+          <a href="#transparencia">Pronósticos visibles</a>
           <a href="#grupos">Planilla completa</a>
           <a href="#reglas">Reglas</a>
         </div>
