@@ -62,21 +62,12 @@ const playerBoards = ranking.map((player) => ({
             </article>
           ))}
         </div>
-
-        <div class="toolbar-row">
-          <div class="progress-pill">Progreso: <strong data-progress-count>0/{totalMatches}</strong> partidos completos</div>
-          <p class="save-status" data-save-status role="status" aria-live="polite">Tus cambios se guardan en este navegador.</p>
-          <div class="inline-actions">
-            <button class="button" type="button" data-save-all>Guardar todo</button>
-            <button class="button-secondary" type="button" data-clear-all>Limpiar</button>
-          </div>
-        </div>
       </div>
     </section>
 
-    <section class="page-section simple-section" id="tabla" aria-labelledby="tabla-title">
-      <div class="site-shell simple-grid">
-        <article class="panel">
+    <section class="page-section simple-section workspace-section">
+      <div class="site-shell workspace-grid">
+        <article class="panel workspace-column workspace-ranking" id="tabla" aria-labelledby="tabla-title">
           <div class="table-row-head">
             <div>
               <span class="eyebrow">Cómo vamos</span>
@@ -121,7 +112,89 @@ const playerBoards = ranking.map((player) => ({
           </table>
         </article>
 
-        <article class="panel compact-panel" id="reglas" aria-labelledby="reglas-title">
+        <article class="workspace-column workspace-entry" id="grupos" aria-labelledby="grupos-title">
+          <div class="panel save-dock" aria-label="Controles de guardado">
+            <div class="save-dock-top">
+              <div>
+                <span class="eyebrow">Planilla activa</span>
+                <h2 class="section-title" id="grupos-title">Ingreso de partidos</h2>
+              </div>
+              <div class="progress-pill">Progreso: <strong data-progress-count>0/{totalMatches}</strong> partidos completos</div>
+            </div>
+
+            <p class="save-status" data-save-status role="status" aria-live="polite">Tus cambios se guardan en este navegador.</p>
+
+            <div class="inline-actions">
+              <button class="button" type="button" data-save-all>Guardar todo</button>
+              <button class="button-secondary" type="button" data-clear-all>Limpiar</button>
+            </div>
+          </div>
+
+          <article class="panel panel-entry">
+            <div class="table-row-head">
+              <div>
+                <span class="eyebrow">Ingresa pronósticos</span>
+                <h3 class="entry-title">Planilla completa de grupos A–L</h3>
+              </div>
+              <span class="muted">Horario Chile · sede · DSPORTS / DGO</span>
+            </div>
+
+            <div class="groups-grid groups-grid-single">
+              {groupedMatches.map((group) => (
+                <article class="group-card">
+                  <div class="group-head">
+                    <div>
+                      <span class="eyebrow">Grupo {group.group}</span>
+                      <h3>6 partidos</h3>
+                    </div>
+                    <span class="tag">Fase de grupos</span>
+                  </div>
+
+                  <div class="group-table-wrap">
+                    <table class="prediction-table">
+                      <caption class="visually-hidden">Pronósticos del grupo {group.group} con marcador, horario de Chile y sede.</caption>
+                      <thead>
+                        <tr>
+                          <th>Partido</th>
+                          <th>Resultado</th>
+                          <th>Chile</th>
+                          <th>Sede</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {group.matches.map((match) => (
+                          <tr>
+                            <td>
+                              <div class="fixture-cell">
+                                <span>{match.homeFlag} {match.home}</span>
+                                <span class="muted">vs</span>
+                                <span>{match.awayFlag} {match.away}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <div class="score-inputs">
+                                <input type="number" min="0" max="20" inputmode="numeric" placeholder="0" data-score-input data-match={match.id} data-side="home" aria-label={`Resultado ${match.home}`} />
+                                <span>-</span>
+                                <input type="number" min="0" max="20" inputmode="numeric" placeholder="0" data-score-input data-match={match.id} data-side="away" aria-label={`Resultado ${match.away}`} />
+                              </div>
+                            </td>
+                            <td>{match.kickoffChile}</td>
+                            <td>
+                              <strong>{match.venue}</strong>
+                              <div class="muted">{match.city}</div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </article>
+        </article>
+
+        <article class="panel compact-panel workspace-column workspace-rules" id="reglas" aria-labelledby="reglas-title">
           <span class="eyebrow">Reglas oficiales</span>
           <h2 class="section-title" id="reglas-title">Puntaje claro y transparente para todo el grupo</h2>
           <div class="compact-stats">
@@ -173,71 +246,6 @@ const playerBoards = ranking.map((player) => ({
 
           <p class="fair-note">Estas reglas se aplican igual para todos los jugadores y buscan que el juego sea simple, claro y fácil de revisar.</p>
         </article>
-      </div>
-    </section>
-
-    <section class="page-section simple-section" id="grupos" aria-labelledby="grupos-title">
-      <div class="site-shell">
-        <div class="table-row-head">
-          <div>
-            <span class="eyebrow">Ingresa pronósticos</span>
-            <h2 class="section-title" id="grupos-title">Planilla completa de grupos A–L</h2>
-          </div>
-          <span class="muted">Horario Chile · sede · DSPORTS / DGO</span>
-        </div>
-
-        <div class="groups-grid">
-          {groupedMatches.map((group) => (
-            <article class="group-card">
-              <div class="group-head">
-                <div>
-                  <span class="eyebrow">Grupo {group.group}</span>
-                  <h3>6 partidos</h3>
-                </div>
-                <span class="tag">Fase de grupos</span>
-              </div>
-
-              <div class="group-table-wrap">
-                <table class="prediction-table">
-                  <caption class="visually-hidden">Pronósticos del grupo {group.group} con marcador, horario de Chile y sede.</caption>
-                  <thead>
-                    <tr>
-                      <th>Partido</th>
-                      <th>Resultado</th>
-                      <th>Chile</th>
-                      <th>Sede</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {group.matches.map((match) => (
-                      <tr>
-                        <td>
-                          <div class="fixture-cell">
-                            <span>{match.homeFlag} {match.home}</span>
-                            <span class="muted">vs</span>
-                            <span>{match.awayFlag} {match.away}</span>
-                          </div>
-                        </td>
-                        <td>
-                          <div class="score-inputs">
-                            <input type="number" min="0" max="20" inputmode="numeric" placeholder="0" data-score-input data-match={match.id} data-side="home" aria-label={`Resultado ${match.home}`} />
-                            <span>-</span>
-                            <input type="number" min="0" max="20" inputmode="numeric" placeholder="0" data-score-input data-match={match.id} data-side="away" aria-label={`Resultado ${match.away}`} />
-                          </div>
-                        </td>
-                        <td>{match.kickoffChile}</td>
-                        <td>
-                          <strong>{match.venue}</strong>
-                          <div class="muted">{match.city}</div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </article>
-          ))}
-        </div>
       </div>
     </section>
   </div>
