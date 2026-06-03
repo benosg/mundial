@@ -501,7 +501,7 @@ tbody tr:last-child td {
 
 .ranking-points {
   display: block;
-  font-size: 2rem;
+  font-size: 1.75rem;
   line-height: 1;
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -525,7 +525,7 @@ tbody tr:last-child td {
 
 .ranking-meta dt {
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -533,6 +533,7 @@ tbody tr:last-child td {
 .ranking-meta dd {
   margin: 0.2rem 0 0;
   font-weight: 800;
+  font-size: 0.95rem;
 }
 
 .footer {
@@ -661,6 +662,11 @@ tbody tr:last-child td {
 .workspace-entry {
   display: grid;
   gap: 1rem;
+}
+
+.workspace-ranking .section-title {
+  font-size: clamp(1.85rem, 2.8vw, 2.7rem);
+  line-height: 1.05;
 }
 
 .simple-grid {
