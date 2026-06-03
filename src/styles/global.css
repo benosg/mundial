@@ -452,6 +452,89 @@ tbody tr:last-child td {
   color: var(--accent);
 }
 
+.ranking-list {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.ranking-item {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.82);
+  padding: 1rem;
+}
+
+.ranking-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.ranking-identity {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+}
+
+.ranking-position {
+  min-width: 42px;
+  color: var(--accent);
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.ranking-name {
+  padding-left: 0;
+}
+
+.ranking-favorite {
+  margin: 0.25rem 0 0;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.ranking-points-block {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.ranking-points {
+  display: block;
+  font-size: 2rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.ranking-points-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ranking-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0.9rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.ranking-meta dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ranking-meta dd {
+  margin: 0.2rem 0 0;
+  font-weight: 800;
+}
+
 .footer {
   padding: 2rem 0 3rem;
   border-top: 1px solid var(--line);
@@ -572,8 +655,7 @@ tbody tr:last-child td {
 
 .workspace-ranking,
 .workspace-rules {
-  position: sticky;
-  top: 102px;
+  position: static;
 }
 
 .workspace-entry {
@@ -599,6 +681,11 @@ tbody tr:last-child td {
 .entry-title {
   margin: 0.3rem 0 0;
   font-size: 1.5rem;
+}
+
+.section-title-compact {
+  font-size: clamp(1.2rem, 2vw, 1.6rem);
+  margin-bottom: 0.75rem;
 }
 
 .compact-stats {
@@ -726,9 +813,7 @@ tbody tr:last-child td {
 }
 
 .save-dock {
-  position: sticky;
-  top: 102px;
-  z-index: 5;
+  position: static;
   display: grid;
   gap: 0.85rem;
   background: rgba(255, 255, 255, 0.94);
@@ -1040,6 +1125,7 @@ tbody tr:last-child td {
 
   .simple-match-main,
   .simple-match-footer,
+  .ranking-main,
   .player-panel-head,
   .readonly-row,
   .player-dialog-head,
@@ -1055,10 +1141,8 @@ tbody tr:last-child td {
     align-items: flex-start;
   }
 
-  .workspace-ranking,
-  .workspace-rules,
-  .save-dock {
-    position: static;
+  .ranking-meta {
+    grid-template-columns: 1fr;
   }
 
   .header-inner,

@@ -79,37 +79,43 @@ const playerBoards = ranking.map((player) => ({
             </div>
           </div>
 
-          <table>
-            <caption class="visually-hidden">Tabla de posiciones del grupo con puntos, exactos, aciertos y avance de cada jugador.</caption>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Jugador</th>
-                <th>Favorito</th>
-                <th>Puntos</th>
-                <th>Exactos</th>
-                <th>Aciertos</th>
-                <th>Completados</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ranking.map((player) => (
-                <tr>
-                  <td class="rank">{player.position}</td>
-                  <td>
-                    <button class="name-button" type="button" data-player-button={player.name} data-player-controls={`panel-${player.name}`} aria-controls={`panel-${player.name}`} aria-pressed={player.name === sampleUser.name ? "true" : "false"}>
-                      {player.name}
-                    </button>
-                  </td>
-                  <td>{player.favorite}</td>
-                  <td>{player.points}</td>
-                  <td>{player.exact}</td>
-                  <td>{player.outcomes}</td>
-                  <td>{player.completed}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div class="ranking-list" role="list" aria-label="Puntajes del grupo">
+            {ranking.map((player) => (
+              <article class="ranking-item" role="listitem">
+                <div class="ranking-main">
+                  <div class="ranking-identity">
+                    <span class="ranking-position">#{player.position}</span>
+                    <div>
+                      <button class="name-button ranking-name" type="button" data-player-button={player.name} data-player-controls={`panel-${player.name}`} aria-controls={`panel-${player.name}`} aria-pressed={player.name === sampleUser.name ? "true" : "false"}>
+                        {player.name}
+                      </button>
+                      <p class="ranking-favorite">{player.favorite}</p>
+                    </div>
+                  </div>
+
+                  <div class="ranking-points-block">
+                    <span class="ranking-points">{player.points}</span>
+                    <span class="ranking-points-label">pts</span>
+                  </div>
+                </div>
+
+                <dl class="ranking-meta">
+                  <div>
+                    <dt>Exactos</dt>
+                    <dd>{player.exact}</dd>
+                  </div>
+                  <div>
+                    <dt>Aciertos</dt>
+                    <dd>{player.outcomes}</dd>
+                  </div>
+                  <div>
+                    <dt>Completados</dt>
+                    <dd>{player.completed}</dd>
+                  </div>
+                </dl>
+              </article>
+            ))}
+          </div>
         </article>
 
         <article class="workspace-column workspace-entry" id="grupos" aria-labelledby="grupos-title">
@@ -196,7 +202,7 @@ const playerBoards = ranking.map((player) => ({
 
         <article class="panel compact-panel workspace-column workspace-rules" id="reglas" aria-labelledby="reglas-title">
           <span class="eyebrow">Reglas oficiales</span>
-          <h2 class="section-title" id="reglas-title">Puntaje claro y transparente para todo el grupo</h2>
+          <h2 class="section-title section-title-compact" id="reglas-title">Puntaje</h2>
           <div class="compact-stats">
             {dashboardStats.map((stat) => (
               <div class="compact-stat">
