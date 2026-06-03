@@ -16,9 +16,9 @@ const {
 
 const navigation = [
   { href: "/", label: "Inicio" },
-  { href: "/groups/demo", label: "Tabla" },
-  { href: "/matches", label: "Partidos" },
-  { href: "/profile", label: "Mi perfil" },
+  { href: "/#tabla", label: "Tabla" },
+  { href: "/#grupos", label: "Grupos" },
+  { href: "/#reglas", label: "Reglas" },
 ];
 
 const pageTitle = `${title} | ${siteName}`;
@@ -40,7 +40,7 @@ const pageTitle = `${title} | ${siteName}`;
           <span class="brand-mark">⚽</span>
           <span class="brand-copy">
             <span>{siteName}</span>
-            <small>Mundial 2026 · Demo MVP</small>
+            <small>Fase de grupos · Planilla simple</small>
           </span>
         </a>
 
@@ -50,7 +50,7 @@ const pageTitle = `${title} | ${siteName}`;
               {item.label}
             </a>
           ))}
-          <a class="button-secondary" href="/">Entrar con Google</a>
+          <a class="button-secondary" href="#grupos">Guardar todo</a>
         </nav>
       </div>
     </header>
@@ -59,11 +59,11 @@ const pageTitle = `${title} | ${siteName}`;
 
     <footer class="footer">
       <div class="footer-inner">
-        <p>{siteName} · Prototipo estático para validar el look & feel antes de conectar login real y base de datos.</p>
+        <p>{siteName} · Fixture oficial de fase de grupos 2026 armado sobre datos de FIFA y horarios mostrados para Chile.</p>
         <div class="list-inline">
-          <a href="/matches">Fixture 2026</a>
-          <a href="/groups/demo">Ranking demo</a>
-          <a href="/profile">País favorito</a>
+          <a href="#tabla">Tabla del grupo</a>
+          <a href="#grupos">Planilla completa</a>
+          <a href="#reglas">Reglas</a>
         </div>
       </div>
     </footer>

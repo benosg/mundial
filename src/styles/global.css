@@ -578,6 +578,102 @@ tbody tr:last-child td {
   border-top: 1px solid var(--line);
 }
 
+.toolbar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.progress-pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: white;
+  padding: 0.8rem 1rem;
+  color: var(--muted);
+}
+
+.progress-pill strong {
+  color: var(--text);
+}
+
+.source-note {
+  margin-top: 1rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fafbfc;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.groups-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.group-card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.group-head h3 {
+  margin: 0.3rem 0 0;
+  font-size: 1.2rem;
+}
+
+.group-table-wrap {
+  overflow-x: auto;
+}
+
+.prediction-table th,
+.prediction-table td {
+  vertical-align: top;
+  padding: 0.8rem 0.65rem;
+}
+
+.fixture-cell {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 175px;
+  font-weight: 600;
+}
+
+.score-inputs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.score-inputs input {
+  width: 52px;
+  padding: 0.65rem 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card-strong);
+  font: inherit;
+  text-align: center;
+}
+
+.score-inputs input:focus {
+  outline: 2px solid rgba(37, 99, 235, 0.15);
+  border-color: var(--accent-alt);
+}
+
 @media (max-width: 960px) {
   .hero-grid,
   .two-column,
@@ -588,12 +684,19 @@ tbody tr:last-child td {
   .stats-grid,
   .cards-grid,
   .summary-grid,
-  .simple-grid {
+  .simple-grid,
+  .groups-grid {
     grid-template-columns: 1fr;
   }
 
   .simple-match-main,
   .simple-match-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .toolbar-row,
+  .group-head {
     flex-direction: column;
     align-items: flex-start;
   }

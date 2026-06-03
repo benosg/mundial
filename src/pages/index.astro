@@ -1,6 +1,8 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { dashboardStats, matches, quickSummary, ranking, sampleUser, scoringRules } from "../data/site";
+import { dashboardStats, groupedMatches, quickSummary, ranking, sampleUser, scoringRules } from "../data/site";
+
+const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.length, 0);
 ---
 
 <Layout
@@ -13,8 +15,8 @@ import { dashboardStats, matches, quickSummary, ranking, sampleUser, scoringRule
       <div class="site-shell simple-stack">
         <div>
           <span class="eyebrow">Grupo privado · Mundial 2026</span>
-          <h1 class="simple-title">Ingresa tus resultados y mira cómo van todos.</h1>
-          <p class="section-copy">Sin vueltas: tabla arriba, partidos abajo, todo claro y con banderas.</p>
+          <h1 class="simple-title">Carga toda la fase de grupos en una sola planilla.</h1>
+          <p class="section-copy">Todos los partidos reales de FIFA 2026, con hora Chile, sede y banderas. Pensado para llenar rápido, no día a día.</p>
         </div>
 
         <div class="summary-grid">
@@ -30,10 +32,18 @@ import { dashboardStats, matches, quickSummary, ranking, sampleUser, scoringRule
             </article>
           ))}
         </div>
+
+        <div class="toolbar-row">
+          <div class="progress-pill">Progreso: <strong data-progress-count>0/{totalMatches}</strong> partidos completos</div>
+          <div class="inline-actions">
+            <button class="button" type="button" data-save-all>Guardar todo</button>
+            <button class="button-secondary" type="button" data-clear-all>Limpiar</button>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="page-section simple-section">
+    <section class="page-section simple-section" id="tabla">
       <div class="site-shell simple-grid">
         <article class="panel">
           <div class="table-row-head">
@@ -53,6 +63,7 @@ import { dashboardStats, matches, quickSummary, ranking, sampleUser, scoringRule
                 <th>Puntos</th>
                 <th>Exactos</th>
                 <th>Aciertos</th>
+                <th>Completados</th>
               </tr>
             </thead>
             <tbody>
@@ -64,13 +75,14 @@ import { dashboardStats, matches, quickSummary, ranking, sampleUser, scoringRule
                   <td>{player.points}</td>
                   <td>{player.exact}</td>
                   <td>{player.outcomes}</td>
+                  <td>{player.completed}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </article>
 
-        <article class="panel compact-panel">
+        <article class="panel compact-panel" id="reglas">
           <span class="eyebrow">Tu resumen</span>
           <h2 class="section-title">Tus puntos</h2>
           <div class="compact-stats">
@@ -80,6 +92,12 @@ import { dashboardStats, matches, quickSummary, ranking, sampleUser, scoringRule
                 <span>{stat.label}</span>
               </div>
             ))}
+          </div>
+
+          <div class="source-note">
+            Datos base de fixture: <strong>FIFA Scores & Fixtures</strong><br />
+            Horarios vistos con territorio <strong>Chile</strong>.<br />
+            Transmisión mostrada por FIFA: <strong>DSPORTS</strong> y <strong>DGO</strong>.
           </div>
 
           <div class="rules-box">
@@ -94,41 +112,63 @@ import { dashboardStats, matches, quickSummary, ranking, sampleUser, scoringRule
       </div>
     </section>
 
-    <section class="page-section simple-section">
+    <section class="page-section simple-section" id="grupos">
       <div class="site-shell">
         <div class="table-row-head">
           <div>
             <span class="eyebrow">Ingresa pronósticos</span>
-            <h2 class="section-title">Partidos abiertos</h2>
+            <h2 class="section-title">Planilla completa de grupos A–L</h2>
           </div>
-          <span class="muted">Horario Chile · sede · transmisión</span>
+          <span class="muted">Horario Chile · sede · DSPORTS / DGO</span>
         </div>
 
-        <div class="simple-match-list">
-          {matches.map((match) => (
-            <article class="simple-match-card">
-              <div class="simple-match-main">
+        <div class="groups-grid">
+          {groupedMatches.map((group) => (
+            <article class="group-card">
+              <div class="group-head">
                 <div>
-                  <div class="muted">{match.stage}</div>
-                  <div class="simple-teams">
-                    <span>{match.homeFlag} {match.home}</span>
-                    <span class="muted">vs</span>
-                    <span>{match.awayFlag} {match.away}</span>
-                  </div>
-                  <div class="muted">{match.kickoffChile} · {match.venue} · {match.city}</div>
-                  <div class="muted">Transmite: {match.broadcasters.join(", ")}</div>
+                  <span class="eyebrow">Grupo {group.group}</span>
+                  <h3>6 partidos</h3>
                 </div>
-
-                <div class="simple-score-entry">
-                  <div class="input-like">{match.homePrediction}</div>
-                  <div class="input-like">{match.awayPrediction}</div>
-                  <button class="save-button">Guardar</button>
-                </div>
+                <span class="tag">Fase de grupos</span>
               </div>
 
-              <div class="simple-match-footer">
-                <span class={`tag ${match.bonus ? "success" : ""}`}>{match.bonus ? "Bonus por favorito" : match.status}</span>
-                <a class="accent" href={`/matches/${match.id}`}>Ver detalle</a>
+              <div class="group-table-wrap">
+                <table class="prediction-table">
+                  <thead>
+                    <tr>
+                      <th>Partido</th>
+                      <th>Resultado</th>
+                      <th>Chile</th>
+                      <th>Sede</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.matches.map((match) => (
+                      <tr>
+                        <td>
+                          <div class="fixture-cell">
+                            <span>{match.homeFlag} {match.home}</span>
+                            <span class="muted">vs</span>
+                            <span>{match.awayFlag} {match.away}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="score-inputs">
+                            <input type="number" min="0" max="20" inputmode="numeric" placeholder="0" data-score-input data-match={match.id} data-side="home" aria-label={`Resultado ${match.home}`} />
+                            <span>-</span>
+                            <input type="number" min="0" max="20" inputmode="numeric" placeholder="0" data-score-input data-match={match.id} data-side="away" aria-label={`Resultado ${match.away}`} />
+                          </div>
+                        </td>
+                        <td>{match.kickoffChile}</td>
+                        <td>
+                          <strong>{match.venue}</strong>
+                          <div class="muted">{match.city}</div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </article>
           ))}
@@ -136,4 +176,71 @@ import { dashboardStats, matches, quickSummary, ranking, sampleUser, scoringRule
       </div>
     </section>
   </main>
+
+  <script is:inline>
+    const STORAGE_KEY = "mundial-2026-picks";
+    const inputs = Array.from(document.querySelectorAll("[data-score-input]"));
+    const progressNode = document.querySelector("[data-progress-count]");
+    const saveButton = document.querySelector("[data-save-all]");
+    const clearButton = document.querySelector("[data-clear-all]");
+
+    const readScores = () => {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      } catch {
+        return {};
+      }
+    };
+
+    const writeScores = (scores) => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
+    };
+
+    const updateProgress = () => {
+      const matches = new Set(inputs.map((input) => input.dataset.match));
+      let completed = 0;
+
+      matches.forEach((matchId) => {
+        const home = document.querySelector(`[data-score-input][data-match="${matchId}"][data-side="home"]`);
+        const away = document.querySelector(`[data-score-input][data-match="${matchId}"][data-side="away"]`);
+
+        if (home && away && home.value !== "" && away.value !== "") {
+          completed += 1;
+        }
+      });
+
+      if (progressNode) progressNode.textContent = `${completed}/${matches.size}`;
+    };
+
+    const hydrate = () => {
+      const scores = readScores();
+      inputs.forEach((input) => {
+        const key = `${input.dataset.match}-${input.dataset.side}`;
+        if (scores[key] !== undefined) input.value = scores[key];
+      });
+      updateProgress();
+    };
+
+    const persist = () => {
+      const scores = {};
+      inputs.forEach((input) => {
+        const key = `${input.dataset.match}-${input.dataset.side}`;
+        if (input.value !== "") scores[key] = input.value;
+      });
+      writeScores(scores);
+      updateProgress();
+    };
+
+    inputs.forEach((input) => input.addEventListener("input", persist));
+    if (saveButton) saveButton.addEventListener("click", persist);
+    if (clearButton) {
+      clearButton.addEventListener("click", () => {
+        localStorage.removeItem(STORAGE_KEY);
+        inputs.forEach((input) => (input.value = ""));
+        updateProgress();
+      });
+    }
+
+    hydrate();
+  </script>
 </Layout>
