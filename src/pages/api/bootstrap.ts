@@ -36,7 +36,32 @@ export const GET: APIRoute = async ({ request, url }) => {
     }
 
     if (authPlayer) {
-      player = authPlayer;
+      const nextName = authPlayer.name || session.user.user_metadata?.full_name || session.user.user_metadata?.name || "";
+      const nextEmail = authPlayer.email || session.user.email || "";
+
+      if (nextName !== authPlayer.name || nextEmail !== authPlayer.email) {
+        const { data: synced, error: syncErr } = await supabase
+          .from("players")
+          .update({
+            name: nextName,
+            email: nextEmail,
+          })
+          .eq("id", authPlayer.id)
+          .select()
+          .single();
+
+        if (!syncErr && synced) {
+          player = synced;
+        } else {
+          player = {
+            ...authPlayer,
+            name: nextName,
+            email: nextEmail,
+          };
+        }
+      } else {
+        player = authPlayer;
+      }
     } else {
       // Create a stub player for this authenticated user
       const { data: created, error: createErr } = await supabase

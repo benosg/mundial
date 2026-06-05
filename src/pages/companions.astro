@@ -18,14 +18,33 @@ groupedMatches.forEach((g) => {
       <div class="table-row-head">
         <div>
           <span class="eyebrow">Compañeros</span>
-          <h1 class="page-title">Quiénes ya jugaron</h1>
+          <h1 class="page-title">Ranking de Jugadores</h1>
         </div>
         <span class="muted" data-companions-count></span>
       </div>
 
-      <p class="section-copy" data-companions-status>Cargando lista de jugadores...</p>
+      <p class="section-copy" data-companions-status>Cargando ranking...</p>
 
-      <div class="ranking-list" data-companions-list></div>
+      <div class="ranking-table panel" data-companions-ranking>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Pos</th>
+              <th scope="col">Jugador</th>
+              <th scope="col">Favorito</th>
+              <th scope="col">Puntos</th>
+              <th scope="col">Exactos (5)</th>
+              <th scope="col">Ganador (3)</th>
+              <th scope="col">Bonus Fav (+1)</th>
+              <th scope="col">Completados</th>
+              <th scope="col">Pronósticos</th>
+            </tr>
+          </thead>
+          <tbody id="ranking-body"></tbody>
+        </table>
+      </div>
+
+      <p class="muted small-note" style="margin-top:1rem" data-companions-note>Solo se muestran puntos de partidos con resultado real ingresado.</p>
 
       <div class="inline-actions" style="margin-top:1.5rem">
         <a class="button-secondary" href="/">&#8592; Volver al inicio</a>
@@ -52,9 +71,9 @@ groupedMatches.forEach((g) => {
   </div>
 
   <script is:inline define:vars={{ allMatchesJson: JSON.stringify(allMatches) }}>
-    const allMatches = allMatchesJson;
+    const allMatches = JSON.parse(allMatchesJson);
 
-    const companionsList = document.querySelector("[data-companions-list]");
+    const rankingBody = document.getElementById("ranking-body");
     const companionsCount = document.querySelector("[data-companions-count]");
     const companionsStatus = document.querySelector("[data-companions-status]");
     const playerModal = document.querySelector("[data-player-modal]");
@@ -121,45 +140,51 @@ groupedMatches.forEach((g) => {
               favorite_flag: "🏳️",
               predictions_count: 0,
               joined: null,
+              points_breakdown: {
+                total_points: 0,
+                exact_count: 0,
+                winner_count: 0,
+                favorite_bonus_count: 0,
+                completed_count: 0,
+              },
             });
           }
         }
 
         if (allPlayers.length === 0) {
           if (companionsStatus) companionsStatus.textContent = "Aún no hay jugadores registrados.";
-          if (companionsList) companionsList.innerHTML = "";
+          if (rankingBody) rankingBody.innerHTML = "";
           return;
         }
 
         if (companionsStatus) companionsStatus.textContent = "";
         if (companionsCount) companionsCount.textContent = `${allPlayers.length} jugador${allPlayers.length !== 1 ? "es" : ""}`;
 
-        companionsList.innerHTML = allPlayers
-          .map((p) => {
+        rankingBody.innerHTML = allPlayers
+          .map((p, index) => {
+            const pb = p.points_breakdown || { total_points: 0, exact_count: 0, winner_count: 0, favorite_bonus_count: 0, completed_count: 0 };
             const isCurrentUser = currentPlayerRecordId && p.id === currentPlayerRecordId;
             return `
-            <div class="ranking-item companion-card" data-player-id="${p.id}" tabindex="0" role="button" aria-label="Ver pronósticos de ${p.name}">
-              <div class="ranking-main">
-                <div class="ranking-identity">
-                  <div class="ranking-position">${p.favorite_flag || '🏳️'}</div>
-                  <div>
-                    <div class="ranking-name">${p.name || 'Sin nombre'} ${isCurrentUser ? '<span class="tag success">Tú</span>' : ''}</div>
-                    ${p.favorite_team ? `<div class="ranking-favorite">Favorito: ${p.favorite_team}</div>` : '<div class="ranking-favorite muted">Sin favorito</div>'}
-                  </div>
-                </div>
-                <div class="ranking-points-block">
-                  <span class="ranking-points">${p.predictions_count || 0}</span>
-                  <span class="ranking-points-label">pronósticos</span>
-                </div>
-              </div>
-            </div>`;
+            <tr class="companion-row" data-player-id="${p.id}" tabindex="0" role="button" aria-label="Ver pronósticos de ${p.name}">
+              <td class="rank">${index + 1}</td>
+              <td class="ranking-name-cell">
+                <div class="ranking-name">${p.name || 'Sin nombre'} ${isCurrentUser ? '<span class="tag-you">Tú</span>' : ''}</div>
+              </td>
+              <td>${p.favorite_flag || '🏳️'} ${p.favorite_team || '<span class="muted">Sin favorito</span>'}</td>
+              <td class="points-cell"><strong class="points-total">${pb.total_points}</strong></td>
+              <td class="points-cell">${pb.exact_count}</td>
+              <td class="points-cell">${pb.winner_count}</td>
+              <td class="points-cell">${pb.favorite_bonus_count}</td>
+              <td class="points-cell">${pb.completed_count}</td>
+              <td class="points-cell muted">${p.predictions_count || 0}</td>
+            </tr>`;
           })
           .join("");
 
-        companionsList.querySelectorAll(".companion-card").forEach((card) => {
-          const handler = () => openPlayerDetail(card.dataset.playerId);
-          card.addEventListener("click", handler);
-          card.addEventListener("keydown", (e) => {
+        rankingBody.querySelectorAll(".companion-row").forEach((row) => {
+          const handler = () => openPlayerDetail(row.dataset.playerId);
+          row.addEventListener("click", handler);
+          row.addEventListener("keydown", (e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
               handler();
@@ -211,15 +236,22 @@ groupedMatches.forEach((g) => {
         let html = "";
         const sortedGroups = Object.keys(grouped).sort();
 
-        sortedGroups.forEach((group) => {
+        sortedGroups.forEach((group, i) => {
           const preds = grouped[group];
-          html += `<div class="player-group-card">
-            <h4 class="eyebrow" style="margin-bottom:.5rem">Grupo ${group}</h4>
+          const openAttr = i < 2 ? ' open' : '';
+          html += `<details class="group-collapsible player-group-card"${openAttr}>
+            <summary class="group-head"><span>Grupo ${group}</span></summary>
             <div class="readonly-list">`;
 
           preds.forEach((pred) => {
             const match = allMatches[pred.match_id];
             if (!match) return;
+            const pointsInfo = pred.points > 0
+              ? `<span class="tag ${pred.type === 'exact' ? 'success' : ''}" style="font-size:0.75rem; margin-left:0.5rem;">+${pred.points} ${pred.favoriteBonus ? '★' : ''}</span>`
+              : pred.type === "pending"
+              ? '<span class="muted" style="font-size:0.75rem; margin-left:0.5rem;">Pendiente</span>'
+              : '<span class="muted" style="font-size:0.75rem; margin-left:0.5rem;">0 pts</span>';
+
             html += `
               <div class="readonly-row">
                 <div class="fixture-cell" style="min-width:auto">
@@ -231,11 +263,12 @@ groupedMatches.forEach((g) => {
                   <span class="readonly-pill">${pred.home_score}</span>
                   <span class="muted">-</span>
                   <span class="readonly-pill">${pred.away_score}</span>
+                  ${pointsInfo}
                 </div>
               </div>`;
           });
 
-          html += `</div></div>`;
+          html += `</div></details>`;
         });
 
         playerPredictionsContent.innerHTML = html;
@@ -246,4 +279,68 @@ groupedMatches.forEach((g) => {
 
     loadCompanions();
   </script>
+
+  <style is:global>
+    .ranking-table {
+      overflow-x: auto;
+    }
+
+    .ranking-table table {
+      width: 100%;
+      font-size: 0.92rem;
+    }
+
+    .ranking-table th,
+    .ranking-table td {
+      padding: 0.85rem 0.75rem;
+      vertical-align: middle;
+    }
+
+    .ranking-table th {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+
+    .ranking-name-cell {
+      min-width: 180px;
+    }
+
+    .points-cell {
+      text-align: center;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .points-total {
+      font-size: 1.1rem;
+      color: var(--accent);
+    }
+
+    .companion-row {
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .companion-row:hover {
+      background: rgba(15, 118, 110, 0.04);
+    }
+
+    .companion-row:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: -3px;
+    }
+
+    @media (max-width: 960px) {
+      .ranking-table th:nth-child(5),
+      .ranking-table th:nth-child(6),
+      .ranking-table th:nth-child(7),
+      .ranking-table td:nth-child(5),
+      .ranking-table td:nth-child(6),
+      .ranking-table td:nth-child(7) {
+        display: none;
+      }
+    }
+  </style>
 </Layout>

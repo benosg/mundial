@@ -1,0 +1,231 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { groupedMatches } from "../../data/site";
+---
+
+<Layout
+  title="Resultados Reales"
+  currentPath="/admin/results"
+  description="Ingresa los resultados reales de los partidos del Mundial 2026."
+  noindex={true}
+>
+  <main class="page-section">
+    <div class="site-shell">
+      <div class="table-row-head">
+        <div>
+          <span class="eyebrow">Administración</span>
+          <h1 class="page-title">Resultados Reales</h1>
+        </div>
+      </div>
+
+      <p class="section-copy">Ingresa los resultados reales de cada partido. Los puntajes se calcularán automáticamente para todos los jugadores.</p>
+
+      <div class="save-dock">
+        <div class="save-dock-top">
+          <div class="progress-pill">
+            <span class="muted">Partidos con resultado:</span>
+            <strong id="results-count">0</strong> <span class="muted">/ <span id="total-matches"></span></span>
+          </div>
+          <div class="inline-actions">
+            <button type="button" class="button" id="save-results-btn" disabled>Guardar resultados</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="groups-grid" id="results-groups"></div>
+
+      <p id="save-status" class="save-status" aria-live="polite"></p>
+    </div>
+  </main>
+
+  <script is:inline define:vars={{ groupedMatchesJson: JSON.stringify(groupedMatches) }}>
+    const groupedMatches = JSON.parse(groupedMatchesJson);
+    const groupsContainer = document.getElementById("results-groups");
+    const saveBtn = document.getElementById("save-results-btn");
+    const resultsCount = document.getElementById("results-count");
+    const totalMatchesEl = document.getElementById("total-matches");
+    const saveStatus = document.getElementById("save-status");
+
+    let hasUnsavedChanges = false;
+
+    function updateResultsCount() {
+      let count = 0;
+      let total = 0;
+      groupedMatches.forEach((group) => {
+        group.matches.forEach((match) => {
+          total++;
+          const homeInput = document.getElementById(`${match.id}-home`);
+          const awayInput = document.getElementById(`${match.id}-away`);
+          if (homeInput && awayInput && homeInput.value !== "" && awayInput.value !== "") {
+            count++;
+          }
+        });
+      });
+      if (resultsCount) resultsCount.textContent = count;
+      if (totalMatchesEl) totalMatchesEl.textContent = total;
+      hasUnsavedChanges = count > 0;
+      if (saveBtn) saveBtn.disabled = !hasUnsavedChanges;
+    }
+
+    function createMatchRow(match, hasResult) {
+      const homeId = `${match.id}-home`;
+      const awayId = `${match.id}-away`;
+      const hasHome = hasResult && hasResult.home_result !== null && hasResult.home_result !== undefined;
+      const hasAway = hasResult && hasResult.away_result !== null && hasResult.away_result !== undefined;
+      const homeValue = hasHome ? hasResult.home_result : "";
+      const awayValue = hasAway ? hasResult.away_result : "";
+      const hasResultFlag = hasHome || hasAway;
+
+      return `
+        <div class="simple-match-card" data-match-id="${match.id}" ${hasResultFlag ? 'data-has-result="true"' : ''}>
+          <div class="simple-match-main">
+            <div class="simple-teams">
+              <span>${match.homeFlag} ${match.home}</span>
+              <span class="muted">vs</span>
+              <span>${match.awayFlag} ${match.away}</span>
+            </div>
+            <div class="simple-score-entry">
+              <input
+                type="number"
+                min="0"
+                max="20"
+                class="input-like"
+                id="${homeId}"
+                value="${homeValue}"
+                placeholder="—"
+                aria-label="Goles ${match.home}"
+                inputmode="numeric"
+                minlength="1"
+                maxlength="2"
+              >
+              <span class="muted">—</span>
+              <input
+                type="number"
+                min="0"
+                max="20"
+                class="input-like"
+                id="${awayId}"
+                value="${awayValue}"
+                placeholder="—"
+                aria-label="Goles ${match.away}"
+                inputmode="numeric"
+                minlength="1"
+                maxlength="2"
+              >
+            </div>
+          </div>
+          <div class="simple-match-footer">
+            <span class="muted small-note">${match.kickoffChile} · ${match.venue}, ${match.city}</span>
+            ${hasResultFlag ? '<span class="tag success">Resultado guardado</span>' : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderGroups(matchesWithResults = {}) {
+      if (!groupsContainer) return;
+      groupsContainer.innerHTML = groupedMatches.map((group) => `
+        <div class="group-card">
+          <div class="group-head">
+            <div class="group-head-main">
+              <span class="group-tag tag">Grupo ${group.group}</span>
+              <h3 class="section-title-compact">Grupo ${group.group}</h3>
+            </div>
+          </div>
+          <div class="simple-match-list">
+            ${group.matches.map((match) => createMatchRow(match, matchesWithResults[match.id])).join("")}
+          </div>
+        </div>
+      `).join("");
+
+      attachInputListeners();
+      updateResultsCount();
+    }
+
+    function attachInputListeners() {
+      document.querySelectorAll('.simple-match-card input[type="number"]').forEach((input) => {
+        input.addEventListener("input", () => {
+          const val = input.value;
+          if (val !== "" && (parseInt(val, 10) < 0 || parseInt(val, 10) > 20)) {
+            input.setCustomValidity("Debe ser entre 0 y 20");
+          } else {
+            input.setCustomValidity("");
+          }
+          input.reportValidity();
+          updateResultsCount();
+          hasUnsavedChanges = true;
+          if (saveBtn) saveBtn.disabled = false;
+        });
+
+        input.addEventListener("change", () => {
+          updateResultsCount();
+        });
+      });
+    }
+
+    async function loadResults() {
+      try {
+        const res = await fetch("/api/admin/results");
+        const data = await res.json();
+        if (data.ok && data.results) {
+          renderGroups(data.results);
+        } else {
+          renderGroups();
+        }
+      } catch {
+        renderGroups();
+      }
+    }
+
+    async function saveResults() {
+      if (!saveBtn) return;
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Guardando...";
+      if (saveStatus) saveStatus.textContent = "Guardando resultados...";
+
+      const results = {};
+      groupedMatches.forEach((group) => {
+        group.matches.forEach((match) => {
+          const homeInput = document.getElementById(`${match.id}-home`);
+          const awayInput = document.getElementById(`${match.id}-away`);
+          const homeVal = homeInput?.value?.trim();
+          const awayVal = awayInput?.value?.trim();
+          if (homeVal !== "" && awayVal !== "") {
+            results[match.id] = {
+              home_result: parseInt(homeVal, 10),
+              away_result: parseInt(awayVal, 10),
+            };
+          }
+        });
+      });
+
+      try {
+        const res = await fetch("/api/admin/results", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ results }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          if (saveStatus) saveStatus.textContent = `✓ ${data.updated} resultados guardados`;
+          hasUnsavedChanges = false;
+          loadResults();
+        } else {
+          if (saveStatus) saveStatus.textContent = `Error: ${data.error}`;
+          saveBtn.disabled = false;
+          saveBtn.textContent = "Guardar resultados";
+        }
+      } catch {
+        if (saveStatus) saveStatus.textContent = "Error de red al guardar";
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Guardar resultados";
+      }
+    }
+
+    if (saveBtn) {
+      saveBtn.addEventListener("click", saveResults);
+    }
+
+    loadResults();
+  </script>
+</Layout>
