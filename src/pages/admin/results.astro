@@ -151,18 +151,18 @@ import { groupedMatches } from "../../data/site";
 
     function renderGroups(matchesWithResults = {}) {
       if (!groupsContainer) return;
-      groupsContainer.innerHTML = groupedMatches.map((group) => `
-        <div class="group-card">
-          <div class="group-head">
+      groupsContainer.innerHTML = groupedMatches.map((group, idx) => `
+        <details class="group-card group-collapsible" ${idx < 2 ? "open" : ""}>
+          <summary class="group-head">
             <div class="group-head-main">
               <span class="group-tag tag">Grupo ${group.group}</span>
               <h3 class="section-title-compact">Grupo ${group.group}</h3>
             </div>
-          </div>
+          </summary>
           <div class="simple-match-list">
             ${group.matches.map((match) => createMatchRow(match, matchesWithResults[match.id])).join("")}
           </div>
-        </div>
+        </details>
       `).join("");
 
       attachInputListeners();
