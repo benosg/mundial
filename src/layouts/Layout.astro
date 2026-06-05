@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 import { siteDescription, siteName, siteOgImage } from "../data/site";
+import { getSessionContext } from "../lib/session";
 
 interface Props {
   title: string;
@@ -18,11 +19,14 @@ const {
   noindex = false,
 } = Astro.props;
 
+const { isAdmin } = await getSessionContext(Astro.request);
+
 const navigation = [
   { href: "/", label: "Inicio" },
   { href: "/companions", label: "Compañeros" },
   { href: "/#grupos", label: "Grupos" },
   { href: "/#reglas", label: "Reglas" },
+  ...(isAdmin ? [{ href: "/admin/results", label: "Admin" }] : []),
 ];
 
 const pageTitle = `${title} | ${siteName}`;
@@ -93,7 +97,11 @@ const structuredData = {
 
         <nav class="nav-links" aria-label="Principal">
           {navigation.map((item) => (
-            <a href={item.href} aria-current={currentPath === item.href ? "page" : undefined}>
+            <a
+              href={item.href}
+              aria-current={currentPath === item.href ? "page" : undefined}
+              class={item.href === "/admin/results" ? "nav-link-admin" : undefined}
+            >
               {item.label}
             </a>
           ))}

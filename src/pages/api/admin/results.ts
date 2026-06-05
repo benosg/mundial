@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { createServerClient } from "../../../lib/supabase";
+import { getSessionContext } from "../../../lib/session";
 
 export const prerender = false;
 
@@ -10,15 +11,9 @@ function json(data: unknown, status = 200) {
   });
 }
 
-async function isAuthenticated(request: Request): Promise<boolean> {
-  const supabase = createServerClient(request, new Headers());
-  const { data: { session } } = await supabase.auth.getSession();
-  return !!session;
-}
-
 export const GET: APIRoute = async ({ request }) => {
-  const authenticated = await isAuthenticated(request);
-  if (!authenticated) {
+  const { isAdmin } = await getSessionContext(request);
+  if (!isAdmin) {
     return json({ ok: false, error: "No autorizado" }, 401);
   }
 
@@ -43,8 +38,8 @@ export const GET: APIRoute = async ({ request }) => {
 };
 
 export const POST: APIRoute = async ({ request }) => {
-  const authenticated = await isAuthenticated(request);
-  if (!authenticated) {
+  const { isAdmin } = await getSessionContext(request);
+  if (!isAdmin) {
     return json({ ok: false, error: "No autorizado" }, 401);
   }
 
