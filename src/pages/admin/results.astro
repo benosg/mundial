@@ -40,6 +40,26 @@ import { groupedMatches } from "../../data/site";
 
   <script is:inline define:vars={{ groupedMatchesJson: JSON.stringify(groupedMatches) }}>
     const groupedMatches = JSON.parse(groupedMatchesJson);
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function flagCodePoints(flag) {
+      return Array.from(flag || "🏳️")
+        .map((char) => char.codePointAt(0).toString(16))
+        .join("-");
+    }
+
+    function flagWithLabel(flag, label) {
+      return `<span class="flag-inline"><img class="flag-icon" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${flagCodePoints(flag || "🏳️")}.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>${escapeHtml(label)}</span></span>`;
+    }
+
     const groupsContainer = document.getElementById("results-groups");
     const saveBtn = document.getElementById("save-results-btn");
     const resultsCount = document.getElementById("results-count");
@@ -80,9 +100,9 @@ import { groupedMatches } from "../../data/site";
         <div class="simple-match-card" data-match-id="${match.id}" ${hasResultFlag ? 'data-has-result="true"' : ''}>
           <div class="simple-match-main">
             <div class="simple-teams">
-              <span>${match.homeFlag} ${match.home}</span>
+              <span>${flagWithLabel(match.homeFlag, match.home)}</span>
               <span class="muted">vs</span>
-              <span>${match.awayFlag} ${match.away}</span>
+              <span>${flagWithLabel(match.awayFlag, match.away)}</span>
             </div>
             <div class="simple-score-entry">
               <input

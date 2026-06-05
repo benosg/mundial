@@ -73,6 +73,30 @@ groupedMatches.forEach((g) => {
   <script is:inline define:vars={{ allMatchesJson: JSON.stringify(allMatches) }}>
     const allMatches = JSON.parse(allMatchesJson);
 
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function flagCodePoints(flag) {
+      return Array.from(flag || "🏳️")
+        .map((char) => char.codePointAt(0).toString(16))
+        .join("-");
+    }
+
+    function flagImage(flag, sizeClass = "") {
+      const classes = ["flag-icon", sizeClass].filter(Boolean).join(" ");
+      return `<img class="${classes}" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${flagCodePoints(flag || "🏳️")}.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" />`;
+    }
+
+    function flagWithLabel(flag, label, sizeClass = "") {
+      return `<span class="flag-inline">${flagImage(flag, sizeClass)}<span>${escapeHtml(label)}</span></span>`;
+    }
+
     const rankingBody = document.getElementById("ranking-body");
     const companionsCount = document.querySelector("[data-companions-count]");
     const companionsStatus = document.querySelector("[data-companions-status]");
@@ -170,7 +194,7 @@ groupedMatches.forEach((g) => {
               <td class="ranking-name-cell">
                 <div class="ranking-name">${p.name || 'Sin nombre'} ${isCurrentUser ? '<span class="tag-you">Tú</span>' : ''}</div>
               </td>
-              <td>${p.favorite_flag || '🏳️'} ${p.favorite_team || '<span class="muted">Sin favorito</span>'}</td>
+              <td>${p.favorite_team ? flagWithLabel(p.favorite_flag || '🏳️', p.favorite_team) : '<span class="muted">Sin favorito</span>'}</td>
               <td class="points-cell"><strong class="points-total">${pb.total_points}</strong></td>
               <td class="points-cell">${pb.exact_count}</td>
               <td class="points-cell">${pb.winner_count}</td>
@@ -216,8 +240,8 @@ groupedMatches.forEach((g) => {
 
         playerModalName.textContent = data.player.name;
         if (playerModalFav) {
-          playerModalFav.textContent = data.player.favorite_team
-            ? `${data.player.favorite_flag} Favorito: ${data.player.favorite_team}`
+          playerModalFav.innerHTML = data.player.favorite_team
+            ? flagWithLabel(data.player.favorite_flag || '🏳️', `Favorito: ${data.player.favorite_team}`)
             : "Sin equipo favorito";
         }
 
@@ -255,9 +279,9 @@ groupedMatches.forEach((g) => {
             html += `
               <div class="readonly-row">
                 <div class="fixture-cell" style="min-width:auto">
-                  <span>${match.homeFlag} ${match.home}</span>
+                  <span>${flagWithLabel(match.homeFlag, match.home)}</span>
                   <span class="muted">vs</span>
-                  <span>${match.awayFlag} ${match.away}</span>
+                  <span>${flagWithLabel(match.awayFlag, match.away)}</span>
                 </div>
                 <div class="readonly-score">
                   <span class="readonly-pill">${pred.home_score}</span>

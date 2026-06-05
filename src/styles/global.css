@@ -1503,9 +1503,35 @@ input[data-score-input][disabled] {
 
 /* ---- Favorite option with flag ---- */
 
+.flag-icon {
+  display: inline-block;
+  width: 1.35em;
+  height: 1em;
+  object-fit: cover;
+  vertical-align: -0.12em;
+  border-radius: 0.15rem;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+
+.flag-icon--lg {
+  width: 2rem;
+  height: 1.5rem;
+}
+
+.flag-icon--xl {
+  width: 3.5rem;
+  height: 2.6rem;
+}
+
+.flag-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 .fav-option-flag {
-  font-size: 1.3rem;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
   flex-shrink: 0;
 }
 
@@ -1524,7 +1550,6 @@ input[data-score-input][disabled] {
 }
 
 .fav-locked-flag {
-  font-size: 3rem;
   line-height: 1;
 }
 

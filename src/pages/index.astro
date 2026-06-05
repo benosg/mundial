@@ -1,12 +1,10 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { groupedMatches, scoringExamples, scoringRules } from "../data/site";
-import { getFlag } from "../lib/flags";
+import { getFlagImageUrl } from "../lib/flags";
 
 const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.length, 0);
 const allTeams = [...new Set(groupedMatches.flatMap((g) => g.matches.flatMap((m) => [m.home, m.away])))].sort();
-const teamFlags: Record<string, string> = {};
-allTeams.forEach((t) => { teamFlags[t] = getFlag(t); });
 ---
 
 <Layout
@@ -118,9 +116,9 @@ allTeams.forEach((t) => { teamFlags[t] = getFlag(t); });
                           <tr data-match-row={match.id}>
                             <td>
                               <div class="fixture-cell">
-                                <span>{match.homeFlag} {match.home}</span>
+                                <span class="flag-inline"><img class="flag-icon" src={getFlagImageUrl(match.home)} alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>{match.home}</span></span>
                                 <span class="muted">vs</span>
-                                <span>{match.awayFlag} {match.away}</span>
+                                <span class="flag-inline"><img class="flag-icon" src={getFlagImageUrl(match.away)} alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>{match.away}</span></span>
                               </div>
                             </td>
                             <td>
@@ -204,7 +202,7 @@ allTeams.forEach((t) => { teamFlags[t] = getFlag(t); });
           {allTeams.map((team) => (
             <label class="fav-option">
               <input type="radio" name="favorite_team" value={team} />
-              <span class="fav-option-flag">{teamFlags[team]}</span>
+              <span class="fav-option-flag"><img class="flag-icon flag-icon--lg" src={getFlagImageUrl(team)} alt="" aria-hidden="true" loading="lazy" decoding="async" /></span>
               <span>{team}</span>
             </label>
           ))}
@@ -284,6 +282,32 @@ allTeams.forEach((t) => { teamFlags[t] = getFlag(t); });
       if (saveStatus) saveStatus.textContent = msg;
     }
 
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function flagCodePoints(flag) {
+      return Array.from(flag || "🏳️")
+        .map((char) => char.codePointAt(0).toString(16))
+        .join("-");
+    }
+
+    function flagImageHtml(flag, team, sizeClass = "") {
+      const safeTeam = escapeHtml(team || "Bandera");
+      const className = ["flag-icon", sizeClass].filter(Boolean).join(" ");
+      return `<img class="${className}" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${flagCodePoints(flag || "🏳️")}.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>${safeTeam}</span>`;
+    }
+
+    function flagImageOnlyHtml(flag, sizeClass = "") {
+      const className = ["flag-icon", sizeClass].filter(Boolean).join(" ");
+      return `<img class="${className}" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${flagCodePoints(flag || "🏳️")}.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" />`;
+    }
+
     function isLocked() {
       return new Date() >= LOCK_CUTOFF;
     }
@@ -354,7 +378,7 @@ allTeams.forEach((t) => { teamFlags[t] = getFlag(t); });
       }
       if (playerFavDisplay) {
         if (player.favorite_team) {
-          playerFavDisplay.textContent = `${player.favorite_flag || '🏳️'} Favorito: ${player.favorite_team}`;
+          playerFavDisplay.innerHTML = `<span class="flag-inline">${flagImageHtml(player.favorite_flag || "🏳️", "Favorito: " + player.favorite_team)}</span>`;
         } else {
           playerFavDisplay.textContent = "Elegí tu equipo favorito para completar tu perfil";
         }
@@ -370,7 +394,7 @@ allTeams.forEach((t) => { teamFlags[t] = getFlag(t); });
     }
 
     function showFavLockedModal(flag, team) {
-      if (lockedFlagDisplay) lockedFlagDisplay.textContent = flag || "🏳️";
+      if (lockedFlagDisplay) lockedFlagDisplay.innerHTML = flagImageOnlyHtml(flag || "🏳️", "flag-icon--xl");
       if (lockedTeamDisplay) lockedTeamDisplay.textContent = team || "No definido";
       if (favLockedModal) favLockedModal.style.display = "";
     }
@@ -380,6 +404,41 @@ allTeams.forEach((t) => { teamFlags[t] = getFlag(t); });
     }
 
     // ---- save ----
+
+    async function saveFavoriteTeam(favoriteTeam) {
+      if (!favoriteTeam) return;
+
+      if (favConfirm) favConfirm.disabled = true;
+      if (favStatus) favStatus.textContent = "Guardando tu favorito...";
+
+      try {
+        const res = await fetch("/api/auth/favorite-team", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ favorite_team: favoriteTeam }),
+        });
+        const data = await res.json();
+
+        if (!data.ok) {
+          if (favStatus) favStatus.textContent = `Error: ${data.error || "No se pudo guardar el favorito."}`;
+          return;
+        }
+
+        serverPlayer = {
+          ...(serverPlayer || {}),
+          ...data.player,
+        };
+        updatePlayerDisplay(serverPlayer);
+        hideFavModal();
+        showFavLockedModal(data.player.favorite_flag, data.player.favorite_team);
+        announce("Equipo favorito guardado.");
+        if (favStatus) favStatus.textContent = "";
+      } catch {
+        if (favStatus) favStatus.textContent = "Error de red al guardar favorito.";
+      } finally {
+        if (favConfirm) favConfirm.disabled = false;
+      }
+    }
 
     async function saveAllPredictions() {
       if (!currentPlayerId) {

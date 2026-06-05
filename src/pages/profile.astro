@@ -39,6 +39,25 @@ import Layout from "../layouts/Layout.astro";
   </main>
 
   <script is:inline>
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function flagCodePoints(flag) {
+      return Array.from(flag || "🏳️")
+        .map((char) => char.codePointAt(0).toString(16))
+        .join("-");
+    }
+
+    function flagWithLabel(flag, label) {
+      return `<span class="flag-inline"><img class="flag-icon" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${flagCodePoints(flag || "🏳️")}.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>${escapeHtml(label)}</span></span>`;
+    }
+
     const profileName = document.querySelector("[data-profile-name]");
     const profileEmail = document.querySelector("[data-profile-email]");
     const profileFav = document.querySelector("[data-profile-fav]");
@@ -61,7 +80,7 @@ import Layout from "../layouts/Layout.astro";
 
           if (data.ok && data.player) {
             const p = data.player;
-            if (profileFav) profileFav.textContent = p.favorite_team ? `${p.favorite_flag} ${p.favorite_team}` : "No seleccionado";
+            if (profileFav) profileFav.innerHTML = p.favorite_team ? flagWithLabel(p.favorite_flag || "🏳️", p.favorite_team) : "No seleccionado";
             if (profilePreds) profilePreds.textContent = String(data.predictions.length);
           }
           return;
@@ -81,7 +100,7 @@ import Layout from "../layouts/Layout.astro";
         if (data.ok && data.player) {
           const p = data.player;
           if (profileName) profileName.textContent = p.name || "Sin nombre";
-          if (profileFav) profileFav.textContent = p.favorite_team ? `${p.favorite_flag} ${p.favorite_team}` : "No seleccionado";
+          if (profileFav) profileFav.innerHTML = p.favorite_team ? flagWithLabel(p.favorite_flag || "🏳️", p.favorite_team) : "No seleccionado";
           if (profilePreds) profilePreds.textContent = String(data.predictions.length);
         }
       } catch {

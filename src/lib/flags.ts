@@ -49,8 +49,26 @@ const FLAG_MAP: Record<string, string> = {
   Panamá: "🇵🇦",
 };
 
+const TWEMOJI_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg";
+
+function toCodePointSequence(value: string): string {
+  return Array.from(value)
+    .map((char) => char.codePointAt(0)?.toString(16))
+    .filter(Boolean)
+    .join("-");
+}
+
 export function getFlag(teamName: string): string {
   return FLAG_MAP[teamName] ?? "🏳️";
+}
+
+export function getFlagImageUrl(teamName: string): string {
+  return getFlagImageUrlFromEmoji(getFlag(teamName));
+}
+
+export function getFlagImageUrlFromEmoji(flag: string): string {
+  const fallback = flag || "🏳️";
+  return `${TWEMOJI_BASE_URL}/${toCodePointSequence(fallback)}.svg`;
 }
 
 export function isFavoriteMatch(
