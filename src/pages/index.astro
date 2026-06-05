@@ -1,10 +1,16 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { groupedMatches, scoringExamples, scoringRules } from "../data/site";
+import { chvBroadcastSource, groupedMatches, isChvBroadcastMatch, scoringExamples, scoringRules } from "../data/site";
 import { getFlagImageUrl } from "../lib/flags";
 
 const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.length, 0);
 const allTeams = [...new Set(groupedMatches.flatMap((g) => g.matches.flatMap((m) => [m.home, m.away])))].sort();
+const groupTeamsByGroup = Object.fromEntries(
+  groupedMatches.map((group) => [
+    group.group,
+    [...new Set(group.matches.flatMap((match) => [match.home, match.away]))],
+  ])
+);
 ---
 
 <Layout
@@ -36,7 +42,7 @@ const allTeams = [...new Set(groupedMatches.flatMap((g) => g.matches.flatMap((m)
           </article>
           <article class="summary-box">
             <div class="muted">TV Chile</div>
-            <strong>DSPORTS + DGO</strong>
+            <strong>CHV* + DSPORTS + DGO</strong>
           </article>
         </div>
 
@@ -87,22 +93,36 @@ const allTeams = [...new Set(groupedMatches.flatMap((g) => g.matches.flatMap((m)
                 <span class="eyebrow">Ingresa pronósticos</span>
                 <h3 class="entry-title">Planilla completa de grupos A–L</h3>
               </div>
-              <span class="muted">Horario Chile · sede · DSPORTS / DGO</span>
+              <span class="muted">Horario Chile · señal · sede</span>
             </div>
+            <p class="section-copy section-copy-tight">
+              Chilevisión confirmó 34 partidos gratis en TV abierta, MiCHV y chilevision.cl.
+              <a href={chvBroadcastSource.url} target="_blank" rel="noreferrer noopener"> Ver calendario oficial CHV</a>.
+            </p>
 
             <div class="groups-grid groups-grid-single">
               {groupedMatches.map((group, idx) => (
                 <details class="group-card group-collapsible" open={idx < 2}>
                   <summary class="group-head">
                     <div class="group-head-main">
-                      <span class="tag group-tag">Grupo {group.group}</span>
+                      <div class="group-head-topline">
+                        <span class="tag group-tag">Grupo {group.group}</span>
+                        <div class="group-team-strip" aria-hidden="true">
+                          {groupTeamsByGroup[group.group].map((team) => (
+                            <span class="group-team-chip">
+                              <img class="flag-icon" src={getFlagImageUrl(team)} alt="" loading="lazy" decoding="async" />
+                              <span>{team}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                       <h3>{group.matches.length} partidos</h3>
                     </div>
                   </summary>
 
                   <div class="group-table-wrap">
                     <table class="prediction-table">
-                      <caption class="visually-hidden">Pronósticos del grupo {group.group} con marcador, horario de Chile y sede.</caption>
+                      <caption class="visually-hidden">Pronósticos del grupo {group.group} con marcador, horario de Chile, señal y sede.</caption>
                       <thead>
                         <tr>
                           <th>Partido</th>
@@ -128,7 +148,10 @@ const allTeams = [...new Set(groupedMatches.flatMap((g) => g.matches.flatMap((m)
                                 <input type="number" min="0" max="20" inputmode="numeric" placeholder="" data-score-input data-match={match.id} data-side="away" aria-label={`Resultado ${match.away}`} disabled />
                               </div>
                             </td>
-                            <td>{match.kickoffChile}</td>
+                            <td>
+                              <strong>{match.kickoffChile}</strong>
+                              <div class="muted">{isChvBroadcastMatch(match.id) ? "CHV · DSPORTS · DGO" : "DSPORTS · DGO"}</div>
+                            </td>
                             <td>
                               <strong>{match.venue}</strong>
                               <div class="muted">{match.city}</div>
@@ -155,6 +178,7 @@ const allTeams = [...new Set(groupedMatches.flatMap((g) => g.matches.flatMap((m)
               <li><strong>3 puntos</strong> si aciertas ganador o empate, aunque no sea exacto.</li>
               <li><strong>+1 punto</strong> si juega tu equipo favorito y ese pronóstico ya sumó puntos.</li>
               <li><strong>0 puntos</strong> si fallas el signo del partido.</li>
+              <li><strong>Cierre:</strong> puedes ingresar o modificar resultados solo hasta <strong>1 hora antes del primer partido del torneo</strong>.</li>
             </ul>
           </div>
 
@@ -180,7 +204,7 @@ const allTeams = [...new Set(groupedMatches.flatMap((g) => g.matches.flatMap((m)
             ))}
           </div>
 
-          <p class="fair-note">Estas reglas se aplican igual para todos los jugadores y buscan que el juego sea simple, claro y fácil de revisar.</p>
+          <p class="fair-note">Estas reglas se aplican igual para todos los jugadores y buscan que el juego sea simple, claro y fácil de revisar. El bloqueo se aplica de forma global una hora antes del primer partido del Mundial.</p>
         </article>
       </div>
     </section>

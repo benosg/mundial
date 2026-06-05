@@ -6,6 +6,22 @@ export const siteOgImage = "/og/world-picks-cover.svg";
 
 export const broadcastersChile = ["DSPORTS", "DGO"];
 
+export const chvBroadcastSource = {
+  label: "CHV confirmó sus partidos para el Mundial 2026",
+  url: "https://www.chilevision.cl/chv-deportes/futbol-internacional/chilevision-confirma-sus-partidos-para-el-mundial-2026-revisa-el-calendario-completo-y-los-horarios-en-chile/",
+  updatedAt: "20/05/2026",
+};
+
+export const chvBroadcastMatchIds = new Set([
+  "A1", "B1", "D1", "B2", "C1", "F1", "E2", "G1", "H2", "I1", "J1", "L1", "K2",
+  "B3", "B4", "D3", "C3", "F4", "E3", "H3", "G3", "J3", "I4", "K3", "L3", "L4",
+  "C5", "A5", "E6", "F6", "D6", "I5", "H6", "K5",
+]);
+
+export function isChvBroadcastMatch(matchId: string): boolean {
+  return chvBroadcastMatchIds.has(matchId);
+}
+
 export const scoringRules = [
   { title: "Resultado exacto", points: "5 pts" },
   { title: "Ganador o empate", points: "3 pts" },
