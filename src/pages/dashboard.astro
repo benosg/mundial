@@ -1,80 +1,37 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { dashboardStats, matches, ranking, sampleUser } from "../data/site";
 ---
 
-<Layout title="Dashboard" currentPath="/dashboard" description="Vista principal del MVP con próximos partidos, grupo privado y progreso del usuario.">
+<Layout title="Dashboard" currentPath="/dashboard" description="Vista principal del MVP con próximos partidos y progreso del usuario.">
   <main class="page-section">
     <div class="site-shell">
-      <span class="eyebrow">Hola, {sampleUser.name}</span>
+      <span class="eyebrow">Tu panel</span>
       <h1 class="page-title">Tu panel mundialero ya está listo.</h1>
-      <p class="section-copy">Mira tus pronósticos pendientes, la tabla del grupo y los próximos partidos con horario Chile.</p>
-
-      <section class="stats-grid spaced">
-        {dashboardStats.map((stat) => (
-          <article class="mini-card">
-            <div class="stat-number">{stat.value}</div>
-            <p>{stat.label}</p>
-          </article>
-        ))}
-      </section>
+      <p class="section-copy">Mira tus pronósticos pendientes y la planilla completa.</p>
 
       <section class="dashboard-grid spaced">
         <article class="panel">
           <div class="table-row-head">
             <div>
-              <span class="eyebrow">Tus próximos partidos</span>
-              <h2 class="section-title">No se te escapa ninguno.</h2>
+              <span class="eyebrow">Planilla</span>
+              <h2 class="section-title">Ingresa tus pronósticos</h2>
             </div>
-            <a class="button-secondary" href="/matches">Ver fixture completo</a>
           </div>
-
-          <div class="list-clean">
-            {matches.map((match) => (
-              <div class="match-card">
-                <div class="match-top">
-                  <span class="tag">{match.status}</span>
-                  <span class="meta">{match.kickoffChile}</span>
-                </div>
-                <p class="versus">{match.home} vs {match.away}</p>
-                <p class="muted">Pronóstico actual: {match.predicted}</p>
-                <div class="match-bottom">
-                  <span class={`tag ${match.bonus ? "success" : ""}`}>{match.bonus ? "Aplica bonus favorito" : "Sin bonus"}</span>
-                  <a class="accent" href={`/matches/${match.id}`}>Editar demo →</a>
-                </div>
-              </div>
-            ))}
+          <p class="muted">Abre la planilla principal para cargar todos tus pronósticos de la fase de grupos.</p>
+          <div class="inline-actions spaced">
+            <a class="button" href="/#grupos">Ir a la planilla</a>
+            <a class="button-secondary" href="/#perfil">Configurar perfil</a>
           </div>
         </article>
 
         <article class="panel">
-          <span class="eyebrow">Grupo activo</span>
-          <h2 class="section-title">{sampleUser.group}</h2>
+          <span class="eyebrow">Info</span>
+          <h2 class="section-title">Tu progreso</h2>
           <ul class="list-clean">
-            <li><strong>Favorito:</strong> {sampleUser.favoriteTeam}</li>
-            <li><strong>Accesos:</strong> Google login, ranking y detalle de partidos</li>
-            <li><strong>Link privado:</strong> pronosticosdelmundial.cl/grupo/demo</li>
+            <li>Tus pronósticos se guardan en el servidor.</li>
+            <li>El bonus se refleja al jugar tu favorito.</li>
+            <li>72 partidos de fase de grupos disponibles.</li>
           </ul>
-          <div class="spaced">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Jugador</th>
-                  <th>Puntos</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ranking.map((player) => (
-                  <tr>
-                    <td class="rank">{player.position}</td>
-                    <td>{player.name}</td>
-                    <td>{player.points}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </article>
       </section>
     </div>

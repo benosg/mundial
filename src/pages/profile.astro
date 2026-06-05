@@ -1,23 +1,22 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { profileStats, sampleUser } from "../data/site";
 ---
 
-<Layout title="Perfil" currentPath="/profile" description="Perfil demo del jugador con selección favorita, email Google y rendimiento.">
+<Layout title="Perfil" currentPath="/profile" description="Tu perfil de jugador en Pronósticos del Mundial 2026.">
   <main class="page-section">
     <div class="site-shell">
       <span class="eyebrow">Perfil de usuario</span>
-      <h1 class="page-title">{sampleUser.name}</h1>
-      <p class="section-copy">Cuenta demo conectada con Google: <strong>{sampleUser.email}</strong>.</p>
+      <h1 class="page-title" data-profile-name>Cargando...</h1>
+      <p class="section-copy" data-profile-email></p>
 
       <section class="profile-layout spaced">
         <article class="panel">
           <span class="eyebrow">Resumen</span>
           <h2 class="section-title">Tu identidad dentro del juego.</h2>
           <ul class="list-clean">
-            {profileStats.map((stat) => (
-              <li><strong>{stat.label}:</strong> {stat.value}</li>
-            ))}
+            <li><strong>Favorito:</strong> <span data-profile-fav>—</span></li>
+            <li><strong>Grupo:</strong> Pronósticos del Mundial</li>
+            <li><strong>Pronósticos guardados:</strong> <span data-profile-preds>0</span>/72</li>
           </ul>
         </article>
 
@@ -27,14 +26,69 @@ import { profileStats, sampleUser } from "../data/site";
           <ul class="list-clean">
             <li>Tu selección favorita queda bloqueada al iniciar el torneo.</li>
             <li>El bonus se refleja en la tabla del grupo.</li>
-            <li>Luego se conectará login real con Google y base de datos.</li>
           </ul>
           <div class="inline-actions spaced">
-            <a class="button" href="/groups/demo">Ver grupo</a>
-            <a class="button-secondary" href="/dashboard">Ir al dashboard</a>
+            <a class="button" href="/#grupos">Ir a la planilla</a>
+            <form method="POST" action="/api/auth/signout" style="display:inline">
+              <button type="submit" class="button-secondary">Cerrar sesión</button>
+            </form>
           </div>
         </article>
       </section>
     </div>
   </main>
+
+  <script is:inline>
+    const profileName = document.querySelector("[data-profile-name]");
+    const profileEmail = document.querySelector("[data-profile-email]");
+    const profileFav = document.querySelector("[data-profile-fav]");
+    const profilePreds = document.querySelector("[data-profile-preds]");
+
+    async function loadProfile() {
+      try {
+        // Check auth session
+        const sessionRes = await fetch("/api/auth/session");
+        const sessionData = await sessionRes.json();
+
+        if (sessionData.ok && sessionData.user) {
+          const user = sessionData.user;
+          if (profileName) profileName.textContent = user.name || user.email || "Sin nombre";
+          if (profileEmail) profileEmail.textContent = user.email || "";
+
+          // Load bootstrap data to get favorite team and predictions
+          const res = await fetch(`/api/bootstrap?player_id=${encodeURIComponent(user.id)}`);
+          const data = await res.json();
+
+          if (data.ok && data.player) {
+            const p = data.player;
+            if (profileFav) profileFav.textContent = p.favorite_team ? `${p.favorite_flag} ${p.favorite_team}` : "No seleccionado";
+            if (profilePreds) profilePreds.textContent = String(data.predictions.length);
+          }
+          return;
+        }
+
+        // Fall back to browser-key anonymous flow
+        const STORAGE_KEY = "mundial-2026-player-id";
+        const playerId = localStorage.getItem(STORAGE_KEY);
+        if (!playerId) {
+          if (profileName) profileName.textContent = "Sin sesión";
+          return;
+        }
+
+        const res = await fetch(`/api/bootstrap?player_id=${encodeURIComponent(playerId)}`);
+        const data = await res.json();
+
+        if (data.ok && data.player) {
+          const p = data.player;
+          if (profileName) profileName.textContent = p.name || "Sin nombre";
+          if (profileFav) profileFav.textContent = p.favorite_team ? `${p.favorite_flag} ${p.favorite_team}` : "No seleccionado";
+          if (profilePreds) profilePreds.textContent = String(data.predictions.length);
+        }
+      } catch {
+        if (profileName) profileName.textContent = "Error al cargar";
+      }
+    }
+
+    loadProfile();
+  </script>
 </Layout>

@@ -40,25 +40,6 @@ export const scoringExamples = [
   },
 ];
 
-export const sampleUser = {
-  name: "Beno",
-  email: "beno@demo.cl",
-  favoriteTeam: "España",
-  favoriteFlag: "🇪🇸",
-  group: "La banda del Mundial",
-  points: 41,
-  exact: 4,
-  outcomes: 9,
-  completed: 26,
-};
-
-export const ranking = [
-  { position: 1, name: "Beno", favorite: "🇪🇸 España", points: 41, exact: 4, outcomes: 9, completed: "26/72", bonus: 5 },
-  { position: 2, name: "Fran", favorite: "🇦🇷 Argentina", points: 39, exact: 4, outcomes: 8, completed: "24/72", bonus: 3 },
-  { position: 3, name: "Pame", favorite: "🇧🇷 Brasil", points: 36, exact: 3, outcomes: 9, completed: "23/72", bonus: 4 },
-  { position: 4, name: "Jota", favorite: "🇯🇵 Japón", points: 30, exact: 2, outcomes: 8, completed: "21/72", bonus: 2 },
-];
-
 type Match = {
   id: string;
   home: string;
@@ -217,27 +198,9 @@ export const matches = groupedMatches.flatMap((group) =>
     group: group.group,
     stage: `Fase de grupos · Grupo ${group.group}`,
     status: "Abierto",
-    bonus: match.home === sampleUser.favoriteTeam || match.away === sampleUser.favoriteTeam,
+    bonus: false,
     predicted: "Pendiente",
     homePrediction: 0,
     awayPrediction: 0,
   }))
 );
-
-export const dashboardStats = [
-  { label: "Puntos totales", value: String(sampleUser.points) },
-  { label: "Exactos", value: String(sampleUser.exact) },
-  { label: "Pronósticos cargados", value: `${sampleUser.completed}/72` },
-];
-
-export const quickSummary = [
-  { label: "Grupos", value: "12" },
-  { label: "Partidos", value: "72" },
-  { label: "TV Chile", value: broadcastersChile.join(" + ") },
-];
-
-export const profileStats = [
-  { label: "Favorito", value: `${sampleUser.favoriteFlag} ${sampleUser.favoriteTeam}` },
-  { label: "Bonus ganados", value: "+5" },
-  { label: "Grupo activo", value: sampleUser.group },
-];
