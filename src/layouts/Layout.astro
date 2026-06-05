@@ -159,10 +159,14 @@ const structuredData = {
           const data = await res.json();
 
           if (data.ok && data.user) {
+            const adminBadge = data.isAdmin
+              ? `<span class="auth-admin-badge" title="Administrador">Admin</span>`
+              : "";
             slot.innerHTML = `
               <span class="auth-user-pill">
                 <img src="${data.user.avatar}" alt="" width="24" height="24" class="auth-avatar" referrerpolicy="no-referrer" />
                 <span class="auth-user-name">${data.user.name || data.user.email}</span>
+                ${adminBadge}
               </span>
               <form method="POST" action="/api/auth/signout" style="display:inline">
                 <button type="submit" class="button-secondary nav-cta">Cerrar sesión</button>
