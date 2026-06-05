@@ -297,15 +297,22 @@ const allTeams = [...new Set(groupedMatches.flatMap((g) => g.matches.flatMap((m)
         .join("-");
     }
 
+    function resolveFlagValue(flag, teamOrLabel = "") {
+      const team = String(teamOrLabel).replace(/^Favorito:\s*/, "").trim();
+      if (team === "Inglaterra") return "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}";
+      if (team === "Escocia") return "\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}";
+      return flag || "🏳️";
+    }
+
     function flagImageHtml(flag, team, sizeClass = "") {
       const safeTeam = escapeHtml(team || "Bandera");
       const className = ["flag-icon", sizeClass].filter(Boolean).join(" ");
-      return `<img class="${className}" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${flagCodePoints(flag || "🏳️")}.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>${safeTeam}</span>`;
+      return `<img class="${className}" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${flagCodePoints(resolveFlagValue(flag, team))}.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>${safeTeam}</span>`;
     }
 
-    function flagImageOnlyHtml(flag, sizeClass = "") {
+    function flagImageOnlyHtml(flag, sizeClass = "", teamOrLabel = "") {
       const className = ["flag-icon", sizeClass].filter(Boolean).join(" ");
-      return `<img class="${className}" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${flagCodePoints(flag || "🏳️")}.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" />`;
+      return `<img class="${className}" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${flagCodePoints(resolveFlagValue(flag, teamOrLabel))}.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" />`;
     }
 
     function isLocked() {
@@ -394,7 +401,7 @@ const allTeams = [...new Set(groupedMatches.flatMap((g) => g.matches.flatMap((m)
     }
 
     function showFavLockedModal(flag, team) {
-      if (lockedFlagDisplay) lockedFlagDisplay.innerHTML = flagImageOnlyHtml(flag || "🏳️", "flag-icon--xl");
+      if (lockedFlagDisplay) lockedFlagDisplay.innerHTML = flagImageOnlyHtml(flag || "🏳️", "flag-icon--xl", team || "");
       if (lockedTeamDisplay) lockedTeamDisplay.textContent = team || "No definido";
       if (favLockedModal) favLockedModal.style.display = "";
     }

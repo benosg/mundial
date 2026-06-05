@@ -84,10 +84,10 @@ export const groupedMatches: GroupBlock[] = [
     group: "C",
     matches: [
       { id: "C1", home: "Brasil", homeFlag: "🇧🇷", away: "Marruecos", awayFlag: "🇲🇦", kickoffChile: "13 jun · 18:00", venue: "New York/New Jersey Stadium", city: "New Jersey", broadcasters: broadcastersChile },
-      { id: "C2", home: "Haití", homeFlag: "🇭🇹", away: "Escocia", awayFlag: "🏴", kickoffChile: "13 jun · 21:00", venue: "Boston Stadium", city: "Boston", broadcasters: broadcastersChile },
-      { id: "C3", home: "Escocia", homeFlag: "🏴", away: "Marruecos", awayFlag: "🇲🇦", kickoffChile: "19 jun · 18:00", venue: "Boston Stadium", city: "Boston", broadcasters: broadcastersChile },
+      { id: "C2", home: "Haití", homeFlag: "🇭🇹", away: "Escocia", awayFlag: "\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}", kickoffChile: "13 jun · 21:00", venue: "Boston Stadium", city: "Boston", broadcasters: broadcastersChile },
+      { id: "C3", home: "Escocia", homeFlag: "\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}", away: "Marruecos", awayFlag: "🇲🇦", kickoffChile: "19 jun · 18:00", venue: "Boston Stadium", city: "Boston", broadcasters: broadcastersChile },
       { id: "C4", home: "Brasil", homeFlag: "🇧🇷", away: "Haití", awayFlag: "🇭🇹", kickoffChile: "19 jun · 20:30", venue: "Philadelphia Stadium", city: "Filadelfia", broadcasters: broadcastersChile },
-      { id: "C5", home: "Escocia", homeFlag: "🏴", away: "Brasil", awayFlag: "🇧🇷", kickoffChile: "24 jun · 18:00", venue: "Miami Stadium", city: "Miami", broadcasters: broadcastersChile },
+      { id: "C5", home: "Escocia", homeFlag: "\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}", away: "Brasil", awayFlag: "🇧🇷", kickoffChile: "24 jun · 18:00", venue: "Miami Stadium", city: "Miami", broadcasters: broadcastersChile },
       { id: "C6", home: "Marruecos", homeFlag: "🇲🇦", away: "Haití", awayFlag: "🇭🇹", kickoffChile: "24 jun · 18:00", venue: "Atlanta Stadium", city: "Atlanta", broadcasters: broadcastersChile },
     ],
   },
@@ -182,11 +182,11 @@ export const groupedMatches: GroupBlock[] = [
   {
     group: "L",
     matches: [
-      { id: "L1", home: "Inglaterra", homeFlag: "🏴", away: "Croacia", awayFlag: "🇭🇷", kickoffChile: "17 jun · 16:00", venue: "Dallas Stadium", city: "Dallas", broadcasters: broadcastersChile },
+      { id: "L1", home: "Inglaterra", homeFlag: "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}", away: "Croacia", awayFlag: "🇭🇷", kickoffChile: "17 jun · 16:00", venue: "Dallas Stadium", city: "Dallas", broadcasters: broadcastersChile },
       { id: "L2", home: "Ghana", homeFlag: "🇬🇭", away: "Panamá", awayFlag: "🇵🇦", kickoffChile: "17 jun · 19:00", venue: "Toronto Stadium", city: "Toronto", broadcasters: broadcastersChile },
-      { id: "L3", home: "Inglaterra", homeFlag: "🏴", away: "Ghana", awayFlag: "🇬🇭", kickoffChile: "23 jun · 16:00", venue: "Boston Stadium", city: "Boston", broadcasters: broadcastersChile },
+      { id: "L3", home: "Inglaterra", homeFlag: "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}", away: "Ghana", awayFlag: "🇬🇭", kickoffChile: "23 jun · 16:00", venue: "Boston Stadium", city: "Boston", broadcasters: broadcastersChile },
       { id: "L4", home: "Panamá", homeFlag: "🇵🇦", away: "Croacia", awayFlag: "🇭🇷", kickoffChile: "23 jun · 19:00", venue: "Toronto Stadium", city: "Toronto", broadcasters: broadcastersChile },
-      { id: "L5", home: "Panamá", homeFlag: "🇵🇦", away: "Inglaterra", awayFlag: "🏴", kickoffChile: "27 jun · 17:00", venue: "New York/New Jersey Stadium", city: "New Jersey", broadcasters: broadcastersChile },
+      { id: "L5", home: "Panamá", homeFlag: "🇵🇦", away: "Inglaterra", awayFlag: "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}", kickoffChile: "27 jun · 17:00", venue: "New York/New Jersey Stadium", city: "New Jersey", broadcasters: broadcastersChile },
       { id: "L6", home: "Croacia", homeFlag: "🇭🇷", away: "Ghana", awayFlag: "🇬🇭", kickoffChile: "27 jun · 17:00", venue: "Philadelphia Stadium", city: "Filadelfia", broadcasters: broadcastersChile },
     ],
   },

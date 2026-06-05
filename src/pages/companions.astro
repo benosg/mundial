@@ -88,13 +88,20 @@ groupedMatches.forEach((g) => {
         .join("-");
     }
 
+    function resolveFlagValue(flag, teamOrLabel = "") {
+      const team = String(teamOrLabel).replace(/^Favorito:\s*/, "").trim();
+      if (team === "Inglaterra") return "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}";
+      if (team === "Escocia") return "\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}";
+      return flag || "🏳️";
+    }
+
     function flagImage(flag, sizeClass = "") {
       const classes = ["flag-icon", sizeClass].filter(Boolean).join(" ");
-      return `<img class="${classes}" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${flagCodePoints(flag || "🏳️")}.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" />`;
+      return `<img class="${classes}" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${flagCodePoints(resolveFlagValue(flag))}.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" />`;
     }
 
     function flagWithLabel(flag, label, sizeClass = "") {
-      return `<span class="flag-inline">${flagImage(flag, sizeClass)}<span>${escapeHtml(label)}</span></span>`;
+      return `<span class="flag-inline">${flagImage(resolveFlagValue(flag, label), sizeClass)}<span>${escapeHtml(label)}</span></span>`;
     }
 
     const rankingBody = document.getElementById("ranking-body");

@@ -1,3 +1,6 @@
+const SCOTLAND_FLAG = "\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}";
+const ENGLAND_FLAG = "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}";
+
 const FLAG_MAP: Record<string, string> = {
   México: "🇲🇽",
   "Corea del Sur": "🇰🇷",
@@ -10,7 +13,7 @@ const FLAG_MAP: Record<string, string> = {
   Brasil: "🇧🇷",
   Marruecos: "🇲🇦",
   Haití: "🇭🇹",
-  Escocia: "🏴",
+  Escocia: SCOTLAND_FLAG,
   USA: "🇺🇸",
   Paraguay: "🇵🇾",
   Australia: "🇦🇺",
@@ -43,7 +46,7 @@ const FLAG_MAP: Record<string, string> = {
   "Congo DR": "🇨🇩",
   Uzbekistán: "🇺🇿",
   Colombia: "🇨🇴",
-  Inglaterra: "🏴",
+  Inglaterra: ENGLAND_FLAG,
   Croacia: "🇭🇷",
   Ghana: "🇬🇭",
   Panamá: "🇵🇦",
