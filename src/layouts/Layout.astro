@@ -20,7 +20,7 @@ const {
 
 const navigation = [
   { href: "/", label: "Inicio" },
-  { href: "/#tabla", label: "Tabla" },
+  { href: "/companions", label: "Compañeros" },
   { href: "/#grupos", label: "Grupos" },
   { href: "/#reglas", label: "Reglas" },
 ];
@@ -88,7 +88,6 @@ const structuredData = {
           <span class="brand-mark">⚽</span>
           <span class="brand-copy">
             <span>{siteName}</span>
-            <small>Fase de grupos · Planilla clara · Chile</small>
           </span>
         </a>
 
@@ -98,7 +97,7 @@ const structuredData = {
               {item.label}
             </a>
           ))}
-          <a class="button-secondary nav-cta" href="#grupos">Ir a la planilla</a>
+          <span class="auth-nav-slot" data-auth-slot></span>
         </nav>
       </div>
     </header>
@@ -111,11 +110,63 @@ const structuredData = {
       <div class="footer-inner">
         <p>{siteName} · Fixture oficial de fase de grupos 2026 armado sobre datos de FIFA y horarios mostrados para Chile.</p>
         <div class="list-inline">
-          <a href="#tabla">Tabla del grupo</a>
+          <a href="/companions">Compañeros</a>
           <a href="#grupos">Planilla completa</a>
           <a href="#reglas">Reglas</a>
         </div>
       </div>
     </footer>
+
+    <script>
+      import { getSupabaseBrowserClient } from "../lib/supabase";
+
+      (async function () {
+        const slot = document.querySelector("[data-auth-slot]");
+        if (!slot) return;
+
+        const renderLoginLink = () => {
+          slot.innerHTML = `<a class="button nav-cta" href="/api/auth/signin" data-login-button>Iniciar sesión con Google</a>`;
+          const loginButton = slot.querySelector("[data-login-button]");
+          if (!loginButton) return;
+
+          loginButton.addEventListener("click", async (event) => {
+            event.preventDefault();
+
+            try {
+              const supabase = getSupabaseBrowserClient();
+              await supabase.auth.signInWithOAuth({
+                provider: "google",
+                options: {
+                  redirectTo: `${window.location.origin}/api/auth/callback`,
+                },
+              });
+            } catch {
+              window.location.href = "/api/auth/signin";
+            }
+          });
+        };
+
+        try {
+          const res = await fetch("/api/auth/session");
+          const data = await res.json();
+
+          if (data.ok && data.user) {
+            slot.innerHTML = `
+              <span class="auth-user-pill">
+                <img src="${data.user.avatar}" alt="" width="24" height="24" class="auth-avatar" referrerpolicy="no-referrer" />
+                <span class="auth-user-name">${data.user.name || data.user.email}</span>
+              </span>
+              <form method="POST" action="/api/auth/signout" style="display:inline">
+                <button type="submit" class="button-secondary nav-cta">Cerrar sesión</button>
+              </form>
+            `;
+          } else {
+            renderLoginLink();
+          }
+        } catch {
+          renderLoginLink();
+        }
+      })();
+    </script>
   </body>
 </html>

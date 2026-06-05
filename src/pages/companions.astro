@@ -1,0 +1,249 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { groupedMatches } from "../data/site";
+
+const allMatches: Record<string, typeof groupedMatches[0]['matches'][0]> = {};
+groupedMatches.forEach((g) => {
+  g.matches.forEach((m) => { allMatches[m.id] = m; });
+});
+---
+
+<Layout
+  title="Compañeros"
+  currentPath="/companions"
+  description="Ve quiénes ya jugaron y revisa sus pronósticos del Mundial 2026."
+>
+  <main class="page-section">
+    <div class="site-shell">
+      <div class="table-row-head">
+        <div>
+          <span class="eyebrow">Compañeros</span>
+          <h1 class="page-title">Quiénes ya jugaron</h1>
+        </div>
+        <span class="muted" data-companions-count></span>
+      </div>
+
+      <p class="section-copy" data-companions-status>Cargando lista de jugadores...</p>
+
+      <div class="ranking-list" data-companions-list></div>
+
+      <div class="inline-actions" style="margin-top:1.5rem">
+        <a class="button-secondary" href="/">&#8592; Volver al inicio</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Player Detail Modal -->
+  <div class="modal-overlay" data-player-modal style="display:none">
+    <div class="modal-card modal-card-wide">
+      <div class="player-dialog-head">
+        <div>
+          <span class="eyebrow">Pronósticos de</span>
+          <h2 class="section-title" data-player-modal-name></h2>
+          <span class="muted" data-player-modal-fav></span>
+        </div>
+        <button type="button" class="button-secondary dialog-close" data-player-modal-close>Cerrar</button>
+      </div>
+
+      <div class="player-predictions-grid" data-player-predictions-content>
+        <p class="muted">Cargando pronósticos...</p>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline define:vars={{ allMatchesJson: JSON.stringify(allMatches) }}>
+    const allMatches = allMatchesJson;
+
+    const companionsList = document.querySelector("[data-companions-list]");
+    const companionsCount = document.querySelector("[data-companions-count]");
+    const companionsStatus = document.querySelector("[data-companions-status]");
+    const playerModal = document.querySelector("[data-player-modal]");
+    const playerModalName = document.querySelector("[data-player-modal-name]");
+    const playerModalFav = document.querySelector("[data-player-modal-fav]");
+    const playerModalClose = document.querySelector("[data-player-modal-close]");
+    const playerPredictionsContent = document.querySelector("[data-player-predictions-content]");
+
+    function hidePlayerModal() {
+      if (playerModal) playerModal.style.display = "none";
+    }
+
+    if (playerModalClose) {
+      playerModalClose.addEventListener("click", hidePlayerModal);
+    }
+    if (playerModal) {
+      playerModal.addEventListener("click", (e) => {
+        if (e.target === playerModal) hidePlayerModal();
+      });
+    }
+
+    async function getCurrentUser() {
+      try {
+        const res = await fetch("/api/auth/session");
+        const data = await res.json();
+        if (data.ok && data.user) return data.user;
+      } catch {}
+      return null;
+    }
+
+    async function loadCompanions() {
+      const user = await getCurrentUser();
+      let currentPlayerRecordId = null;
+
+      if (user) {
+        try {
+          const bRes = await fetch(`/api/bootstrap?player_id=${encodeURIComponent(user.id)}`);
+          const bData = await bRes.json();
+          if (bData.ok && bData.player) {
+            currentPlayerRecordId = bData.player.id;
+          }
+        } catch {}
+      }
+
+      try {
+        const res = await fetch("/api/players");
+        const data = await res.json();
+
+        if (!data.ok) {
+          console.error("[companions] API error:", data.error);
+          if (companionsStatus) companionsStatus.textContent = "No se pudo cargar la lista.";
+          return;
+        }
+
+        let allPlayers = [...(data.players || [])];
+
+        if (currentPlayerRecordId && user) {
+          const alreadyIncluded = allPlayers.some((p) => p.id === currentPlayerRecordId);
+          if (!alreadyIncluded) {
+            allPlayers.unshift({
+              id: currentPlayerRecordId,
+              name: user.name || "Sin nombre",
+              favorite_team: null,
+              favorite_flag: "🏳️",
+              predictions_count: 0,
+              joined: null,
+            });
+          }
+        }
+
+        if (allPlayers.length === 0) {
+          if (companionsStatus) companionsStatus.textContent = "Aún no hay jugadores registrados.";
+          if (companionsList) companionsList.innerHTML = "";
+          return;
+        }
+
+        if (companionsStatus) companionsStatus.textContent = "";
+        if (companionsCount) companionsCount.textContent = `${allPlayers.length} jugador${allPlayers.length !== 1 ? "es" : ""}`;
+
+        companionsList.innerHTML = allPlayers
+          .map((p) => {
+            const isCurrentUser = currentPlayerRecordId && p.id === currentPlayerRecordId;
+            return `
+            <div class="ranking-item companion-card" data-player-id="${p.id}" tabindex="0" role="button" aria-label="Ver pronósticos de ${p.name}">
+              <div class="ranking-main">
+                <div class="ranking-identity">
+                  <div class="ranking-position">${p.favorite_flag || '🏳️'}</div>
+                  <div>
+                    <div class="ranking-name">${p.name || 'Sin nombre'} ${isCurrentUser ? '<span class="tag success">Tú</span>' : ''}</div>
+                    ${p.favorite_team ? `<div class="ranking-favorite">Favorito: ${p.favorite_team}</div>` : '<div class="ranking-favorite muted">Sin favorito</div>'}
+                  </div>
+                </div>
+                <div class="ranking-points-block">
+                  <span class="ranking-points">${p.predictions_count || 0}</span>
+                  <span class="ranking-points-label">pronósticos</span>
+                </div>
+              </div>
+            </div>`;
+          })
+          .join("");
+
+        companionsList.querySelectorAll(".companion-card").forEach((card) => {
+          const handler = () => openPlayerDetail(card.dataset.playerId);
+          card.addEventListener("click", handler);
+          card.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handler();
+            }
+          });
+        });
+      } catch (err) {
+        console.error("[companions] Failed to load:", err);
+        if (companionsStatus) companionsStatus.textContent = "Error de red al cargar compañeros.";
+      }
+    }
+
+    async function openPlayerDetail(playerId) {
+      if (!playerModal || !playerModalName || !playerPredictionsContent) return;
+
+      playerModal.style.display = "";
+      playerModalName.textContent = "Cargando...";
+      if (playerModalFav) playerModalFav.textContent = "";
+      playerPredictionsContent.innerHTML = '<p class="muted">Cargando pronósticos...</p>';
+
+      try {
+        const res = await fetch(`/api/players?id=${encodeURIComponent(playerId)}`);
+        const data = await res.json();
+
+        if (!data.ok) {
+          playerPredictionsContent.innerHTML = '<p class="muted">No se pudo cargar la información.</p>';
+          return;
+        }
+
+        playerModalName.textContent = data.player.name;
+        if (playerModalFav) {
+          playerModalFav.textContent = data.player.favorite_team
+            ? `${data.player.favorite_flag} Favorito: ${data.player.favorite_team}`
+            : "Sin equipo favorito";
+        }
+
+        if (!data.predictions || data.predictions.length === 0) {
+          playerPredictionsContent.innerHTML = '<p class="muted">Este jugador aún no ha cargado pronósticos.</p>';
+          return;
+        }
+
+        const grouped = {};
+        data.predictions.forEach((pred) => {
+          const group = pred.match_id.charAt(0);
+          if (!grouped[group]) grouped[group] = [];
+          grouped[group].push(pred);
+        });
+
+        let html = "";
+        const sortedGroups = Object.keys(grouped).sort();
+
+        sortedGroups.forEach((group) => {
+          const preds = grouped[group];
+          html += `<div class="player-group-card">
+            <h4 class="eyebrow" style="margin-bottom:.5rem">Grupo ${group}</h4>
+            <div class="readonly-list">`;
+
+          preds.forEach((pred) => {
+            const match = allMatches[pred.match_id];
+            if (!match) return;
+            html += `
+              <div class="readonly-row">
+                <div class="fixture-cell" style="min-width:auto">
+                  <span>${match.homeFlag} ${match.home}</span>
+                  <span class="muted">vs</span>
+                  <span>${match.awayFlag} ${match.away}</span>
+                </div>
+                <div class="readonly-score">
+                  <span class="readonly-pill">${pred.home_score}</span>
+                  <span class="muted">-</span>
+                  <span class="readonly-pill">${pred.away_score}</span>
+                </div>
+              </div>`;
+          });
+
+          html += `</div></div>`;
+        });
+
+        playerPredictionsContent.innerHTML = html;
+      } catch {
+        playerPredictionsContent.innerHTML = '<p class="muted">Error de red al cargar.</p>';
+      }
+    }
+
+    loadCompanions();
+  </script>
+</Layout>
