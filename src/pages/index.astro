@@ -1,6 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { chvBroadcastSource, groupedMatches, isChvBroadcastMatch, scoringExamples, scoringRules } from "../data/site";
+import { groupedMatches, isChvBroadcastMatch, scoringExamples, scoringRules } from "../data/site";
 import { getFlagImageUrl } from "../lib/flags";
 
 const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.length, 0);
@@ -95,11 +95,6 @@ const groupTeamsByGroup = Object.fromEntries(
               </div>
               <span class="muted">Horario Chile · señal · sede</span>
             </div>
-            <p class="section-copy section-copy-tight">
-              Chilevisión confirmó 34 partidos gratis en TV abierta, MiCHV y chilevision.cl.
-              <a href={chvBroadcastSource.url} target="_blank" rel="noreferrer noopener"> Ver calendario oficial CHV</a>.
-            </p>
-
             <div class="groups-grid groups-grid-single">
               {groupedMatches.map((group, idx) => (
                 <details class="group-card group-collapsible" open={idx < 2}>
