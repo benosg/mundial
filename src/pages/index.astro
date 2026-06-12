@@ -87,6 +87,61 @@ const groupTeamsByGroup = Object.fromEntries(
             </div>
           </div>
 
+          <article class="panel standings-panel" aria-labelledby="standings-title">
+            <div class="table-row-head standings-panel-head">
+              <div>
+                <span class="eyebrow">Datos oficiales FIFA</span>
+                <h3 class="entry-title" id="standings-title">Así van los grupos</h3>
+                <p class="muted standings-copy">Posiciones en vivo según los resultados oficiales cargados por FIFA.</p>
+              </div>
+            </div>
+
+            <div class="standings-legend" aria-label="Criterios de clasificación actuales">
+              <span class="standings-legend-chip standings-legend-chip--qualified">1.º y 2.º: clasificación directa</span>
+              <span class="standings-legend-chip standings-legend-chip--best-third">3.º: entre los 8 mejores terceros</span>
+            </div>
+
+            <div class="standings-grid" data-standings-grid>
+              {groupedMatches.map((group) => (
+                <section class="standings-card" aria-labelledby={`standings-group-${group.group}`}>
+                  <div class="standings-card-head">
+                    <div>
+                      <span class="tag group-tag">Grupo {group.group}</span>
+                      <h4 id={`standings-group-${group.group}`}>Grupo {group.group}</h4>
+                    </div>
+                    <span class="muted standings-progress" data-group-standings-progress={group.group}>0/{group.matches.length} jugados</span>
+                  </div>
+
+                  <div class="standings-table-wrap">
+                    <table class="standings-table">
+                      <caption class="visually-hidden">Tabla oficial del grupo {group.group} según los resultados cargados por FIFA.</caption>
+                      <thead>
+                        <tr>
+                          <th>Equipo</th>
+                          <th>Pts</th>
+                          <th>DG</th>
+                          <th>GF</th>
+                        </tr>
+                      </thead>
+                      <tbody data-group-standings-body={group.group}>
+                        {groupTeamsByGroup[group.group].map((team) => (
+                          <tr>
+                            <td>
+                              <span class="flag-inline"><img class="flag-icon" src={getFlagImageUrl(team)} alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>{team}</span></span>
+                            </td>
+                            <td>0</td>
+                            <td>0</td>
+                            <td>0</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              ))}
+            </div>
+          </article>
+
           <article class="panel panel-entry">
             <div class="table-row-head">
               <div>
@@ -258,7 +313,12 @@ const groupTeamsByGroup = Object.fromEntries(
     </div>
   </div>
 
-  <script is:inline>
+  <script is:inline define:vars={{ groupedMatchesJson: JSON.stringify(groupedMatches) }}>
+    const groupsData = JSON.parse(groupedMatchesJson);
+    let officialGroupsData = groupsData.map((group) => ({
+      ...group,
+      matches: group.matches.map((match) => ({ ...match, home_result: null, away_result: null })),
+    }));
     const STORAGE_KEY = "mundial-2026-player-id";
     const FIRST_MATCH_KICKOFF = new Date("2026-06-11T15:00:00-04:00"); // Chile time (UTC-4)
     const LOCK_CUTOFF = new Date(FIRST_MATCH_KICKOFF.getTime() - 60 * 60 * 1000); // 1 hour before
@@ -281,6 +341,12 @@ const groupTeamsByGroup = Object.fromEntries(
     const favLockedClose = document.querySelector("[data-fav-locked-close]");
     const lockBanner = document.querySelector("[data-lock-banner]");
     const lockBannerText = document.querySelector("[data-lock-banner-text]");
+    const standingsBodies = new Map(
+      groupsData.map((group) => [group.group, document.querySelector(`[data-group-standings-body="${group.group}"]`)])
+    );
+    const standingsProgressNodes = new Map(
+      groupsData.map((group) => [group.group, document.querySelector(`[data-group-standings-progress="${group.group}"]`)])
+    );
 
     var currentPlayerId = null;
     var serverPlayer = null;
@@ -383,6 +449,164 @@ const groupTeamsByGroup = Object.fromEntries(
       if (progressNode) progressNode.textContent = `${completed}/${matchIds.size}`;
     }
 
+    function getPredictedScore(matchId, side) {
+      const input = document.querySelector(`[data-score-input][data-match="${matchId}"][data-side="${side}"]`);
+      if (!input) return null;
+      if (input.value === "") return null;
+      const value = input.valueAsNumber;
+      return Number.isInteger(value) ? value : null;
+    }
+
+    function getTeamFlagMap() {
+      const flags = new Map();
+      officialGroupsData.forEach((group) => {
+        group.matches.forEach((match) => {
+          flags.set(match.home, match.homeFlag);
+          flags.set(match.away, match.awayFlag);
+        });
+      });
+      return flags;
+    }
+
+    function compareStandingsRows(a, b) {
+      return (
+        b.points - a.points
+        || b.goalDifference - a.goalDifference
+        || b.goalsFor - a.goalsFor
+        || a.team.localeCompare(b.team, "es")
+      );
+    }
+
+    function applyOfficialMatchResults(matches) {
+      const matchesById = new Map((matches || []).map((match) => [match.id, match]));
+      officialGroupsData = groupsData.map((group) => ({
+        ...group,
+        matches: group.matches.map((match) => {
+          const officialMatch = matchesById.get(match.id);
+          return {
+            ...match,
+            homeFlag: officialMatch?.home_flag || match.homeFlag,
+            awayFlag: officialMatch?.away_flag || match.awayFlag,
+            home_result: Number.isInteger(officialMatch?.home_result) ? officialMatch.home_result : null,
+            away_result: Number.isInteger(officialMatch?.away_result) ? officialMatch.away_result : null,
+          };
+        }),
+      }));
+    }
+
+    function buildStandings(group) {
+      const table = new Map();
+
+      group.matches.forEach((match) => {
+        table.set(match.home, table.get(match.home) || { team: match.home, points: 0, goalDifference: 0, goalsFor: 0, played: 0 });
+        table.set(match.away, table.get(match.away) || { team: match.away, points: 0, goalDifference: 0, goalsFor: 0, played: 0 });
+
+        const homeScore = match.home_result;
+        const awayScore = match.away_result;
+
+        if (!Number.isInteger(homeScore) || !Number.isInteger(awayScore)) {
+          return;
+        }
+
+        const homeRow = table.get(match.home);
+        const awayRow = table.get(match.away);
+
+        homeRow.played += 1;
+        awayRow.played += 1;
+        homeRow.goalsFor += homeScore;
+        awayRow.goalsFor += awayScore;
+        homeRow.goalDifference += homeScore - awayScore;
+        awayRow.goalDifference += awayScore - homeScore;
+
+        if (homeScore > awayScore) {
+          homeRow.points += 3;
+        } else if (homeScore < awayScore) {
+          awayRow.points += 3;
+        } else {
+          homeRow.points += 1;
+          awayRow.points += 1;
+        }
+      });
+
+      return Array.from(table.values()).sort(compareStandingsRows);
+    }
+
+    function resolveBestThirdKeys(groupStandings) {
+      const thirdPlacedTeams = groupStandings
+        .map(({ groupId, standings }) => {
+          const thirdPlace = standings[2];
+          return thirdPlace && thirdPlace.played > 0 ? { ...thirdPlace, group: groupId } : null;
+        })
+        .filter(Boolean)
+        .sort(compareStandingsRows)
+        .slice(0, 8);
+
+      return new Set(thirdPlacedTeams.map((row) => `${row.group}:${row.team}`));
+    }
+
+    async function loadOfficialMatches() {
+      try {
+        const res = await fetch("/api/bootstrap", { cache: "no-store" });
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.matches)) {
+          applyOfficialMatchResults(data.matches);
+          renderStandings();
+          return true;
+        }
+      } catch {}
+
+      return false;
+    }
+
+    function renderStandings() {
+      const teamFlags = getTeamFlagMap();
+      const standingsByGroup = officialGroupsData.map((group) => ({
+        groupId: group.group,
+        matches: group.matches,
+        standings: buildStandings(group),
+      }));
+      const bestThirdKeys = resolveBestThirdKeys(standingsByGroup);
+
+      standingsByGroup.forEach(({ groupId, matches, standings }) => {
+        const body = standingsBodies.get(groupId);
+        const progress = standingsProgressNodes.get(groupId);
+        if (!body) return;
+
+        const completedMatches = matches.filter((match) => (
+          Number.isInteger(match.home_result) && Number.isInteger(match.away_result)
+        )).length;
+
+        body.innerHTML = standings.map((row, index) => {
+          const flag = teamFlags.get(row.team) || "🏳️";
+          const isDirectQualifier = index < 2;
+          const isBestThird = index === 2 && bestThirdKeys.has(`${groupId}:${row.team}`);
+          const rowClasses = [
+            "standings-row",
+            isDirectQualifier && "standings-row-qualified",
+            isBestThird && "standings-row-best-third",
+          ].filter(Boolean).join(" ");
+          return `
+            <tr class="${rowClasses}">
+              <td>
+                <span class="standings-team">
+                  <span class="standings-rank">${index + 1}</span>
+                  ${flagImageOnlyHtml(flag, "", row.team)}
+                  <span>${escapeHtml(row.team)}</span>
+                </span>
+              </td>
+              <td><strong>${row.points}</strong></td>
+              <td>${row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</td>
+              <td>${row.goalsFor}</td>
+            </tr>
+          `;
+        }).join("");
+
+        if (progress) {
+          progress.textContent = `${completedMatches}/${matches.length} jugados`;
+        }
+      });
+    }
+
     function hydratePredictions(predictions) {
       inputs.forEach((input) => {
         input.value = "";
@@ -395,6 +619,7 @@ const groupTeamsByGroup = Object.fromEntries(
         if (awayInput && Number.isFinite(p.away_score)) awayInput.value = String(p.away_score);
       });
       updateProgress();
+      renderStandings();
     }
 
     function updatePlayerDisplay(player) {
@@ -527,6 +752,7 @@ const groupTeamsByGroup = Object.fromEntries(
         if (data.ok) {
           inputs.forEach((input) => (input.value = ""));
           updateProgress();
+          renderStandings();
           announce("Pronósticos borrados.");
           await bootstrap();
         } else {
@@ -538,6 +764,7 @@ const groupTeamsByGroup = Object.fromEntries(
     }
 
     async function bootstrap() {
+      await loadOfficialMatches();
       const user = await checkSession();
 
       if (!user) {
@@ -567,7 +794,7 @@ const groupTeamsByGroup = Object.fromEntries(
           serverPlayer = data.player;
           updatePlayerDisplay(data.player);
           hydratePredictions(data.predictions);
-          announce("Datos cargados desde el servidor.");
+          announce("");
 
           if (sessionUser && data.player && !data.player.favorite_team) {
             // First login — show favourite-team picker
@@ -579,6 +806,14 @@ const groupTeamsByGroup = Object.fromEntries(
       } catch {
         announce("Error de red al cargar datos.");
       }
+    }
+
+    async function refreshOfficialResultsInBackground() {
+      try {
+        await fetch("/api/results/refresh", { cache: "no-store" });
+      } catch {}
+
+      await loadOfficialMatches();
     }
 
     // ---- events ----
@@ -608,7 +843,13 @@ const groupTeamsByGroup = Object.fromEntries(
     }
 
     (async () => {
+      renderStandings();
+      void refreshOfficialResultsInBackground();
       await bootstrap();
     })();
+
+    setInterval(() => {
+      void refreshOfficialResultsInBackground();
+    }, 30000);
   </script>
 </Layout>

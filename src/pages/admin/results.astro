@@ -27,6 +27,7 @@ import { groupedMatches } from "../../data/site";
             <strong id="results-count">0</strong> <span class="muted">/ <span id="total-matches"></span></span>
           </div>
           <div class="inline-actions">
+            <button type="button" class="button-secondary" id="sync-fifa-btn">Actualizar desde FIFA</button>
             <button type="button" class="button" id="save-results-btn" disabled>Guardar resultados</button>
           </div>
         </div>
@@ -68,6 +69,7 @@ import { groupedMatches } from "../../data/site";
     }
 
     const groupsContainer = document.getElementById("results-groups");
+    const syncBtn = document.getElementById("sync-fifa-btn");
     const saveBtn = document.getElementById("save-results-btn");
     const resultsCount = document.getElementById("results-count");
     const totalMatchesEl = document.getElementById("total-matches");
@@ -249,8 +251,48 @@ import { groupedMatches } from "../../data/site";
       }
     }
 
+    async function syncFromFifa() {
+      if (!syncBtn) return;
+
+      syncBtn.disabled = true;
+      syncBtn.textContent = "Actualizando...";
+      if (saveStatus) saveStatus.textContent = "Consultando resultados oficiales en FIFA...";
+
+      try {
+        const res = await fetch("/api/admin/results/fifa-sync", {
+          method: "POST",
+        });
+        const data = await res.json();
+
+        if (!data.ok) {
+          if (saveStatus) saveStatus.textContent = `Error FIFA: ${data.error}`;
+          return;
+        }
+
+        const suspiciousNote = Array.isArray(data.suspiciousGroups) && data.suspiciousGroups.length > 0
+          ? ` Atención: ${data.suspiciousGroups.join(" ")}`
+          : "";
+
+        if (saveStatus) {
+          saveStatus.textContent = `✓ FIFA importó ${data.imported} resultado(s) y actualizó ${data.updated} partido(s).${suspiciousNote}`;
+        }
+
+        hasUnsavedChanges = false;
+        await loadResults();
+      } catch {
+        if (saveStatus) saveStatus.textContent = "Error de red al consultar FIFA";
+      } finally {
+        syncBtn.disabled = false;
+        syncBtn.textContent = "Actualizar desde FIFA";
+      }
+    }
+
     if (saveBtn) {
       saveBtn.addEventListener("click", saveResults);
+    }
+
+    if (syncBtn) {
+      syncBtn.addEventListener("click", syncFromFifa);
     }
 
     loadResults();

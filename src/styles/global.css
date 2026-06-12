@@ -759,6 +759,134 @@ tbody tr:last-child td {
   gap: 1rem;
 }
 
+.standings-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.standings-panel-head {
+  align-items: flex-start;
+}
+
+.standings-copy {
+  margin: 0.45rem 0 0;
+}
+
+.standings-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.standings-legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.standings-legend-chip {
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--line);
+  background: rgba(8, 17, 31, 0.04);
+}
+
+.standings-legend-chip--qualified {
+  color: #0f766e;
+  background: rgba(15, 118, 110, 0.1);
+}
+
+.standings-legend-chip--best-third {
+  color: #9a6700;
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.standings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.standings-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card-strong);
+  padding: 0.9rem;
+}
+
+.standings-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 0.8rem;
+}
+
+.standings-card-head h4 {
+  margin: 0.4rem 0 0;
+  font-size: 1rem;
+}
+
+.standings-progress {
+  white-space: nowrap;
+}
+
+.standings-table-wrap {
+  overflow-x: auto;
+}
+
+.standings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.standings-table th,
+.standings-table td {
+  padding: 0.6rem 0.4rem;
+  border-top: 1px solid var(--line);
+  text-align: left;
+}
+
+.standings-table thead th {
+  border-top: 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.standings-row-qualified {
+  background: rgba(15, 118, 110, 0.06);
+}
+
+.standings-row-best-third {
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.standings-team {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+}
+
+.standings-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 .entry-title {
   margin: 0.3rem 0 0;
   font-size: 1.05rem;
@@ -1330,9 +1458,14 @@ tbody tr:last-child td {
   }
 
   .toolbar-row,
-  .group-head {
+  .group-head,
+  .standings-card-head {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .standings-grid {
+    grid-template-columns: 1fr;
   }
 
   .ranking-meta {

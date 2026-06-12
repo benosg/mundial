@@ -44,7 +44,7 @@ groupedMatches.forEach((g) => {
         </table>
       </div>
 
-      <p class="muted small-note" style="margin-top:1rem" data-companions-note>Solo se muestran puntos de partidos con resultado real ingresado.</p>
+      <p class="muted small-note" style="margin-top:1rem" data-companions-note>Solo se muestran puntos de partidos con resultado real ingresado. Esta vista se actualiza cada 30 segundos.</p>
 
       <div class="inline-actions" style="margin-top:1.5rem">
         <a class="button-secondary" href="/">&#8592; Volver al inicio</a>
@@ -107,14 +107,21 @@ groupedMatches.forEach((g) => {
     const rankingBody = document.getElementById("ranking-body");
     const companionsCount = document.querySelector("[data-companions-count]");
     const companionsStatus = document.querySelector("[data-companions-status]");
+    const companionsNote = document.querySelector("[data-companions-note]");
     const playerModal = document.querySelector("[data-player-modal]");
     const playerModalName = document.querySelector("[data-player-modal-name]");
     const playerModalFav = document.querySelector("[data-player-modal-fav]");
     const playerModalClose = document.querySelector("[data-player-modal-close]");
     const playerPredictionsContent = document.querySelector("[data-player-predictions-content]");
+    const AUTO_REFRESH_MS = 30000;
+
+    let currentUserPromise = null;
+    let currentPlayerModalId = null;
+    let companionsRefreshInFlight = null;
 
     function hidePlayerModal() {
       if (playerModal) playerModal.style.display = "none";
+      currentPlayerModalId = null;
     }
 
     if (playerModalClose) {
@@ -127,21 +134,63 @@ groupedMatches.forEach((g) => {
     }
 
     async function getCurrentUser() {
-      try {
-        const res = await fetch("/api/auth/session");
-        const data = await res.json();
-        if (data.ok && data.user) return data.user;
-      } catch {}
-      return null;
+      if (currentUserPromise) return currentUserPromise;
+
+      currentUserPromise = (async () => {
+        try {
+          const res = await fetch("/api/auth/session", { cache: "no-store" });
+          const data = await res.json();
+          if (data.ok && data.user) return data.user;
+        } catch {}
+        return null;
+      })();
+
+      return currentUserPromise;
     }
 
-    async function loadCompanions() {
+    async function refreshOfficialResults() {
+      try {
+        const res = await fetch("/api/results/refresh", { cache: "no-store" });
+        const data = await res.json();
+
+        if (!data.ok) {
+          if (companionsNote) {
+            companionsNote.textContent = "No se pudo consultar FIFA ahora. El ranking sigue mostrando los datos guardados más recientes.";
+          }
+          return;
+        }
+
+        if (companionsNote) {
+          const throttleSeconds = Math.round((data.upstreamThrottleMs || 60000) / 1000);
+          const refreshNote = data.source === "fifa"
+            ? "Resultados oficiales revisados recién."
+            : "Ranking actualizado con datos locales ya sincronizados.";
+          companionsNote.textContent = `${refreshNote} FIFA se consulta como máximo cada ${throttleSeconds} segundos y esta vista se refresca cada 30 segundos.`;
+        }
+      } catch {
+        if (companionsNote) {
+          companionsNote.textContent = "Error de red al consultar FIFA. El ranking sigue mostrando los datos guardados más recientes.";
+        }
+      }
+    }
+
+    async function loadCompanions(options = {}) {
+      if (companionsRefreshInFlight) {
+        return companionsRefreshInFlight;
+      }
+
+      const { silent = false } = options;
+
+      companionsRefreshInFlight = (async () => {
+        if (!silent && companionsStatus) companionsStatus.textContent = "Actualizando ranking...";
+        await refreshOfficialResults();
+
       const user = await getCurrentUser();
       let currentPlayerRecordId = null;
 
       if (user) {
         try {
-          const bRes = await fetch(`/api/bootstrap?player_id=${encodeURIComponent(user.id)}`);
+          const bRes = await fetch(`/api/bootstrap?player_id=${encodeURIComponent(user.id)}`, { cache: "no-store" });
           const bData = await bRes.json();
           if (bData.ok && bData.player) {
             currentPlayerRecordId = bData.player.id;
@@ -150,7 +199,7 @@ groupedMatches.forEach((g) => {
       }
 
       try {
-        const res = await fetch("/api/players");
+        const res = await fetch("/api/players", { cache: "no-store" });
         const data = await res.json();
 
         if (!data.ok) {
@@ -188,7 +237,7 @@ groupedMatches.forEach((g) => {
           return;
         }
 
-        if (companionsStatus) companionsStatus.textContent = "";
+        if (companionsStatus) companionsStatus.textContent = `Ranking actualizado. Próxima revisión automática en ${AUTO_REFRESH_MS / 1000} segundos.`;
         if (companionsCount) companionsCount.textContent = `${allPlayers.length} jugador${allPlayers.length !== 1 ? "es" : ""}`;
 
         rankingBody.innerHTML = allPlayers
@@ -222,22 +271,36 @@ groupedMatches.forEach((g) => {
             }
           });
         });
+
+        if (currentPlayerModalId) {
+          await openPlayerDetail(currentPlayerModalId, { silent: true });
+        }
       } catch (err) {
         console.error("[companions] Failed to load:", err);
         if (companionsStatus) companionsStatus.textContent = "Error de red al cargar compañeros.";
+      } finally {
+        companionsRefreshInFlight = null;
       }
+      })();
+
+      return companionsRefreshInFlight;
     }
 
-    async function openPlayerDetail(playerId) {
+    async function openPlayerDetail(playerId, options = {}) {
       if (!playerModal || !playerModalName || !playerPredictionsContent) return;
 
+      const { silent = false } = options;
+      currentPlayerModalId = playerId;
+
       playerModal.style.display = "";
-      playerModalName.textContent = "Cargando...";
-      if (playerModalFav) playerModalFav.textContent = "";
-      playerPredictionsContent.innerHTML = '<p class="muted">Cargando pronósticos...</p>';
+      if (!silent) {
+        playerModalName.textContent = "Cargando...";
+        if (playerModalFav) playerModalFav.textContent = "";
+        playerPredictionsContent.innerHTML = '<p class="muted">Cargando pronósticos...</p>';
+      }
 
       try {
-        const res = await fetch(`/api/players?id=${encodeURIComponent(playerId)}`);
+        const res = await fetch(`/api/players?id=${encodeURIComponent(playerId)}`, { cache: "no-store" });
         const data = await res.json();
 
         if (!data.ok) {
@@ -309,6 +372,9 @@ groupedMatches.forEach((g) => {
     }
 
     loadCompanions();
+    setInterval(() => {
+      void loadCompanions({ silent: true });
+    }, AUTO_REFRESH_MS);
   </script>
 
   <style is:global>
