@@ -65,9 +65,27 @@ const groupTeamsByGroup = Object.fromEntries(
     <section class="page-section simple-section workspace-section" data-workspace-section style="display:none">
       <div class="site-shell workspace-grid workspace-grid-duo">
         <article class="panel workspace-column workspace-entry" id="grupos" aria-labelledby="grupos-title">
-          <div>
-            <span class="eyebrow">Planilla activa</span>
-            <h2 class="section-title" id="grupos-title">Ingreso de partidos</h2>
+          <div class="save-dock" aria-label="Controles de guardado">
+            <div class="save-dock-top">
+              <div>
+                <span class="eyebrow">Planilla activa</span>
+                <h2 class="section-title" id="grupos-title">Ingreso de partidos</h2>
+              </div>
+              <div class="progress-pill">Progreso: <strong data-progress-count>0/{totalMatches}</strong> partidos completos</div>
+            </div>
+
+            <p class="save-status" data-save-status role="status">Cargando datos del servidor...</p>
+
+            <div class="lock-banner" data-lock-banner style="display:none" role="alert">
+              <span class="lock-banner-icon">🔒</span>
+              <span class="lock-banner-text" data-lock-banner-text></span>
+            </div>
+
+            <div class="inline-actions">
+              <button class="button" type="button" data-save-all>Guardar todo</button>
+              <button class="button-secondary" type="button" data-clear-all>Limpiar</button>
+              <a class="button-secondary" href="#prediction-sheet">Ver resultados ingresados</a>
+            </div>
           </div>
 
           <article class="panel standings-panel" aria-labelledby="standings-title">
@@ -88,7 +106,6 @@ const groupTeamsByGroup = Object.fromEntries(
                 <section class="standings-card" aria-labelledby={`standings-group-${group.group}`}>
                   <div class="standings-card-head">
                     <div>
-                      <span class="tag group-tag">Grupo {group.group}</span>
                       <h4 id={`standings-group-${group.group}`}>Grupo {group.group}</h4>
                     </div>
                     <span class="muted standings-progress" data-group-standings-progress={group.group}>0/{group.matches.length} jugados</span>
@@ -134,19 +151,6 @@ const groupTeamsByGroup = Object.fromEntries(
                 <div class="progress-pill">Progreso: <strong data-progress-count>0/{totalMatches}</strong> partidos completos</div>
                 <span class="muted">Horario Chile · señal · sede</span>
               </div>
-            </div>
-
-            <p class="save-status" data-save-status role="status">Cargando datos del servidor...</p>
-
-            <div class="lock-banner" data-lock-banner style="display:none" role="alert">
-              <span class="lock-banner-icon">🔒</span>
-              <span class="lock-banner-text" data-lock-banner-text></span>
-            </div>
-
-            <div class="inline-actions">
-              <button class="button" type="button" data-save-all>Guardar todo</button>
-              <button class="button-secondary" type="button" data-clear-all>Limpiar</button>
-              <a class="button-secondary" href="#prediction-sheet">Ver resultados ingresados</a>
             </div>
 
             <div class="groups-grid groups-grid-single">
