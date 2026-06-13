@@ -606,7 +606,7 @@ const groupTeamsByGroup = Object.fromEntries(
             companionsSummaryBody.innerHTML = topPlayers.map((player, index) => {
               const points = player?.points_breakdown?.total_points ?? 0;
               const rankingPosition = player?.ranking_position ?? index + 1;
-              const topClass = index < 3 ? ` companions-summary-item--top-${index + 1}` : "";
+              const topClass = rankingPosition <= 3 ? ` companions-summary-item--top-${rankingPosition}` : "";
               return `
                 <li class="companions-summary-item${topClass}">
                   <span class="companions-summary-rank">${rankingPosition}</span>
