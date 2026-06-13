@@ -76,14 +76,7 @@ const groupTeamsByGroup = Object.fromEntries(
 
             <p class="save-status" data-save-status role="status">Cargando datos del servidor...</p>
 
-            <div class="lock-banner" data-lock-banner style="display:none" role="alert">
-              <span class="lock-banner-icon">🔒</span>
-              <span class="lock-banner-text" data-lock-banner-text></span>
-            </div>
-
             <div class="inline-actions">
-              <button class="button" type="button" data-save-all>Guardar todo</button>
-              <button class="button-secondary" type="button" data-clear-all>Limpiar</button>
               <a class="button-secondary" href="#prediction-sheet">Ver resultados ingresados</a>
             </div>
           </div>
@@ -151,6 +144,18 @@ const groupTeamsByGroup = Object.fromEntries(
                 <div class="progress-pill">Progreso: <strong data-progress-count>0/{totalMatches}</strong> partidos completos</div>
                 <span class="muted">Horario Chile · señal · sede</span>
               </div>
+            </div>
+
+            <p class="save-status" data-save-status role="status">Cargando datos del servidor...</p>
+
+            <div class="lock-banner" data-lock-banner style="display:none" role="alert">
+              <span class="lock-banner-icon">🔒</span>
+              <span class="lock-banner-text" data-lock-banner-text></span>
+            </div>
+
+            <div class="inline-actions">
+              <button class="button" type="button" data-save-all>Guardar todo</button>
+              <button class="button-secondary" type="button" data-clear-all>Limpiar</button>
             </div>
 
             <div class="groups-grid groups-grid-single">
