@@ -244,9 +244,10 @@ groupedMatches.forEach((g) => {
           .map((p, index) => {
             const pb = p.points_breakdown || { total_points: 0, exact_count: 0, winner_count: 0, favorite_bonus_count: 0, completed_count: 0 };
             const isCurrentUser = currentPlayerRecordId && p.id === currentPlayerRecordId;
+            const rankingPosition = p.ranking_position ?? index + 1;
             return `
             <tr class="companion-row" data-player-id="${p.id}" tabindex="0" role="button" aria-label="Ver pronósticos de ${p.name}">
-              <td class="rank">${index + 1}</td>
+              <td class="rank">${rankingPosition}</td>
               <td class="ranking-name-cell">
                 <div class="ranking-name">${p.name || 'Sin nombre'} ${isCurrentUser ? '<span class="tag-you">Tú</span>' : ''}</div>
               </td>

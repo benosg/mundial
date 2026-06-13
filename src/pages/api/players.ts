@@ -108,6 +108,6 @@ export const GET: APIRoute = async ({ request, url }) => {
 
   return json({
     ok: true,
-    players: players.map(({ auth_user_id: _authUserId, ranking_position: _rankingPosition, ...player }) => player),
+    players: players.map(({ auth_user_id: _authUserId, ...player }) => player),
   });
 };

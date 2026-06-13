@@ -65,27 +65,9 @@ const groupTeamsByGroup = Object.fromEntries(
     <section class="page-section simple-section workspace-section" data-workspace-section style="display:none">
       <div class="site-shell workspace-grid workspace-grid-duo">
         <article class="panel workspace-column workspace-entry" id="grupos" aria-labelledby="grupos-title">
-          <div class="save-dock" aria-label="Controles de guardado">
-            <div class="save-dock-top">
-              <div>
-                <span class="eyebrow">Planilla activa</span>
-                <h2 class="section-title" id="grupos-title">Ingreso de partidos</h2>
-              </div>
-              <div class="progress-pill">Progreso: <strong data-progress-count>0/{totalMatches}</strong> partidos completos</div>
-            </div>
-
-            <p class="save-status" data-save-status role="status">Cargando datos del servidor...</p>
-
-            <div class="lock-banner" data-lock-banner style="display:none" role="alert">
-              <span class="lock-banner-icon">🔒</span>
-              <span class="lock-banner-text" data-lock-banner-text></span>
-            </div>
-
-            <div class="inline-actions">
-              <button class="button" type="button" data-save-all>Guardar todo</button>
-              <button class="button-secondary" type="button" data-clear-all>Limpiar</button>
-              <a class="button-secondary" href="#prediction-sheet">Ver resultados ingresados</a>
-            </div>
+          <div>
+            <span class="eyebrow">Planilla activa</span>
+            <h2 class="section-title" id="grupos-title">Ingreso de partidos</h2>
           </div>
 
           <article class="panel standings-panel" aria-labelledby="standings-title">
@@ -93,7 +75,6 @@ const groupTeamsByGroup = Object.fromEntries(
               <div>
                 <span class="eyebrow">Datos oficiales FIFA</span>
                 <h3 class="entry-title" id="standings-title">Así van los grupos</h3>
-                <p class="muted standings-copy">Posiciones en vivo según los resultados oficiales cargados por FIFA.</p>
               </div>
             </div>
 
@@ -149,8 +130,25 @@ const groupTeamsByGroup = Object.fromEntries(
                 <span class="eyebrow">Ingresa pronósticos</span>
                 <h3 class="entry-title">Planilla completa de grupos A–L</h3>
               </div>
-              <span class="muted">Horario Chile · señal · sede</span>
+              <div class="entry-header-side">
+                <div class="progress-pill">Progreso: <strong data-progress-count>0/{totalMatches}</strong> partidos completos</div>
+                <span class="muted">Horario Chile · señal · sede</span>
+              </div>
             </div>
+
+            <p class="save-status" data-save-status role="status">Cargando datos del servidor...</p>
+
+            <div class="lock-banner" data-lock-banner style="display:none" role="alert">
+              <span class="lock-banner-icon">🔒</span>
+              <span class="lock-banner-text" data-lock-banner-text></span>
+            </div>
+
+            <div class="inline-actions">
+              <button class="button" type="button" data-save-all>Guardar todo</button>
+              <button class="button-secondary" type="button" data-clear-all>Limpiar</button>
+              <a class="button-secondary" href="#prediction-sheet">Ver resultados ingresados</a>
+            </div>
+
             <div class="groups-grid groups-grid-single">
               {groupedMatches.map((group, idx) => (
                 <details class="group-card group-collapsible" id={`prediction-group-${group.group}`} open={idx < 2}>
@@ -229,8 +227,6 @@ const groupTeamsByGroup = Object.fromEntries(
             <ol class="companions-summary-list" data-companions-summary-body>
               <li class="companions-summary-empty">Esperando puntajes actualizados...</li>
             </ol>
-
-            <p class="fair-note">Aquí solo ves nombre y puntos actuales. El ranking completo y el detalle de pronósticos sigue disponible en la vista dedicada.</p>
 
             <div class="inline-actions">
               <a class="button-secondary" href="/companions">Ver ranking completo</a>
@@ -609,10 +605,11 @@ const groupTeamsByGroup = Object.fromEntries(
           if (companionsSummaryBody) {
             companionsSummaryBody.innerHTML = topPlayers.map((player, index) => {
               const points = player?.points_breakdown?.total_points ?? 0;
+              const rankingPosition = player?.ranking_position ?? index + 1;
               const topClass = index < 3 ? ` companions-summary-item--top-${index + 1}` : "";
               return `
                 <li class="companions-summary-item${topClass}">
-                  <span class="companions-summary-rank">${index + 1}</span>
+                  <span class="companions-summary-rank">${rankingPosition}</span>
                   <span class="companions-summary-name">${escapeHtml(player?.name || "Sin nombre")}</span>
                   <strong class="companions-summary-points">${points} pts</strong>
                 </li>

@@ -47,6 +47,25 @@ export interface RankedPlayer {
   ranking_position: number;
 }
 
+function applyCompetitionRanking(players: RankedPlayer[]): RankedPlayer[] {
+  let previousPoints: number | null = null;
+  let currentPosition = 0;
+
+  return players.map((player, index) => {
+    const points = player.points_breakdown.total_points;
+
+    if (previousPoints === null || points !== previousPoints) {
+      currentPosition = index + 1;
+      previousPoints = points;
+    }
+
+    return {
+      ...player,
+      ranking_position: currentPosition,
+    };
+  });
+}
+
 function calcSign(a: number, b: number): number {
   if (a > b) return 1;
   if (a < b) return -1;
@@ -189,10 +208,7 @@ export async function getRankedPlayers(supabase: SupabaseClient): Promise<{
   rankedPlayers.sort((a, b) => b.points_breakdown.total_points - a.points_breakdown.total_points);
 
   return {
-    players: rankedPlayers.map((player, index) => ({
-      ...player,
-      ranking_position: index + 1,
-    })),
+    players: applyCompetitionRanking(rankedPlayers),
     error: null,
   };
 }
