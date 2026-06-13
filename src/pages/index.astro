@@ -84,6 +84,7 @@ const groupTeamsByGroup = Object.fromEntries(
             <div class="inline-actions">
               <button class="button" type="button" data-save-all>Guardar todo</button>
               <button class="button-secondary" type="button" data-clear-all>Limpiar</button>
+              <a class="button-secondary" href="#prediction-sheet">Ver resultados ingresados</a>
             </div>
           </div>
 
@@ -142,7 +143,7 @@ const groupTeamsByGroup = Object.fromEntries(
             </div>
           </article>
 
-          <article class="panel panel-entry">
+          <article class="panel panel-entry" id="prediction-sheet">
             <div class="table-row-head">
               <div>
                 <span class="eyebrow">Ingresa pronósticos</span>
@@ -152,7 +153,7 @@ const groupTeamsByGroup = Object.fromEntries(
             </div>
             <div class="groups-grid groups-grid-single">
               {groupedMatches.map((group, idx) => (
-                <details class="group-card group-collapsible" open={idx < 2}>
+                <details class="group-card group-collapsible" id={`prediction-group-${group.group}`} open={idx < 2}>
                   <summary class="group-head">
                     <div class="group-head-main">
                       <div class="group-head-topline">
@@ -217,45 +218,65 @@ const groupTeamsByGroup = Object.fromEntries(
           </article>
         </article>
 
-        <article class="panel compact-panel workspace-column workspace-rules" id="reglas" aria-labelledby="reglas-title">
-          <span class="eyebrow">Reglas oficiales</span>
-          <h2 class="section-title section-title-compact" id="reglas-title">Puntaje</h2>
-
-          <div class="rules-highlight">
-            <p><strong>Reglamento corto:</strong></p>
-            <ul>
-              <li><strong>5 puntos</strong> si aciertas el marcador exacto.</li>
-              <li><strong>3 puntos</strong> si aciertas ganador o empate, aunque no sea exacto.</li>
-              <li><strong>+1 punto</strong> si juega tu equipo favorito y ese pronóstico ya sumó puntos.</li>
-              <li><strong>0 puntos</strong> si fallas el signo del partido.</li>
-              <li><strong>Cierre:</strong> puedes ingresar o modificar resultados solo hasta <strong>1 hora antes del primer partido del torneo</strong>.</li>
-            </ul>
-          </div>
-
-          <div class="rules-box">
-            {scoringRules.map((rule) => (
-              <div class="rule-line">
-                <strong>{rule.points}</strong>
-                <span>{rule.title}</span>
+        <div class="workspace-column workspace-sidebar-stack">
+          <article class="panel compact-panel workspace-ranking" aria-labelledby="companions-summary-title">
+            <div class="table-row-head companions-summary-head">
+              <div>
+                <h2 class="section-title section-title-compact" id="companions-summary-title">Ranking</h2>
               </div>
-            ))}
-          </div>
+            </div>
 
-          <div class="examples-box">
-            <p class="examples-title">Ejemplos con partidos reales del fixture</p>
-            {scoringExamples.map((item) => (
-              <div class="example-line">
-                <strong>{item.points}</strong>
-                <div>
-                  <div>{item.title}</div>
-                  <span class="muted">{item.example}</span>
+            <ol class="companions-summary-list" data-companions-summary-body>
+              <li class="companions-summary-empty">Esperando puntajes actualizados...</li>
+            </ol>
+
+            <p class="fair-note">Aquí solo ves nombre y puntos actuales. El ranking completo y el detalle de pronósticos sigue disponible en la vista dedicada.</p>
+
+            <div class="inline-actions">
+              <a class="button-secondary" href="/companions">Ver ranking completo</a>
+            </div>
+          </article>
+
+          <article class="panel compact-panel workspace-rules" id="reglas" aria-labelledby="reglas-title">
+            <span class="eyebrow">Reglas oficiales</span>
+            <h2 class="section-title section-title-compact" id="reglas-title">Puntaje</h2>
+
+            <div class="rules-highlight">
+              <p><strong>Reglamento corto:</strong></p>
+              <ul>
+                <li><strong>5 puntos</strong> si aciertas el marcador exacto.</li>
+                <li><strong>3 puntos</strong> si aciertas ganador o empate, aunque no sea exacto.</li>
+                <li><strong>+1 punto</strong> si juega tu equipo favorito y ese pronóstico ya sumó puntos.</li>
+                <li><strong>0 puntos</strong> si fallas el signo del partido.</li>
+                <li><strong>Cierre:</strong> puedes ingresar o modificar resultados solo hasta <strong>1 hora antes del primer partido del torneo</strong>.</li>
+              </ul>
+            </div>
+
+            <div class="rules-box">
+              {scoringRules.map((rule) => (
+                <div class="rule-line">
+                  <strong>{rule.points}</strong>
+                  <span>{rule.title}</span>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          <p class="fair-note">Estas reglas se aplican igual para todos los jugadores y buscan que el juego sea simple, claro y fácil de revisar. El bloqueo se aplica de forma global una hora antes del primer partido del Mundial.</p>
-        </article>
+            <div class="examples-box">
+              <p class="examples-title">Ejemplos con partidos reales del fixture</p>
+              {scoringExamples.map((item) => (
+                <div class="example-line">
+                  <strong>{item.points}</strong>
+                  <div>
+                    <div>{item.title}</div>
+                    <span class="muted">{item.example}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p class="fair-note">Estas reglas se aplican igual para todos los jugadores y buscan que el juego sea simple, claro y fácil de revisar. El bloqueo se aplica de forma global una hora antes del primer partido del Mundial.</p>
+          </article>
+        </div>
       </div>
     </section>
   </div>
@@ -329,6 +350,7 @@ const groupTeamsByGroup = Object.fromEntries(
     const saveStatus = document.querySelector("[data-save-status]");
     const playerNameDisplay = document.querySelector("[data-player-name-display]");
     const playerFavDisplay = document.querySelector("[data-player-fav-display]");
+    const companionsSummaryBody = document.querySelector("[data-companions-summary-body]");
     const authGate = document.querySelector("[data-auth-gate]");
     const workspaceSection = document.querySelector("[data-workspace-section]");
     const favModal = document.querySelector("[data-fav-modal]");
@@ -347,10 +369,11 @@ const groupTeamsByGroup = Object.fromEntries(
     const standingsProgressNodes = new Map(
       groupsData.map((group) => [group.group, document.querySelector(`[data-group-standings-progress="${group.group}"]`)])
     );
-
     var currentPlayerId = null;
     var serverPlayer = null;
     var sessionUser = null;
+    var companionsSummaryRefreshInFlight = null;
+    const COMPANIONS_SUMMARY_LIMIT = 8;
 
     // ---- helpers ----
 
@@ -556,6 +579,54 @@ const groupTeamsByGroup = Object.fromEntries(
       } catch {}
 
       return false;
+    }
+
+    async function loadCompanionsSummary(options = {}) {
+      if (companionsSummaryRefreshInFlight) return companionsSummaryRefreshInFlight;
+
+      const { silent = false } = options;
+
+      companionsSummaryRefreshInFlight = (async () => {
+        try {
+          const res = await fetch("/api/players", { cache: "no-store" });
+          const data = await res.json();
+
+          if (!data.ok) {
+            if (companionsSummaryBody && !silent) companionsSummaryBody.innerHTML = '<li class="companions-summary-empty">No se pudo cargar el ranking ahora.</li>';
+            return;
+          }
+
+          const allPlayers = Array.isArray(data.players) ? data.players : [];
+          const topPlayers = allPlayers.slice(0, COMPANIONS_SUMMARY_LIMIT);
+
+          if (topPlayers.length === 0) {
+            if (companionsSummaryBody) {
+              companionsSummaryBody.innerHTML = '<li class="companions-summary-empty">Todavía no hay puntajes para mostrar.</li>';
+            }
+            return;
+          }
+
+          if (companionsSummaryBody) {
+            companionsSummaryBody.innerHTML = topPlayers.map((player, index) => {
+              const points = player?.points_breakdown?.total_points ?? 0;
+              const topClass = index < 3 ? ` companions-summary-item--top-${index + 1}` : "";
+              return `
+                <li class="companions-summary-item${topClass}">
+                  <span class="companions-summary-rank">${index + 1}</span>
+                  <span class="companions-summary-name">${escapeHtml(player?.name || "Sin nombre")}</span>
+                  <strong class="companions-summary-points">${points} pts</strong>
+                </li>
+              `;
+            }).join("");
+          }
+        } catch {
+          if (companionsSummaryBody && !silent) companionsSummaryBody.innerHTML = '<li class="companions-summary-empty">Error de red al cargar el ranking.</li>';
+        } finally {
+          companionsSummaryRefreshInFlight = null;
+        }
+      })();
+
+      return companionsSummaryRefreshInFlight;
     }
 
     function renderStandings() {
@@ -814,6 +885,7 @@ const groupTeamsByGroup = Object.fromEntries(
       } catch {}
 
       await loadOfficialMatches();
+      await loadCompanionsSummary({ silent: true });
     }
 
     // ---- events ----
@@ -844,6 +916,7 @@ const groupTeamsByGroup = Object.fromEntries(
 
     (async () => {
       renderStandings();
+      void loadCompanionsSummary();
       void refreshOfficialResultsInBackground();
       await bootstrap();
     })();

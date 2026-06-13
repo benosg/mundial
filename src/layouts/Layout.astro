@@ -159,6 +159,9 @@ const structuredData = {
           const data = await res.json();
 
           if (data.ok && data.user) {
+            const rankingBadge = Number.isInteger(data.rankingPosition)
+              ? `<span class="auth-rank-badge" title="Posición actual en el ranking">#${data.rankingPosition}</span>`
+              : "";
             const adminBadge = data.isAdmin
               ? `<span class="auth-admin-badge" title="Administrador">Admin</span>`
               : "";
@@ -166,6 +169,7 @@ const structuredData = {
               <span class="auth-user-pill">
                 <img src="${data.user.avatar}" alt="" width="24" height="24" class="auth-avatar" referrerpolicy="no-referrer" />
                 <span class="auth-user-name">${data.user.name || data.user.email}</span>
+                ${rankingBadge}
                 ${adminBadge}
               </span>
               <form method="POST" action="/api/auth/signout" style="display:inline">
