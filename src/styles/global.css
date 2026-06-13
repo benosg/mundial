@@ -1647,10 +1647,22 @@ tbody tr:last-child td {
 
   .nav-links {
     width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
   }
 
   .nav-cta {
     width: 100%;
+  }
+
+  .auth-nav-slot {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .auth-user-pill {
+    flex-wrap: wrap;
   }
 }
 
@@ -1665,6 +1677,53 @@ tbody tr:last-child td {
 
   .site-shell {
     width: min(var(--max), calc(100% - 1.2rem));
+  }
+}
+
+/* ---- Prediction table mobile ---- */
+@media (max-width: 960px) {
+  .prediction-table th:nth-child(4),
+  .prediction-table td:nth-child(4) {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .prediction-table th:nth-child(3),
+  .prediction-table td:nth-child(3) {
+    display: none;
+  }
+
+  .fixture-cell {
+    min-width: auto;
+    font-size: 0.85rem;
+  }
+
+  .score-inputs input {
+    width: 40px;
+    min-height: 38px;
+    padding: 0.5rem 0.3rem;
+    font-size: 0.95rem;
+  }
+}
+
+/* ---- Standings table mobile ---- */
+@media (max-width: 640px) {
+  .standings-table th,
+  .standings-table td {
+    padding: 0.4rem 0.3rem;
+    font-size: 0.82rem;
+  }
+}
+
+/* ---- Modal card mobile ---- */
+@media (max-width: 640px) {
+  .modal-card {
+    padding: 1rem;
+  }
+
+  .fav-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   }
 }
 

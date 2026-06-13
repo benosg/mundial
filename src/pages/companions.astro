@@ -440,5 +440,22 @@ groupedMatches.forEach((g) => {
         display: none;
       }
     }
+
+    @media (max-width: 640px) {
+      .ranking-table th:nth-child(3),
+      .ranking-table td:nth-child(3) {
+        display: none;
+      }
+
+      .ranking-table th,
+      .ranking-table td {
+        padding: 0.6rem 0.4rem;
+        font-size: 0.82rem;
+      }
+
+      .ranking-name-cell {
+        min-width: auto;
+      }
+    }
   </style>
 </Layout>
