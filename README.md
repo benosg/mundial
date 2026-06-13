@@ -1,140 +1,168 @@
-# Pronósticos del Mundial
+# ⚽ Pronósticos del Mundial 2026
 
-Pronósticos del Mundial 2026 con grupos privados, tabla transparente, bonus por favorito y carga rápida de toda la fase de grupos en una sola planilla.
+App de pronósticos para el Mundial 2026 — grupos privados, puntaje transparente, bonus por equipo favorito y planilla para toda la fase de grupos.
 
-## Setup
+**Stack**: Astro 6.4 (SSR) + Supabase (auth + DB) + Vercel
+
+---
+
+## Setup rápido
 
 ```sh
 npm install
+cp .env.example .env   # llena SUPABASE_URL y SUPABASE_KEY
 ```
 
-### Supabase
+### Base de datos
 
-1. Copy `.env.example` to `.env` and fill in your credentials:
-   ```sh
-   cp .env.example .env
-   ```
-2. Get values from your Supabase project dashboard (Settings → API).
+Las tablas **no se crean automáticamente**. Corre en el SQL Editor de Supabase:
 
-### Google OAuth Setup
+1. `supabase/schema.sql` — estructura (players, matches, predictions)
+2. `supabase/seed.sql` — 72 partidos de fase de grupos
 
-1. **Google Cloud Console:**
-   - Go to [Google Cloud Console](https://console.cloud.google.com)
-   - Create a new project or select an existing one
-   - Go to **APIs & Services → Credentials**
-   - Click **Create Credentials → OAuth 2.0 Client ID**
-   - Application type: **Web application**
-   - Authorized redirect URIs: Add `https://YOUR_PROJECT.supabase.co/auth/v1/callback`
-   - Copy the **Client ID** and **Client Secret**
+### Autenticación Google OAuth
 
-2. **Supabase Dashboard:**
-   - Go to **Authentication → Providers → Google**
-   - Enable Google provider
-   - Paste the Client ID and Client Secret from Google
-   - Set the **Site URL** to your production URL (e.g., `https://your-domain.vercel.app`)
-   - Under **Redirect URLs**, add:
-     - `https://your-domain.vercel.app/api/auth/callback`
-     - `http://localhost:4321/api/auth/callback` (for local dev)
+1. **Google Cloud Console** → credenciales OAuth 2.0 → redirect URI: `https://YOUR_PROJECT.supabase.co/auth/v1/callback`
+2. **Supabase Dashboard** → Authentication → Providers → Google → pega Client ID/Secret
+3. Agrega a redirect URLs: `https://tu-dominio.vercel.app/api/auth/callback` y `http://localhost:4321/api/auth/callback`
 
-3. **Vercel Environment Variables:**
-   - Set `SUPABASE_URL` and `SUPABASE_KEY` in your Vercel project settings
-   - Set `SITE_URL` to your production URL
+### Variables de entorno
 
-### Create Tables & Seed Data
+| Variable | ¿Requerida? | Uso |
+|----------|-------------|-----|
+| `SUPABASE_URL` | sí | URL del proyecto Supabase |
+| `SUPABASE_KEY` | sí | Key anónima/publicable |
+| `SITE_URL` | sí (prod) | Redirect OAuth + canonical (lo setea Vercel) |
 
-**Tables are NOT created automatically.** You must run the SQL manually:
+---
 
-1. Open your Supabase project dashboard → **SQL Editor**
-2. Paste the contents of `supabase/schema.sql` and run it
-3. If migrating from an older version, also run `supabase/migration_google_auth.sql`
-4. Paste the contents of `supabase/seed.sql` and run it
+## Desarrollo
 
-This creates:
-- `players` — player profiles (auth_user_id for Google login, browser_key for anonymous, name, favorite team)
-- `matches` — 72 World Cup group-stage fixtures with flags and venues
-- `predictions` — player predictions per match (upserted on save)
+```sh
+npm run dev       # → http://localhost:4321
+npm run build     # build SSR para Vercel
+npm run preview   # preview local del build
+npx astro check   # type checking (no está en scripts)
+```
 
-### Commands
+No hay tests, linter ni formateador configurados en el repo.
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro check`     | Run type checks                                  |
-
-### Testing the Supabase connection
-
-Hit `GET /api/supabase-status` while the dev server runs:
+### Verificar conexión Supabase
 
 ```sh
 curl http://localhost:4321/api/supabase-status
 ```
 
-### Auth-Gated UX
+---
 
-- **Unauthenticated users** see a sign-in prompt. Prediction inputs and save/clear buttons are disabled.
-- **Authenticated users without a favorite** see the favorite-team picker modal on first login. The irreversible warning is displayed before confirming.
-- **Authenticated users with a favorite** see a read-only locked state confirming their choice. The favorite cannot be changed.
+## Arquitectura
 
-### Testing the full flow
+### Flujo de datos
 
-1. Start dev server: `npm run dev`
-2. Open `http://localhost:4321`
-3. Click "Iniciar sesión con Google" in the header
-4. Complete Google OAuth flow
-5. On first login, choose your favorite country (this cannot be changed later)
-6. Scroll to the planilla → enter predictions for any matches → click "Guardar todo"
-7. Reload the page → your predictions should persist from the server
-
-### Reset Player State (for testing)
-
-To test the first-login flow again, reset a player's state in Supabase SQL Editor:
-
-```sql
--- By email (replace with actual email):
-UPDATE players
-SET favorite_team = '', favorite_flag = '', name = ''
-WHERE email = 'user@example.com';
-
--- By auth_user_id (replace with Supabase UUID):
-UPDATE players
-SET favorite_team = '', favorite_flag = '', name = ''
-WHERE auth_user_id = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx';
+```
+src/data/site.ts (72 partidos hardcodeados)
+       ↓
+   FIFA API (api.fifa.com) → polling cada 60s → tabla matches
+       ↓
+   Usuarios ingresan pronósticos → tabla predictions (upsert)
+       ↓
+   src/lib/ranking.ts → cálculo server-side de puntajes
 ```
 
-See `supabase/reset_player.sql` for the full script with all options.
+- **Fixtures**: Hardcodeados en `src/data/site.ts` (grupos A–L, info de broadcast chileno)
+- **Resultados**: Polling desde FIFA API cada 60s, throttle por sesión (caché de 60s)
+- **Pronósticos**: Upsert por `player_id + match_id`
+- **Ranking**: Calculado en cada request desde `src/lib/ranking.ts`
 
-### API Endpoints
+### Puntaje
 
-| Endpoint                  | Method | Description                                       |
-| :------------------------ | :----- | :------------------------------------------------ |
-| `/api/auth/signin`        | GET    | Initiate Google OAuth login                       |
-| `/api/auth/callback`      | GET    | Handle OAuth redirect and exchange code for session |
-| `/api/auth/session`       | GET    | Get current user session                          |
-| `/api/auth/signout`       | POST   | Sign out and clear session                        |
-| `/api/auth/favorite-team` | POST   | Set favorite team (first login only, irreversible) |
-| `/api/bootstrap`          | GET    | Load matches, player profile, and predictions     |
-| `/api/player`             | POST   | Save player profile (name, favorite team)         |
-| `/api/predictions`        | POST   | Save predictions (upsert per player+match)        |
-| `/api/supabase-status`    | GET    | Check Supabase connection health                  |
+| Tipo | Ptos | Condición |
+|------|------|-----------|
+| Exacto | 5 | Marcador exacto |
+| Ganador | 3 | Signo (gana/pierde/empata) acertado |
+| Bonus favorito | +1 | Si juega tu equipo favorito y el pronóstico sumó puntos |
+| Falla | 0 | Signo no acertado |
 
-## Relevant Files
+### Auth
 
-- `src/lib/supabase.ts` — Supabase browser + server clients (SSR-compatible)
-- `src/lib/flags.ts` — Country name → emoji flag mapping
-- `src/data/site.ts` — Static fixture data (matches rendered at build time)
-- `src/pages/api/auth/signin.ts` — Initiate Google OAuth login
-- `src/pages/api/auth/callback.ts` — Handle OAuth redirect callback
-- `src/pages/api/auth/session.ts` — Get current user session
-- `src/pages/api/auth/signout.ts` — Sign out and clear session
-- `src/pages/api/auth/favorite-team.ts` — Set favorite team (first login only)
-- `src/pages/api/bootstrap.ts` — Bootstrap endpoint (matches + player + predictions)
-- `src/pages/api/player.ts` — Save player profile
-- `src/pages/api/predictions.ts` — Save predictions
-- `src/pages/api/supabase-status.ts` — Connection check endpoint
-- `supabase/schema.sql` — Database schema (run in SQL Editor)
-- `supabase/migration_google_auth.sql` — Migration for Google auth support
-- `supabase/seed.sql` — Fixture seed data (run in SQL Editor)
-- `.env.example` — Required env vars template
+- Google OAuth vía Supabase. Sesión en cookies HTTP.
+- `getSessionContext(Astro.request)` → `{ user, isAdmin, rankingPosition }`
+- Admin: columna `players.is_admin` en Supabase
+- Usuarios pueden jugar sin auth (legacy `browser_key`) pero la experiencia completa requiere login
+
+### Mobile
+
+- Breakpoints: **960px** (layout columnar) y **640px** (columnas ocultas, padding reducido)
+- Tabla de pronósticos: 4 columnas desktop → 2 en mobile (se oculta Sede a ≤960px, Chile a ≤640px)
+- Ranking: 9 columnas desktop → 5 en mobile (se ocultan Exactos/Ganador/Bonus a ≤960px, Favorito a ≤640px)
+
+---
+
+## API
+
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/api/bootstrap` | GET | Matches + player + predictions (auth o browser-key) |
+| `/api/players` | GET | Lista completa de jugadores rankeados |
+| `/api/player` | POST | Guardar perfil |
+| `/api/predictions` | POST/DELETE | Guardar/limpiar pronósticos |
+| `/api/results/refresh` | GET | Forzar sync con FIFA (throttle 60s) |
+| `/api/auth/signin` | GET | Iniciar Google OAuth |
+| `/api/auth/callback` | GET | Callback OAuth |
+| `/api/auth/session` | GET | Sesión actual |
+| `/api/auth/signout` | POST | Cerrar sesión |
+| `/api/auth/favorite-team` | POST | Elegir equipo favorito (irreversible) |
+
+---
+
+## Admin
+
+Los usuarios con `players.is_admin = true` ven un link "Admin" en la navegación y pueden acceder a `/admin/results` para importar resultados FIFA manualmente.
+
+---
+
+## Flujo completo de prueba
+
+1. `npm run dev`
+2. Abrir `http://localhost:4321`
+3. "Iniciar sesión con Google" en el header
+4. Primer login → elegir país favorito (⚠️ irreversible)
+5. Ingresar pronósticos → "Guardar todo"
+6. Recargar → los pronósticos persisten desde el servidor
+
+### Reset para testing
+
+```sql
+-- en Supabase SQL Editor
+UPDATE players SET favorite_team = '', favorite_flag = '', name = ''
+WHERE email = 'user@example.com';
+```
+
+O usa `supabase/reset_player.sql`.
+
+---
+
+## Estructura del proyecto
+
+```
+src/
+├── data/site.ts          — fixtures, reglas, ejemplos de puntaje
+├── lib/
+│   ├── supabase.ts       — clientes browser/server para Supabase
+│   ├── session.ts        — lectura de sesión desde cookies
+│   ├── ranking.ts        — cálculo de puntajes y ranking
+│   ├── fifa-results.ts   — fetch de resultados desde FIFA API
+│   ├── results-sync.ts   — sincronización con throttle y caché
+│   └── flags.ts          — mapeo país → emoji (vía Twemoji SVG)
+├── layouts/Layout.astro  — layout global con nav y auth slot
+├── pages/
+│   ├── index.astro       — home: planilla + standings + ranking
+│   ├── companions.astro  — ranking completo con detalle de jugador
+│   ├── admin/results.astro — importación manual de resultados FIFA
+│   └── api/*             — endpoints REST
+└── styles/global.css     — todos los estilos globales
+supabase/
+├── schema.sql            — esquema de base de datos
+├── seed.sql              — datos de fixtures
+└── migration_*.sql       — migraciones
+```
