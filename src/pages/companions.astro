@@ -328,13 +328,22 @@ groupedMatches.forEach((g) => {
           grouped[group].push(pred);
         });
 
+        const renderedGroups = playerPredictionsContent.querySelectorAll("details[data-group]");
+        const hasPreviousGroupState = renderedGroups.length > 0;
+        const openGroups = new Set(
+          Array.from(playerPredictionsContent.querySelectorAll("details[data-group][open]"))
+            .map((detail) => detail.getAttribute("data-group"))
+            .filter(Boolean)
+        );
+
         let html = "";
         const sortedGroups = Object.keys(grouped).sort();
 
         sortedGroups.forEach((group, i) => {
           const preds = grouped[group];
-          const openAttr = i < 2 ? ' open' : '';
-          html += `<details class="group-collapsible player-group-card"${openAttr}>
+          const shouldOpen = hasPreviousGroupState ? openGroups.has(group) : i < 2;
+          const openAttr = shouldOpen ? ' open' : '';
+          html += `<details class="group-collapsible player-group-card" data-group="${group}"${openAttr}>
             <summary class="group-head"><span>Grupo ${group}</span></summary>
             <div class="readonly-list">`;
 
