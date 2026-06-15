@@ -1,0 +1,929 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { groupedMatches, isChvBroadcastMatch, scoringExamples, scoringRules } from "../../data/site";
+import { getFlagImageUrl } from "../../lib/flags";
+
+const totalMatches = groupedMatches.reduce((sum, group) => sum + group.matches.length, 0);
+const allTeams = [...new Set(groupedMatches.flatMap((g) => g.matches.flatMap((m) => [m.home, m.away])))].sort();
+const groupTeamsByGroup = Object.fromEntries(
+  groupedMatches.map((group) => [
+    group.group,
+    [...new Set(group.matches.flatMap((match) => [match.home, match.away]))],
+  ])
+);
+---
+
+<Layout
+  title="Grupos"
+  currentPath="/groups"
+  description="Pronósticos del Mundial 2026: juega con tus amigos, elige tu país favorito y compite con puntaje por exactos y ganador o empate."
+>
+  <div class="simple-main">
+    <section class="simple-top" aria-labelledby="hero-title">
+      <div class="site-shell simple-stack">
+        <div class="hero-copy-block">
+          <span class="eyebrow">Pronósticos del Mundial 2026</span>
+            <h1 class="simple-title" id="hero-title">Pronóstico Mundial</h1>
+        </div>
+
+        <div class="summary-grid">
+          <article class="summary-box highlight" data-player-summary>
+            <div class="muted">Jugador</div>
+            <strong data-player-name-display>Inicia sesión para jugar</strong>
+            <span data-player-fav-display class="muted">Ingresa con Google para cargar tus pronósticos</span>
+          </article>
+          <article class="summary-box">
+            <div class="muted">Grupos</div>
+            <strong>12</strong>
+          </article>
+          <article class="summary-box">
+            <div class="muted">Partidos</div>
+            <strong>72</strong>
+          </article>
+          <article class="summary-box">
+            <div class="muted">TV Chile</div>
+            <strong>CHV* + DSPORTS + DGO</strong>
+          </article>
+        </div>
+
+    </section>
+
+    <!-- Auth gate: prompt to sign in -->
+    <section class="page-section simple-section" data-auth-gate style="display:none">
+      <div class="site-shell">
+        <article class="panel auth-gate-panel">
+          <div class="auth-gate-inner">
+            <span class="eyebrow">Acceso requerido</span>
+            <h2 class="section-title">Inicia sesión para jugar</h2>
+            <p class="muted" style="margin-bottom:1.2rem">Necesitás una cuenta de Google para guardar tus pronósticos y que queden persistidos.</p>
+            <a class="button" href="/api/auth/signin" data-login-gate-button>Iniciar sesión con Google</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="page-section simple-section workspace-section" data-workspace-section style="display:none">
+      <div class="site-shell workspace-grid workspace-grid-duo">
+        <article class="panel workspace-column workspace-entry" id="grupos" aria-labelledby="grupos-title">
+          <div class="save-dock" aria-label="Controles de guardado">
+            <div class="save-dock-top">
+            </div>
+
+            <p class="save-status" data-save-status role="status">Cargando datos del servidor...</p>
+
+            <div class="inline-actions">
+              <a class="button-secondary" href="#prediction-sheet">Ver resultados ingresados</a>
+            </div>
+          </div>
+
+          <article class="panel standings-panel" aria-labelledby="standings-title">
+            <div class="table-row-head standings-panel-head">
+              <div>
+                <span class="eyebrow">Datos oficiales FIFA</span>
+                <h3 class="entry-title" id="standings-title">Así van los grupos</h3>
+              </div>
+            </div>
+
+            <div class="standings-legend" aria-label="Criterios de clasificación actuales">
+              <span class="standings-legend-chip standings-legend-chip--qualified">1.º y 2.º: clasificación directa</span>
+              <span class="standings-legend-chip standings-legend-chip--best-third">3.º: entre los 8 mejores terceros</span>
+            </div>
+
+            <div class="standings-grid" data-standings-grid>
+              {groupedMatches.map((group) => (
+                <section class="standings-card" aria-labelledby={`standings-group-${group.group}`}>
+                  <div class="standings-card-head">
+                    <div>
+                      <h4 id={`standings-group-${group.group}`}>Grupo {group.group}</h4>
+                    </div>
+                    <span class="muted standings-progress" data-group-standings-progress={group.group}>0/{group.matches.length} jugados</span>
+                  </div>
+
+                  <div class="standings-table-wrap">
+                    <table class="standings-table">
+                      <caption class="visually-hidden">Tabla oficial del grupo {group.group} según los resultados cargados por FIFA.</caption>
+                      <thead>
+                        <tr>
+                          <th>Equipo</th>
+                          <th>Pts</th>
+                          <th>DG</th>
+                          <th>GF</th>
+                        </tr>
+                      </thead>
+                      <tbody data-group-standings-body={group.group}>
+                        {groupTeamsByGroup[group.group].map((team) => (
+                          <tr>
+                            <td>
+                              <span class="flag-inline"><img class="flag-icon" src={getFlagImageUrl(team)} alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>{team}</span></span>
+                            </td>
+                            <td>0</td>
+                            <td>0</td>
+                            <td>0</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              ))}
+            </div>
+          </article>
+
+          <article class="panel panel-entry" id="prediction-sheet">
+            <div class="table-row-head">
+              <div>
+                <span class="eyebrow">Ingresa pronósticos</span>
+                <h3 class="entry-title">Planilla completa de grupos A–L</h3>
+              </div>
+              <div class="entry-header-side">
+                <div class="progress-pill">Progreso: <strong data-progress-count>0/{totalMatches}</strong> partidos completos</div>
+                <span class="muted">Horario Chile · señal · sede</span>
+              </div>
+            </div>
+
+            <p class="save-status" data-save-status role="status">Cargando datos del servidor...</p>
+
+            <div class="lock-banner" data-lock-banner style="display:none" role="alert">
+              <span class="lock-banner-icon">🔒</span>
+              <span class="lock-banner-text" data-lock-banner-text></span>
+            </div>
+
+            <div class="inline-actions">
+              <button class="button" type="button" data-save-all>Guardar todo</button>
+              <button class="button-secondary" type="button" data-clear-all>Limpiar</button>
+            </div>
+
+            <div class="groups-grid groups-grid-single">
+              {groupedMatches.map((group, idx) => (
+                <details class="group-card group-collapsible" id={`prediction-group-${group.group}`} open={idx < 2}>
+                  <summary class="group-head">
+                    <div class="group-head-main">
+                      <div class="group-head-topline">
+                        <span class="tag group-tag">Grupo {group.group}</span>
+                        <div class="group-team-strip" aria-hidden="true">
+                          {groupTeamsByGroup[group.group].map((team) => (
+                            <span class="group-team-chip">
+                              <img class="flag-icon" src={getFlagImageUrl(team)} alt="" loading="lazy" decoding="async" />
+                              <span>{team}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <h3>{group.matches.length} partidos</h3>
+                    </div>
+                  </summary>
+
+                  <div class="group-table-wrap">
+                    <table class="prediction-table">
+                      <caption class="visually-hidden">Pronósticos del grupo {group.group} con marcador, horario de Chile, señal y sede.</caption>
+                      <thead>
+                        <tr>
+                          <th>Partido</th>
+                          <th>Resultado</th>
+                          <th>Chile</th>
+                          <th>Sede</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {group.matches.map((match) => (
+                          <tr data-match-row={match.id}>
+                            <td>
+                              <div class="fixture-cell">
+                                <span class="flag-inline"><img class="flag-icon" src={getFlagImageUrl(match.home)} alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>{match.home}</span></span>
+                                <span class="muted">vs</span>
+                                <span class="flag-inline"><img class="flag-icon" src={getFlagImageUrl(match.away)} alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>{match.away}</span></span>
+                              </div>
+                            </td>
+                            <td>
+                              <div class="score-inputs">
+                                <input type="number" min="0" max="20" inputmode="numeric" placeholder="" data-score-input data-match={match.id} data-side="home" aria-label={`Resultado ${match.home}`} disabled />
+                                <span>-</span>
+                                <input type="number" min="0" max="20" inputmode="numeric" placeholder="" data-score-input data-match={match.id} data-side="away" aria-label={`Resultado ${match.away}`} disabled />
+                              </div>
+                            </td>
+                            <td>
+                              <strong>{match.kickoffChile}</strong>
+                              <div class="muted">{isChvBroadcastMatch(match.id) ? "CHV · DSPORTS · DGO" : "DSPORTS · DGO"}</div>
+                            </td>
+                            <td>
+                              <strong>{match.venue}</strong>
+                              <div class="muted">{match.city}</div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </article>
+        </article>
+
+        <div class="workspace-column workspace-sidebar-stack">
+          <article class="panel compact-panel workspace-ranking" aria-labelledby="companions-summary-title">
+            <div class="table-row-head companions-summary-head">
+              <div>
+                <h2 class="section-title section-title-compact" id="companions-summary-title">Ranking</h2>
+              </div>
+            </div>
+
+            <ol class="companions-summary-list" data-companions-summary-body>
+              <li class="companions-summary-empty">Esperando puntajes actualizados...</li>
+            </ol>
+
+            <div class="inline-actions">
+              <a class="button-secondary" href="/companions">Ver ranking completo</a>
+            </div>
+          </article>
+
+          <article class="panel compact-panel workspace-rules" id="reglas" aria-labelledby="reglas-title">
+            <span class="eyebrow">Reglas oficiales</span>
+            <h2 class="section-title section-title-compact" id="reglas-title">Puntaje</h2>
+
+            <div class="rules-highlight">
+              <p><strong>Reglamento corto:</strong></p>
+              <ul>
+                <li><strong>5 puntos</strong> si aciertas el marcador exacto.</li>
+                <li><strong>3 puntos</strong> si aciertas ganador o empate, aunque no sea exacto.</li>
+                <li><strong>+1 punto</strong> si juega tu equipo favorito y ese pronóstico ya sumó puntos.</li>
+                <li><strong>0 puntos</strong> si fallas el signo del partido.</li>
+                <li><strong>Cierre:</strong> puedes ingresar o modificar resultados solo hasta <strong>1 hora antes del primer partido del torneo</strong>.</li>
+              </ul>
+            </div>
+
+            <div class="rules-box">
+              {scoringRules.map((rule) => (
+                <div class="rule-line">
+                  <strong>{rule.points}</strong>
+                  <span>{rule.title}</span>
+                </div>
+              ))}
+            </div>
+
+            <div class="examples-box">
+              <p class="examples-title">Ejemplos con partidos reales del fixture</p>
+              {scoringExamples.map((item) => (
+                <div class="example-line">
+                  <strong>{item.points}</strong>
+                  <div>
+                    <div>{item.title}</div>
+                    <span class="muted">{item.example}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p class="fair-note">Estas reglas se aplican igual para todos los jugadores y buscan que el juego sea simple, claro y fácil de revisar. El bloqueo se aplica de forma global una hora antes del primer partido del Mundial.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Favorite Team Modal (shown on first authenticated login) -->
+  <div class="modal-overlay" data-fav-modal style="display:none">
+    <div class="modal-card">
+      <span class="eyebrow">Tu equipo favorito</span>
+      <h2 class="section-title">Elige tu país favorito</h2>
+      <p class="muted" style="margin-bottom:1rem">Este equipo recibirá +1 punto extra en cada pronóstico acertado donde juegue.</p>
+
+      <div class="fav-warning">
+        <strong>⚠️ Atención:</strong> Tu país favorito quedará fijado y <strong>no podrás cambiarlo después</strong>. Esta decisión es <strong>irreversible</strong>. Asegúrate de elegir correctamente antes de confirmar.
+      </div>
+
+      <form data-fav-form>
+        <div class="fav-grid">
+          {allTeams.map((team) => (
+            <label class="fav-option">
+              <input type="radio" name="favorite_team" value={team} />
+              <span class="fav-option-flag"><img class="flag-icon flag-icon--lg" src={getFlagImageUrl(team)} alt="" aria-hidden="true" loading="lazy" decoding="async" /></span>
+              <span>{team}</span>
+            </label>
+          ))}
+        </div>
+
+        <div class="inline-actions" style="margin-top:1.2rem">
+          <button type="submit" class="button" data-fav-confirm disabled>Confirmar favorito</button>
+        </div>
+      </form>
+
+      <p class="muted" style="margin-top:.75rem" data-fav-status role="status"></p>
+    </div>
+  </div>
+
+  <!-- Favorite Locked State Modal (shown when favorite is already set) -->
+  <div class="modal-overlay" data-fav-locked-modal style="display:none">
+    <div class="modal-card">
+      <span class="eyebrow">Tu equipo favorito</span>
+      <h2 class="section-title">Equipo favorito fijado</h2>
+
+      <div class="fav-locked-state">
+        <div class="fav-locked-flag" data-locked-flag-display></div>
+        <div class="fav-locked-name" data-locked-team-display></div>
+        <div class="fav-locked-badge">🔒 No se puede cambiar</div>
+      </div>
+
+      <div class="fav-warning" style="margin-top:1rem">
+        <strong>Recordatorio:</strong> Tu país favorito fue elegido en tu primer ingreso y es <strong>irreversible</strong>. Cada pronóstico acertado donde juegue este equipo suma +1 punto extra.
+      </div>
+
+      <div class="inline-actions" style="margin-top:1rem">
+        <button type="button" class="button" data-fav-locked-close>Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline define:vars={{ groupedMatchesJson: JSON.stringify(groupedMatches) }}>
+    const groupsData = JSON.parse(groupedMatchesJson);
+    let officialGroupsData = groupsData.map((group) => ({
+      ...group,
+      matches: group.matches.map((match) => ({ ...match, home_result: null, away_result: null })),
+    }));
+    const STORAGE_KEY = "mundial-2026-player-id";
+    const FIRST_MATCH_KICKOFF = new Date("2026-06-11T15:00:00-04:00"); // Chile time (UTC-4)
+    const LOCK_CUTOFF = new Date(FIRST_MATCH_KICKOFF.getTime() - 60 * 60 * 1000); // 1 hour before
+    const inputs = Array.from(document.querySelectorAll("[data-score-input]"));
+    const progressNode = document.querySelector("[data-progress-count]");
+    const saveButton = document.querySelector("[data-save-all]");
+    const clearButton = document.querySelector("[data-clear-all]");
+    const saveStatus = document.querySelector("[data-save-status]");
+    const playerNameDisplay = document.querySelector("[data-player-name-display]");
+    const playerFavDisplay = document.querySelector("[data-player-fav-display]");
+    const companionsSummaryBody = document.querySelector("[data-companions-summary-body]");
+    const authGate = document.querySelector("[data-auth-gate]");
+    const workspaceSection = document.querySelector("[data-workspace-section]");
+    const favModal = document.querySelector("[data-fav-modal]");
+    const favForm = document.querySelector("[data-fav-form]");
+    const favConfirm = document.querySelector("[data-fav-confirm]");
+    const favStatus = document.querySelector("[data-fav-status]");
+    const favLockedModal = document.querySelector("[data-fav-locked-modal]");
+    const lockedFlagDisplay = document.querySelector("[data-locked-flag-display]");
+    const lockedTeamDisplay = document.querySelector("[data-locked-team-display]");
+    const favLockedClose = document.querySelector("[data-fav-locked-close]");
+    const lockBanner = document.querySelector("[data-lock-banner]");
+    const lockBannerText = document.querySelector("[data-lock-banner-text]");
+    const standingsBodies = new Map(
+      groupsData.map((group) => [group.group, document.querySelector(`[data-group-standings-body="${group.group}"]`)])
+    );
+    const standingsProgressNodes = new Map(
+      groupsData.map((group) => [group.group, document.querySelector(`[data-group-standings-progress="${group.group}"]`)])
+    );
+    var currentPlayerId = null;
+    var serverPlayer = null;
+    var sessionUser = null;
+    var companionsSummaryRefreshInFlight = null;
+    const COMPANIONS_SUMMARY_LIMIT = 8;
+
+    // ---- helpers ----
+
+    function getPlayerId() {
+      let id = localStorage.getItem(STORAGE_KEY);
+      if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem(STORAGE_KEY, id);
+      }
+      return id;
+    }
+
+    function announce(msg) {
+      if (saveStatus) saveStatus.textContent = msg;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function flagCodePoints(flag) {
+      return Array.from(flag || "🏳️")
+        .map((char) => char.codePointAt(0).toString(16))
+        .join("-");
+    }
+
+    function resolveFlagValue(flag, teamOrLabel = "") {
+      const team = String(teamOrLabel).replace(/^Favorito:\s*/, "").trim();
+      if (team === "Inglaterra") return "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}";
+      if (team === "Escocia") return "\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}";
+      return flag || "🏳️";
+    }
+
+    function flagImageHtml(flag, team, sizeClass = "") {
+      const safeTeam = escapeHtml(team || "Bandera");
+      const className = ["flag-icon", sizeClass].filter(Boolean).join(" ");
+      return `<img class="${className}" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${flagCodePoints(resolveFlagValue(flag, team))}.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>${safeTeam}</span>`;
+    }
+
+    function flagImageOnlyHtml(flag, sizeClass = "", teamOrLabel = "") {
+      const className = ["flag-icon", sizeClass].filter(Boolean).join(" ");
+      return `<img class="${className}" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${flagCodePoints(resolveFlagValue(flag, teamOrLabel))}.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" />`;
+    }
+
+    function isLocked() {
+      return new Date() >= LOCK_CUTOFF;
+    }
+
+    function applyLockState() {
+      if (isLocked()) {
+        setInputsDisabled(true);
+        if (lockBanner) {
+          lockBanner.style.display = "";
+          const unlockDate = FIRST_MATCH_KICKOFF.toLocaleString("es-CL", { timeZone: "Etc/GMT+4", dateStyle: "long", timeStyle: "short" });
+          if (lockBannerText) lockBannerText.textContent = `Los pronósticos se bloquearon el ${unlockDate} (1 hora antes del primer partido). Ya no se pueden modificar.`;
+        }
+      }
+    }
+
+    function setInputsDisabled(disabled) {
+      const forceDisable = isLocked();
+      inputs.forEach((input) => {
+        input.disabled = disabled || forceDisable;
+      });
+      if (saveButton) saveButton.disabled = disabled || forceDisable;
+      if (clearButton) clearButton.disabled = disabled || forceDisable;
+    }
+
+    // ---- session & bootstrap ----
+
+    async function checkSession() {
+      try {
+        const res = await fetch("/api/auth/session");
+        const data = await res.json();
+        if (data.ok && data.user) {
+          sessionUser = data.user;
+          return data.user;
+        }
+      } catch {}
+      return null;
+    }
+
+    function updateProgress() {
+      const matchIds = new Set(inputs.map((i) => i.dataset.match));
+      let completed = 0;
+      matchIds.forEach((id) => {
+        const h = document.querySelector(`[data-score-input][data-match="${id}"][data-side="home"]`);
+        const a = document.querySelector(`[data-score-input][data-match="${id}"][data-side="away"]`);
+        if (h && a && h.value !== "" && a.value !== "") completed += 1;
+      });
+      if (progressNode) progressNode.textContent = `${completed}/${matchIds.size}`;
+    }
+
+    function getPredictedScore(matchId, side) {
+      const input = document.querySelector(`[data-score-input][data-match="${matchId}"][data-side="${side}"]`);
+      if (!input) return null;
+      if (input.value === "") return null;
+      const value = input.valueAsNumber;
+      return Number.isInteger(value) ? value : null;
+    }
+
+    function getTeamFlagMap() {
+      const flags = new Map();
+      officialGroupsData.forEach((group) => {
+        group.matches.forEach((match) => {
+          flags.set(match.home, match.homeFlag);
+          flags.set(match.away, match.awayFlag);
+        });
+      });
+      return flags;
+    }
+
+    function compareStandingsRows(a, b) {
+      return (
+        b.points - a.points
+        || b.goalDifference - a.goalDifference
+        || b.goalsFor - a.goalsFor
+        || a.team.localeCompare(b.team, "es")
+      );
+    }
+
+    function applyOfficialMatchResults(matches) {
+      const matchesById = new Map((matches || []).map((match) => [match.id, match]));
+      officialGroupsData = groupsData.map((group) => ({
+        ...group,
+        matches: group.matches.map((match) => {
+          const officialMatch = matchesById.get(match.id);
+          return {
+            ...match,
+            homeFlag: officialMatch?.home_flag || match.homeFlag,
+            awayFlag: officialMatch?.away_flag || match.awayFlag,
+            home_result: Number.isInteger(officialMatch?.home_result) ? officialMatch.home_result : null,
+            away_result: Number.isInteger(officialMatch?.away_result) ? officialMatch.away_result : null,
+          };
+        }),
+      }));
+    }
+
+    function buildStandings(group) {
+      const table = new Map();
+
+      group.matches.forEach((match) => {
+        table.set(match.home, table.get(match.home) || { team: match.home, points: 0, goalDifference: 0, goalsFor: 0, played: 0 });
+        table.set(match.away, table.get(match.away) || { team: match.away, points: 0, goalDifference: 0, goalsFor: 0, played: 0 });
+
+        const homeScore = match.home_result;
+        const awayScore = match.away_result;
+
+        if (!Number.isInteger(homeScore) || !Number.isInteger(awayScore)) {
+          return;
+        }
+
+        const homeRow = table.get(match.home);
+        const awayRow = table.get(match.away);
+
+        homeRow.played += 1;
+        awayRow.played += 1;
+        homeRow.goalsFor += homeScore;
+        awayRow.goalsFor += awayScore;
+        homeRow.goalDifference += homeScore - awayScore;
+        awayRow.goalDifference += awayScore - homeScore;
+
+        if (homeScore > awayScore) {
+          homeRow.points += 3;
+        } else if (homeScore < awayScore) {
+          awayRow.points += 3;
+        } else {
+          homeRow.points += 1;
+          awayRow.points += 1;
+        }
+      });
+
+      return Array.from(table.values()).sort(compareStandingsRows);
+    }
+
+    function resolveBestThirdKeys(groupStandings) {
+      const thirdPlacedTeams = groupStandings
+        .map(({ groupId, standings }) => {
+          const thirdPlace = standings[2];
+          return thirdPlace && thirdPlace.played > 0 ? { ...thirdPlace, group: groupId } : null;
+        })
+        .filter(Boolean)
+        .sort(compareStandingsRows)
+        .slice(0, 8);
+
+      return new Set(thirdPlacedTeams.map((row) => `${row.group}:${row.team}`));
+    }
+
+    async function loadOfficialMatches() {
+      try {
+        const res = await fetch("/api/bootstrap", { cache: "no-store" });
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.matches)) {
+          applyOfficialMatchResults(data.matches);
+          renderStandings();
+          return true;
+        }
+      } catch {}
+
+      return false;
+    }
+
+    async function loadCompanionsSummary(options = {}) {
+      if (companionsSummaryRefreshInFlight) return companionsSummaryRefreshInFlight;
+
+      const { silent = false } = options;
+
+      companionsSummaryRefreshInFlight = (async () => {
+        try {
+          const res = await fetch("/api/players", { cache: "no-store" });
+          const data = await res.json();
+
+          if (!data.ok) {
+            if (companionsSummaryBody && !silent) companionsSummaryBody.innerHTML = '<li class="companions-summary-empty">No se pudo cargar el ranking ahora.</li>';
+            return;
+          }
+
+          const allPlayers = Array.isArray(data.players) ? data.players : [];
+          const topPlayers = allPlayers.slice(0, COMPANIONS_SUMMARY_LIMIT);
+
+          if (topPlayers.length === 0) {
+            if (companionsSummaryBody) {
+              companionsSummaryBody.innerHTML = '<li class="companions-summary-empty">Todavía no hay puntajes para mostrar.</li>';
+            }
+            return;
+          }
+
+          if (companionsSummaryBody) {
+            companionsSummaryBody.innerHTML = topPlayers.map((player, index) => {
+              const points = player?.points_breakdown?.total_points ?? 0;
+              const rankingPosition = player?.ranking_position ?? index + 1;
+              const topClass = rankingPosition <= 3 ? ` companions-summary-item--top-${rankingPosition}` : "";
+              return `
+                <li class="companions-summary-item${topClass}">
+                  <span class="companions-summary-rank">${rankingPosition}</span>
+                  <span class="companions-summary-name">${escapeHtml(player?.name || "Sin nombre")}</span>
+                  <strong class="companions-summary-points">${points} pts</strong>
+                </li>
+              `;
+            }).join("");
+          }
+        } catch {
+          if (companionsSummaryBody && !silent) companionsSummaryBody.innerHTML = '<li class="companions-summary-empty">Error de red al cargar el ranking.</li>';
+        } finally {
+          companionsSummaryRefreshInFlight = null;
+        }
+      })();
+
+      return companionsSummaryRefreshInFlight;
+    }
+
+    function renderStandings() {
+      const teamFlags = getTeamFlagMap();
+      const standingsByGroup = officialGroupsData.map((group) => ({
+        groupId: group.group,
+        matches: group.matches,
+        standings: buildStandings(group),
+      }));
+      const bestThirdKeys = resolveBestThirdKeys(standingsByGroup);
+
+      standingsByGroup.forEach(({ groupId, matches, standings }) => {
+        const body = standingsBodies.get(groupId);
+        const progress = standingsProgressNodes.get(groupId);
+        if (!body) return;
+
+        const completedMatches = matches.filter((match) => (
+          Number.isInteger(match.home_result) && Number.isInteger(match.away_result)
+        )).length;
+
+        body.innerHTML = standings.map((row, index) => {
+          const flag = teamFlags.get(row.team) || "🏳️";
+          const isDirectQualifier = index < 2;
+          const isBestThird = index === 2 && bestThirdKeys.has(`${groupId}:${row.team}`);
+          const rowClasses = [
+            "standings-row",
+            isDirectQualifier && "standings-row-qualified",
+            isBestThird && "standings-row-best-third",
+          ].filter(Boolean).join(" ");
+          return `
+            <tr class="${rowClasses}">
+              <td>
+                <span class="standings-team">
+                  <span class="standings-rank">${index + 1}</span>
+                  ${flagImageOnlyHtml(flag, "", row.team)}
+                  <span>${escapeHtml(row.team)}</span>
+                </span>
+              </td>
+              <td><strong>${row.points}</strong></td>
+              <td>${row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</td>
+              <td>${row.goalsFor}</td>
+            </tr>
+          `;
+        }).join("");
+
+        if (progress) {
+          progress.textContent = `${completedMatches}/${matches.length} jugados`;
+        }
+      });
+    }
+
+    function hydratePredictions(predictions) {
+      inputs.forEach((input) => {
+        input.value = "";
+      });
+
+      predictions.forEach((p) => {
+        const homeInput = document.querySelector(`[data-score-input][data-match="${p.match_id}"][data-side="home"]`);
+        const awayInput = document.querySelector(`[data-score-input][data-match="${p.match_id}"][data-side="away"]`);
+        if (homeInput && Number.isFinite(p.home_score)) homeInput.value = String(p.home_score);
+        if (awayInput && Number.isFinite(p.away_score)) awayInput.value = String(p.away_score);
+      });
+      updateProgress();
+      renderStandings();
+    }
+
+    function updatePlayerDisplay(player) {
+      if (!player) return;
+      if (playerNameDisplay) {
+        playerNameDisplay.textContent = player.name || sessionUser?.name || "Sin nombre";
+      }
+      if (playerFavDisplay) {
+        if (player.favorite_team) {
+          playerFavDisplay.innerHTML = `<span class="flag-inline">${flagImageHtml(player.favorite_flag || "🏳️", "Favorito: " + player.favorite_team)}</span>`;
+        } else {
+          playerFavDisplay.textContent = "Elegí tu equipo favorito para completar tu perfil";
+        }
+      }
+    }
+
+    function showFavModal() {
+      if (favModal) favModal.style.display = "";
+    }
+
+    function hideFavModal() {
+      if (favModal) favModal.style.display = "none";
+    }
+
+    function showFavLockedModal(flag, team) {
+      if (lockedFlagDisplay) lockedFlagDisplay.innerHTML = flagImageOnlyHtml(flag || "🏳️", "flag-icon--xl", team || "");
+      if (lockedTeamDisplay) lockedTeamDisplay.textContent = team || "No definido";
+      if (favLockedModal) favLockedModal.style.display = "";
+    }
+
+    function hideFavLockedModal() {
+      if (favLockedModal) favLockedModal.style.display = "none";
+    }
+
+    // ---- save ----
+
+    async function saveFavoriteTeam(favoriteTeam) {
+      if (!favoriteTeam) return;
+
+      if (favConfirm) favConfirm.disabled = true;
+      if (favStatus) favStatus.textContent = "Guardando tu favorito...";
+
+      try {
+        const res = await fetch("/api/auth/favorite-team", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ favorite_team: favoriteTeam }),
+        });
+        const data = await res.json();
+
+        if (!data.ok) {
+          if (favStatus) favStatus.textContent = `Error: ${data.error || "No se pudo guardar el favorito."}`;
+          return;
+        }
+
+        serverPlayer = {
+          ...(serverPlayer || {}),
+          ...data.player,
+        };
+        updatePlayerDisplay(serverPlayer);
+        hideFavModal();
+        showFavLockedModal(data.player.favorite_flag, data.player.favorite_team);
+        announce("Equipo favorito guardado.");
+        if (favStatus) favStatus.textContent = "";
+      } catch {
+        if (favStatus) favStatus.textContent = "Error de red al guardar favorito.";
+      } finally {
+        if (favConfirm) favConfirm.disabled = false;
+      }
+    }
+
+    async function saveAllPredictions() {
+      if (!currentPlayerId) {
+        announce("Error: no hay sesión de jugador.");
+        return;
+      }
+
+      const predictions = [];
+      const matchIds = new Set(inputs.map((i) => i.dataset.match));
+
+      matchIds.forEach((matchId) => {
+        const h = document.querySelector(`[data-score-input][data-match="${matchId}"][data-side="home"]`);
+        const a = document.querySelector(`[data-score-input][data-match="${matchId}"][data-side="away"]`);
+        if (h && a && h.value !== "" && a.value !== "") {
+          const homeScore = h.valueAsNumber;
+          const awayScore = a.valueAsNumber;
+
+          if (!Number.isInteger(homeScore) || !Number.isInteger(awayScore)) {
+            return;
+          }
+
+          predictions.push({
+            match_id: matchId,
+            home_score: homeScore,
+            away_score: awayScore,
+          });
+        }
+      });
+
+      try {
+        const res = await fetch("/api/predictions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ player_id: currentPlayerId, predictions }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          announce(`Pronósticos guardados (${data.saved} partidos).`);
+          await bootstrap();
+        } else {
+          announce(`Error al guardar: ${data.error}`);
+        }
+      } catch (err) {
+        announce("Error de red al guardar.");
+      }
+
+      updateProgress();
+    }
+
+    async function clearPredictions() {
+      if (!currentPlayerId) return;
+
+      try {
+        const res = await fetch("/api/predictions", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ player_id: currentPlayerId }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          inputs.forEach((input) => (input.value = ""));
+          updateProgress();
+          renderStandings();
+          announce("Pronósticos borrados.");
+          await bootstrap();
+        } else {
+          if (favStatus) favStatus.textContent = `Error: ${data.error}`;
+        }
+      } catch {
+        if (favStatus) favStatus.textContent = "Error de red al guardar favorito.";
+      }
+    }
+
+    async function bootstrap() {
+      await loadOfficialMatches();
+      const user = await checkSession();
+
+      if (!user) {
+        // Not authenticated — show auth gate, hide workspace
+        if (authGate) authGate.style.display = "";
+        if (workspaceSection) workspaceSection.style.display = "none";
+        setInputsDisabled(true);
+        if (playerNameDisplay) playerNameDisplay.textContent = "Inicia sesión para jugar";
+        if (playerFavDisplay) playerFavDisplay.textContent = "Ingresa con Google para cargar tus pronósticos";
+        return;
+      }
+
+      // Authenticated — hide auth gate, show workspace
+      if (authGate) authGate.style.display = "none";
+      if (workspaceSection) workspaceSection.style.display = "";
+      setInputsDisabled(false);
+
+      applyLockState();
+
+      currentPlayerId = user.id;
+
+      try {
+        const res = await fetch(`/api/bootstrap?player_id=${encodeURIComponent(currentPlayerId)}`);
+        const data = await res.json();
+
+        if (data.ok) {
+          serverPlayer = data.player;
+          updatePlayerDisplay(data.player);
+          hydratePredictions(data.predictions);
+          announce("");
+
+          if (sessionUser && data.player && !data.player.favorite_team) {
+            // First login — show favourite-team picker
+            showFavModal();
+          }
+        } else {
+          announce("Error al cargar datos del servidor.");
+        }
+      } catch {
+        announce("Error de red al cargar datos.");
+      }
+    }
+
+    async function refreshOfficialResultsInBackground() {
+      try {
+        await fetch("/api/results/refresh", { cache: "no-store" });
+      } catch {}
+
+      await loadOfficialMatches();
+      await loadCompanionsSummary({ silent: true });
+    }
+
+    // ---- events ----
+
+    inputs.forEach((input) => input.addEventListener("input", updateProgress));
+    if (saveButton) saveButton.addEventListener("click", saveAllPredictions);
+    if (clearButton) clearButton.addEventListener("click", clearPredictions);
+
+    // Favorite-team modal
+    if (favForm) {
+      favForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const selected = favForm.querySelector("input[name=favorite_team]:checked");
+        if (!selected) return;
+        await saveFavoriteTeam(selected.value);
+      });
+      favForm.querySelectorAll("input[name=favorite_team]").forEach((radio) => {
+        radio.addEventListener("change", () => {
+          if (favConfirm) favConfirm.disabled = false;
+        });
+      });
+    }
+
+    // Favorite locked modal close
+    if (favLockedClose) {
+      favLockedClose.addEventListener("click", hideFavLockedModal);
+    }
+
+    (async () => {
+      renderStandings();
+      void loadCompanionsSummary();
+      void refreshOfficialResultsInBackground();
+      await bootstrap();
+    })();
+
+    setInterval(() => {
+      void refreshOfficialResultsInBackground();
+    }, 30000);
+  </script>
+</Layout>

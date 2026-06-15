@@ -1,0 +1,4 @@
+[     935ms] [ERROR] Refused to get unsafe header "X-Sg-Cs" @ https://www.google.com/search?q=site%3Afifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sei=rZYsarTVJai55OUPhL-EuQ8:42
+[     935ms] [ERROR] Refused to get unsafe header "X-Sorry-Redirect" @ https://www.google.com/search?q=site%3Afifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sei=rZYsarTVJai55OUPhL-EuQ8:42
+[    1928ms] [ERROR] Refused to get unsafe header "X-Sg-Cs" @ https://www.google.com/search?q=site%3Afifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sei=rZYsarTVJai55OUPhL-EuQ8:42
+[    1928ms] [ERROR] Refused to get unsafe header "X-Sorry-Redirect" @ https://www.google.com/search?q=site%3Afifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sei=rZYsarTVJai55OUPhL-EuQ8:42

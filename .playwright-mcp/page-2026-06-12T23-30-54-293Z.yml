@@ -1,0 +1,399 @@
+- generic [active] [ref=e1]:
+  - generic:
+    - generic:
+      - link "Ir al contenido principal" [ref=e2] [cursor=pointer]
+      - link "Ayuda sobre la accesibilidad" [ref=e3] [cursor=pointer]:
+        - /url: https://support.google.com/websearch/answer/181196?hl=es-419
+  - generic [ref=e8]:
+    - search [ref=e9]:
+      - generic [ref=e11]:
+        - generic:
+          - generic:
+            - generic:
+              - img
+        - 'link "Copa Mundial 2026: El arte del caño" [ref=e13] [cursor=pointer]':
+          - /url: https://www.google.com/webhp?hl=es-419&ictx=2&sa=X&ved=0ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQPQgK
+          - 'img "Copa Mundial 2026: El arte del caño" [ref=e14]'
+        - generic [ref=e15]:
+          - generic [ref=e16]:
+            - combobox "Buscar" [ref=e19]: site:fifa.com 2026 world cup format 12 groups best third-placed teams site:fifa.com 2026 world cup format 12 groups best third-placed teams
+            - generic [ref=e20]:
+              - button "Borrar" [ref=e22] [cursor=pointer]:
+                - img [ref=e24]
+              - generic [ref=e27]:
+                - button "Búsqueda por voz" [ref=e28] [cursor=pointer]:
+                  - img [ref=e29]
+                - button "Búsqueda por imagen" [ref=e31] [cursor=pointer]:
+                  - img [ref=e32]
+          - button "Buscar" [ref=e34] [cursor=pointer]:
+            - img [ref=e37]
+    - generic [ref=e39]:
+      - button "Configuración" [ref=e41] [cursor=pointer]:
+        - img [ref=e44]
+      - generic [ref=e47]:
+        - button "Apps de Google" [ref=e49] [cursor=pointer]:
+          - img [ref=e50]
+        - link "Acceder" [ref=e54] [cursor=pointer]:
+          - /url: https://accounts.google.com/ServiceLogin?hl=es-419&passive=true&continue=https://www.google.com/search%3Fq%3Dsite%253Afifa.com%2B2026%2Bworld%2Bcup%2Bformat%2B12%2Bgroups%2Bbest%2Bthird-placed%2Bteams%26sei%3DrZYsarTVJai55OUPhL-EuQ8&ec=futura_srp_og_si_72236_p
+  - generic [ref=e56]:
+    - navigation [ref=e62]:
+      - generic [ref=e68]:
+        - list [ref=e69]:
+          - listitem [ref=e70]:
+            - link "Modo IA" [ref=e73] [cursor=pointer]:
+              - /url: /search?q=site:fifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sca_esv=9063533dd0cd7df7&udm=50&fbs=ADc_l-bpk8W4E-qsVlOvbGJcDwpn60DczFdcvPnuv8WQohHLTUEVLYKBrOkTsSvdYDjhWUeCgsxTb96atxpw9-Dhl1StTcDQK17fMqLPX7cPB_3WhdZNUn95EUOVjtfRkBpRzyWtxiv6_baKQ4vOlKRx7ngjDvBBrd1YgwWiiyyYQr8IzMMQrE0le1fmDOfHo21VmJG1jHqy7r4e4uCOF63X1VMLk2JriCB4VoL157ATuxFXFHM06bU&aep=1&ntc=1&sa=X&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQ2J8OegQIDhAD
+              - generic [ref=e76]: Modo IA
+          - listitem [ref=e77]:
+            - link "Todo" [disabled] [ref=e78]:
+              - generic [ref=e80]: Todo
+          - listitem [ref=e81]:
+            - link "Imágenes" [ref=e82] [cursor=pointer]:
+              - /url: /search?sca_esv=9063533dd0cd7df7&udm=2&fbs=ADc_l-bpk8W4E-qsVlOvbGJcDwpn60DczFdcvPnuv8WQohHLTUEVLYKBrOkTsSvdYDjhWUeCgsxTb96atxpw9-Dhl1StTcDQK17fMqLPX7cPB_3WhdZNUn95EUOVjtfRkBpRzyWtxiv6_baKQ4vOlKRx7ngjDvBBrd1YgwWiiyyYQr8IzMMQrE0le1fmDOfHo21VmJG1jHqy7r4e4uCOF63X1VMLk2JriCB4VoL157ATuxFXFHM06bU&q=site:fifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sa=X&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQtKgLegQIExAB
+              - generic [ref=e84]: Imágenes
+          - listitem [ref=e85]:
+            - link "Videos cortos" [ref=e86] [cursor=pointer]:
+              - /url: /search?sca_esv=9063533dd0cd7df7&udm=39&fbs=ADc_l-bpk8W4E-qsVlOvbGJcDwpn60DczFdcvPnuv8WQohHLTUEVLYKBrOkTsSvdYDjhWUeCgsxTb96atxpw9-Dhl1StTcDQK17fMqLPX7cPB_3WhdZNUn95EUOVjtfRkBpRzyWtxiv6_baKQ4vOlKRx7ngjDvBBrd1YgwWiiyyYQr8IzMMQrE0le1fmDOfHo21VmJG1jHqy7r4e4uCOF63X1VMLk2JriCB4VoL157ATuxFXFHM06bU&q=site:fifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sa=X&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQs6gLegQIFRAB
+              - generic [ref=e88]: Videos cortos
+          - listitem [ref=e89]:
+            - link "Noticias" [ref=e90] [cursor=pointer]:
+              - /url: /search?sca_esv=9063533dd0cd7df7&q=site:fifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&tbm=nws&source=lnms&fbs=ADc_l-bpk8W4E-qsVlOvbGJcDwpn60DczFdcvPnuv8WQohHLTUEVLYKBrOkTsSvdYDjhWUeCgsxTb96atxpw9-Dhl1StTcDQK17fMqLPX7cPB_3WhdZNUn95EUOVjtfRkBpRzyWtxiv6_baKQ4vOlKRx7ngjDvBBrd1YgwWiiyyYQr8IzMMQrE0le1fmDOfHo21VmJG1jHqy7r4e4uCOF63X1VMLk2JriCB4VoL157ATuxFXFHM06bU&sa=X&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQ0pQJegQIFhAB
+              - generic [ref=e92]: Noticias
+          - listitem [ref=e93]:
+            - link "Videos" [ref=e94] [cursor=pointer]:
+              - /url: /search?sca_esv=9063533dd0cd7df7&udm=7&fbs=ADc_l-bpk8W4E-qsVlOvbGJcDwpn60DczFdcvPnuv8WQohHLTUEVLYKBrOkTsSvdYDjhWUeCgsxTb96atxpw9-Dhl1StTcDQK17fMqLPX7cPB_3WhdZNUn95EUOVjtfRkBpRzyWtxiv6_baKQ4vOlKRx7ngjDvBBrd1YgwWiiyyYQr8IzMMQrE0le1fmDOfHo21VmJG1jHqy7r4e4uCOF63X1VMLk2JriCB4VoL157ATuxFXFHM06bU&q=site:fifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sa=X&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQtKgLegQIFBAB
+              - generic [ref=e96]: Videos
+          - listitem [ref=e97]:
+            - link "Shopping" [ref=e98] [cursor=pointer]:
+              - /url: /search?sca_esv=9063533dd0cd7df7&udm=28&fbs=ADc_l-bpk8W4E-qsVlOvbGJcDwpn60DczFdcvPnuv8WQohHLTUEVLYKBrOkTsSvdYDjhWUeCgsxTb96atxpw9-Dhl1StTcDQK17fMqLPX7cPB_3WhdZNUn95EUOVjtfRkBpRzyWtxiv6_baKQ4vOlKRx7ngjDvBBrd1YgwWiiyyYQr8IzMMQrE0le1fmDOfHo21VmJG1jHqy7r4e4uCOF63X1VMLk2JriCB4VoL157ATuxFXFHM06bU&q=site:fifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&ved=1t:220175&ictx=111
+              - generic [ref=e100]: Shopping
+          - listitem [ref=e101]:
+            - button "Más filtros" [ref=e102] [cursor=pointer]:
+              - generic "Más filtros" [ref=e103]:
+                - generic [ref=e104]:
+                  - generic [ref=e105]: Más
+                  - img [ref=e107]
+        - button "Herramientas" [ref=e110] [cursor=pointer]:
+          - generic [ref=e112]:
+            - generic [ref=e113]: Herramientas
+            - img [ref=e115]
+    - heading "Resultados de búsqueda" [level=1] [ref=e117]
+    - generic [ref=e123]:
+      - generic [ref=e124]: Looking for results in English?
+      - link [ref=e125] [cursor=pointer]:
+        - /url: "#"
+        - img [ref=e127]
+      - link "Change to English" [ref=e129] [cursor=pointer]:
+        - /url: /setprefs?sig=0_dfeiF_IN5aCy2fS5i5X0-f3DAzA%3D&source=en_ignored_notification&prev=https://www.google.com/search?q%3Dsite:fifa.com%2B2026%2Bworld%2Bcup%2Bformat%2B12%2Bgroups%2Bbest%2Bthird-placed%2Bteams%26sei%3DrZYsarTVJai55OUPhL-EuQ8&hl=en&sa=X&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQhoQCKAF6BAgZEAQ
+      - link "Continuar usando español" [ref=e130] [cursor=pointer]:
+        - /url: "#"
+      - link "Configuración del idioma" [ref=e132] [cursor=pointer]:
+        - /url: /preferences?lang=1&hl=es-419&sa=X&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQiIQCKAN6BAgZEAY#languages
+    - main [ref=e134]:
+      - generic [ref=e138]:
+        - generic [ref=e141]:
+          - heading "Web results" [level=2] [ref=e142]
+          - generic [ref=e143]:
+            - generic [ref=e146]:
+              - 'link "World Cup 2026 groups: How teams qualify and tie-breakers FIFA https://www.fifa.com › articles" [ref=e148] [cursor=pointer]':
+                - /url: https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/groups-how-teams-qualify-tie-breakers
+                - 'heading "World Cup 2026 groups: How teams qualify and tie-breakers" [level=3] [ref=e149]'
+                - generic [ref=e155]:
+                  - generic [ref=e157]: FIFA
+                  - generic [ref=e159]: https://www.fifa.com › articles
+              - generic [ref=e160]:
+                - generic [ref=e161]: ·
+                - link "Traducir esta página" [ref=e162] [cursor=pointer]:
+                  - /url: https://translate.google.com/translate?u=https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/groups-how-teams-qualify-tie-breakers&hl=es-419&sl=en&tl=es-419&client=search
+              - button "Acerca de este resultado" [ref=e163] [cursor=pointer]:
+                - img [ref=e166]
+            - generic [ref=e169]:
+              - generic [ref=e170]: 19 abr 2026 —
+              - generic [ref=e171]:
+                - text: The two
+                - emphasis [ref=e172]: teams
+                - text: with the most points in each
+                - emphasis [ref=e173]: group
+                - text: will progress to the Round of 32, where they will be joined by the eight
+                - emphasis [ref=e174]: best third
+                - text: "-"
+                - emphasis [ref=e175]: placed
+                - text: ...
+        - generic [ref=e179]:
+          - generic [ref=e182]:
+            - link "Curiosities from the World Cup group stage FIFA https://www.fifa.com › articles" [ref=e184] [cursor=pointer]:
+              - /url: https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/world-cup-group-stages-though-the-years
+              - heading "Curiosities from the World Cup group stage" [level=3] [ref=e185]
+              - generic [ref=e191]:
+                - generic [ref=e193]: FIFA
+                - generic [ref=e195]: https://www.fifa.com › articles
+            - generic [ref=e196]:
+              - generic [ref=e197]: ·
+              - link "Traducir esta página" [ref=e198] [cursor=pointer]:
+                - /url: https://translate.google.com/translate?u=https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/world-cup-group-stages-though-the-years&hl=es-419&sl=en&tl=es-419&client=search
+            - button "Acerca de este resultado" [ref=e199] [cursor=pointer]:
+              - img [ref=e202]
+          - generic [ref=e205]:
+            - generic [ref=e206]: hace 6 días —
+            - generic [ref=e207]:
+              - text: Prior to
+              - emphasis [ref=e208]: "2026"
+              - text: ", Mexico 1986, Italy 1990 and USA 1994 are the only"
+              - emphasis [ref=e209]: World
+              - text: Cups to have featured the
+              - emphasis [ref=e210]: best third
+              - text: "-"
+              - emphasis [ref=e211]: placed teams
+              - text: system. In 75 per ...
+        - generic [ref=e215]:
+          - generic [ref=e218]:
+            - link "10. What is the format for the FIFA World Cup 2026 ... FIFA https://gpcustomersupportfwc2026.tickets.fifa.com › ..." [ref=e220] [cursor=pointer]:
+              - /url: https://gpcustomersupportfwc2026.tickets.fifa.com/hc/en-gb/articles/28784798873117-10-What-is-the-format-for-the-FIFA-World-Cup-2026-tournament
+              - heading "10. What is the format for the FIFA World Cup 2026 ..." [level=3] [ref=e221]
+              - generic [ref=e227]:
+                - generic [ref=e229]: FIFA
+                - generic [ref=e231]: https://gpcustomersupportfwc2026.tickets.fifa.com › ...
+            - generic [ref=e232]:
+              - generic [ref=e233]: ·
+              - link "Traducir esta página" [ref=e234] [cursor=pointer]:
+                - /url: https://translate.google.com/translate?u=https://gpcustomersupportfwc2026.tickets.fifa.com/hc/en-gb/articles/28784798873117-10-What-is-the-format-for-the-FIFA-World-Cup-2026-tournament&hl=es-419&sl=en&tl=es-419&client=search
+            - button "Acerca de este resultado" [ref=e235] [cursor=pointer]:
+              - img [ref=e238]
+          - generic [ref=e241]:
+            - generic [ref=e242]: 2 jun 2026 —
+            - generic [ref=e243]:
+              - text: After the
+              - emphasis [ref=e244]: group
+              - text: "stage, a new round begins: The"
+              - emphasis [ref=e245]: top
+              - text: two
+              - emphasis [ref=e246]: teams
+              - text: from each
+              - emphasis [ref=e247]: group
+              - text: ", along with the eight"
+              - emphasis [ref=e248]: best third
+              - text: "-"
+              - emphasis [ref=e249]: place teams
+              - text: ", will advance to a ..."
+        - generic [ref=e253]:
+          - generic [ref=e256]:
+            - link "Standings | FIFA World Cup 2026™ FIFA https://www.fifa.com › worldcup" [ref=e258] [cursor=pointer]:
+              - /url: https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/standings
+              - heading "Standings | FIFA World Cup 2026™" [level=3] [ref=e259]
+              - generic [ref=e265]:
+                - generic [ref=e267]: FIFA
+                - generic [ref=e269]: https://www.fifa.com › worldcup
+            - generic [ref=e270]:
+              - generic [ref=e271]: ·
+              - link "Traducir esta página" [ref=e272] [cursor=pointer]:
+                - /url: https://translate.google.com/translate?u=https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/standings&hl=es-419&sl=en&tl=es-419&client=search
+            - button "Acerca de este resultado" [ref=e273] [cursor=pointer]:
+              - img [ref=e276]
+          - generic [ref=e280]:
+            - emphasis [ref=e281]: "1"
+            - text: . Mexico. MEX ; 2. South Africa. RSA ; 3. Korea Republic. KOR ; 4. Czechia. CZE.
+        - generic [ref=e285]:
+          - generic [ref=e288]:
+            - link "Final Draw results | FIFA World Cup 2026 FIFA https://www.fifa.com › articles" [ref=e290] [cursor=pointer]:
+              - /url: https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/final-draw-results
+              - heading "Final Draw results | FIFA World Cup 2026" [level=3] [ref=e291]
+              - generic [ref=e297]:
+                - generic [ref=e299]: FIFA
+                - generic [ref=e301]: https://www.fifa.com › articles
+            - generic [ref=e302]:
+              - generic [ref=e303]: ·
+              - link "Traducir esta página" [ref=e304] [cursor=pointer]:
+                - /url: https://translate.google.com/translate?u=https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/final-draw-results&hl=es-419&sl=en&tl=es-419&client=search
+            - button "Acerca de este resultado" [ref=e305] [cursor=pointer]:
+              - img [ref=e308]
+          - generic [ref=e311]:
+            - generic [ref=e312]: 5 may 2026 —
+            - generic [ref=e313]:
+              - text: The top two teams from each section and
+              - emphasis [ref=e314]: eight best third-place teams
+              - text: from the groups will progress to the Round of 32 at FIFA World Cup 2026.
+        - generic [ref=e318]:
+          - generic [ref=e321]:
+            - link "FIFA World Cup 2026™ | Fixtures, groups, teams & more FIFA https://www.fifa.com › articles" [ref=e323] [cursor=pointer]:
+              - /url: https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/fifa-world-cup-2026-hosts-cities-dates-usa-mexico-canada
+              - heading "FIFA World Cup 2026™ | Fixtures, groups, teams & more" [level=3] [ref=e324]
+              - generic [ref=e330]:
+                - generic [ref=e332]: FIFA
+                - generic [ref=e334]: https://www.fifa.com › articles
+            - generic [ref=e335]:
+              - generic [ref=e336]: ·
+              - link "Traducir esta página" [ref=e337] [cursor=pointer]:
+                - /url: https://translate.google.com/translate?u=https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/fifa-world-cup-2026-hosts-cities-dates-usa-mexico-canada&hl=es-419&sl=en&tl=es-419&client=search
+            - button "Acerca de este resultado" [ref=e338] [cursor=pointer]:
+              - img [ref=e341]
+          - generic [ref=e344]:
+            - generic [ref=e345]: 30 mar 2026 —
+            - generic [ref=e346]:
+              - text: ...
+              - emphasis [ref=e347]: Cup 2026 group
+              - text: stage
+              - emphasis [ref=e348]: format
+              - text: from 16
+              - emphasis [ref=e349]: groups
+              - text: of three, to
+              - emphasis [ref=e350]: 12 groups
+              - text: of four. The
+              - emphasis [ref=e351]: top
+              - text: two
+              - emphasis [ref=e352]: teams
+              - text: from each
+              - emphasis [ref=e353]: group
+              - text: and the eight
+              - emphasis [ref=e354]: best third
+              - text: "-"
+              - emphasis [ref=e355]: place
+              - text: ...
+        - generic [ref=e359]:
+          - generic [ref=e362]:
+            - link "Procedures and pots | Final Draw | FIFA World Cup 2026 FIFA https://www.fifa.com › articles" [ref=e364] [cursor=pointer]:
+              - /url: https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/procedures-pots-final-draw
+              - heading "Procedures and pots | Final Draw | FIFA World Cup 2026" [level=3] [ref=e365]
+              - generic [ref=e371]:
+                - generic [ref=e373]: FIFA
+                - generic [ref=e375]: https://www.fifa.com › articles
+            - generic [ref=e376]:
+              - generic [ref=e377]: ·
+              - link "Traducir esta página" [ref=e378] [cursor=pointer]:
+                - /url: https://translate.google.com/translate?u=https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/procedures-pots-final-draw&hl=es-419&sl=en&tl=es-419&client=search
+            - button "Acerca de este resultado" [ref=e379] [cursor=pointer]:
+              - img [ref=e382]
+          - generic [ref=e385]:
+            - generic [ref=e386]: 25 nov 2025 —
+            - generic [ref=e387]:
+              - text: The draw will begin with all the
+              - emphasis [ref=e388]: teams
+              - text: from pot 1 being drawn to
+              - emphasis [ref=e389]: groups
+              - text: A to L. It will then continue with pots 2,
+              - emphasis [ref=e390]: "3"
+              - text: and 4 in that order.
+        - generic [ref=e394]:
+          - generic [ref=e397]:
+            - link "11. What is the FIFA World Cup 2026™ Final Draw, and ... FIFA https://gpcustomersupportfwc2026.tickets.fifa.com › ..." [ref=e399] [cursor=pointer]:
+              - /url: https://gpcustomersupportfwc2026.tickets.fifa.com/hc/en-gb/articles/28785389081501-11-What-is-the-FIFA-World-Cup-2026-Final-Draw-and-when-and-where-will-it-take-place
+              - heading "11. What is the FIFA World Cup 2026™ Final Draw, and ..." [level=3] [ref=e400]
+              - generic [ref=e406]:
+                - generic [ref=e408]: FIFA
+                - generic [ref=e410]: https://gpcustomersupportfwc2026.tickets.fifa.com › ...
+            - generic [ref=e411]:
+              - generic [ref=e412]: ·
+              - link "Traducir esta página" [ref=e413] [cursor=pointer]:
+                - /url: https://translate.google.com/translate?u=https://gpcustomersupportfwc2026.tickets.fifa.com/hc/en-gb/articles/28785389081501-11-What-is-the-FIFA-World-Cup-2026-Final-Draw-and-when-and-where-will-it-take-place&hl=es-419&sl=en&tl=es-419&client=search
+            - button "Acerca de este resultado" [ref=e414] [cursor=pointer]:
+              - img [ref=e417]
+          - generic [ref=e420]:
+            - generic [ref=e421]: 2 jun 2026 —
+            - generic [ref=e422]:
+              - text: The draw allocated the qualified
+              - emphasis [ref=e423]: teams
+              - text: into
+              - emphasis [ref=e424]: 12 groups
+              - text: of four. Before the draw,
+              - emphasis [ref=e425]: teams
+              - text: were
+              - emphasis [ref=e426]: placed
+              - text: into four pots based on the FIFA Men's ...
+        - generic [ref=e430]:
+          - generic [ref=e433]:
+            - link "How the FIFA World Cup 26™ will work with 48 teams FIFA https://www.fifa.com › articles" [ref=e435] [cursor=pointer]:
+              - /url: https://www.fifa.com/en/articles/article-fifa-world-cup-2026-mexico-canada-usa-new-format-tournament-football-soccer
+              - heading "How the FIFA World Cup 26™ will work with 48 teams" [level=3] [ref=e436]
+              - generic [ref=e442]:
+                - generic [ref=e444]: FIFA
+                - generic [ref=e446]: https://www.fifa.com › articles
+            - generic [ref=e447]:
+              - generic [ref=e448]: ·
+              - link "Traducir esta página" [ref=e449] [cursor=pointer]:
+                - /url: https://translate.google.com/translate?u=https://www.fifa.com/en/articles/article-fifa-world-cup-2026-mexico-canada-usa-new-format-tournament-football-soccer&hl=es-419&sl=en&tl=es-419&client=search
+            - button "Acerca de este resultado" [ref=e450] [cursor=pointer]:
+              - img [ref=e453]
+          - generic [ref=e456]:
+            - generic [ref=e457]: 1 mar 2023 —
+            - generic [ref=e458]:
+              - text: The top two teams in each group, plus the eight best thir
+              - emphasis [ref=e459]: d
+              - text: "-placed teams, will advance to the round of 32. Adopting 12 groups of four was chosen ..."
+        - generic [ref=e463]:
+          - generic [ref=e466]:
+            - link "FIFA World Cup 2026™ FIFA https://www.fifa.com › worldcup" [ref=e468] [cursor=pointer]:
+              - /url: https://www.fifa.com/worldcup/fifaworldcup2026/
+              - heading "FIFA World Cup 2026™" [level=3] [ref=e469]
+              - generic [ref=e475]:
+                - generic [ref=e477]: FIFA
+                - generic [ref=e479]: https://www.fifa.com › worldcup
+            - generic [ref=e480]:
+              - generic [ref=e481]: ·
+              - link "Traducir esta página" [ref=e482] [cursor=pointer]:
+                - /url: https://translate.google.com/translate?u=https://www.fifa.com/worldcup/fifaworldcup2026/&hl=es-419&sl=en&tl=es-419&client=search
+            - button "Acerca de este resultado" [ref=e483] [cursor=pointer]:
+              - img [ref=e486]
+          - generic [ref=e490]:
+            - text: The FIFA
+            - emphasis [ref=e491]: World Cup 2026
+            - text: ™ will be the 23rd edition of the tournament but the first to feature 48
+            - emphasis [ref=e492]: teams
+            - text: and
+            - emphasis [ref=e493]: three
+            - text: "host countries: Canada, Mexico and the United ..."
+          - generic [ref=e495]: "Falta(n): format ‎best"
+      - navigation [ref=e498]:
+        - heading "Navegación de páginas" [level=1] [ref=e499]
+        - text: "1"
+        - link "Page 2" [ref=e502] [cursor=pointer]:
+          - /url: /search?q=site:fifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sca_esv=9063533dd0cd7df7&ei=rZYsavbmLqKy5OUP28akyQY&start=10&sa=N&sstk=AU9db-DZf5P9wm2duGGhcAQ5sC19z-IQt4kitqpzej_zsSINNxxmINuEvfUfpqzHgpc3pTNbm_VYLx4q15uUnP_IQSY2hnIxw5IxAA&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQ8tMDegQIMBAE
+          - text: "2"
+        - link "Page 3" [ref=e504] [cursor=pointer]:
+          - /url: /search?q=site:fifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sca_esv=9063533dd0cd7df7&ei=rZYsavbmLqKy5OUP28akyQY&start=20&sa=N&sstk=AU9db-DZf5P9wm2duGGhcAQ5sC19z-IQt4kitqpzej_zsSINNxxmINuEvfUfpqzHgpc3pTNbm_VYLx4q15uUnP_IQSY2hnIxw5IxAA&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQ8tMDegQIMBAG
+          - text: "3"
+        - link "Page 4" [ref=e506] [cursor=pointer]:
+          - /url: /search?q=site:fifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sca_esv=9063533dd0cd7df7&ei=rZYsavbmLqKy5OUP28akyQY&start=30&sa=N&sstk=AU9db-DZf5P9wm2duGGhcAQ5sC19z-IQt4kitqpzej_zsSINNxxmINuEvfUfpqzHgpc3pTNbm_VYLx4q15uUnP_IQSY2hnIxw5IxAA&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQ8tMDegQIMBAI
+          - text: "4"
+        - link "Page 5" [ref=e508] [cursor=pointer]:
+          - /url: /search?q=site:fifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sca_esv=9063533dd0cd7df7&ei=rZYsavbmLqKy5OUP28akyQY&start=40&sa=N&sstk=AU9db-DZf5P9wm2duGGhcAQ5sC19z-IQt4kitqpzej_zsSINNxxmINuEvfUfpqzHgpc3pTNbm_VYLx4q15uUnP_IQSY2hnIxw5IxAA&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQ8tMDegQIMBAK
+          - text: "5"
+        - link "Page 6" [ref=e510] [cursor=pointer]:
+          - /url: /search?q=site:fifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sca_esv=9063533dd0cd7df7&ei=rZYsavbmLqKy5OUP28akyQY&start=50&sa=N&sstk=AU9db-DZf5P9wm2duGGhcAQ5sC19z-IQt4kitqpzej_zsSINNxxmINuEvfUfpqzHgpc3pTNbm_VYLx4q15uUnP_IQSY2hnIxw5IxAA&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQ8tMDegQIMBAM
+          - text: "6"
+        - link "Page 7" [ref=e512] [cursor=pointer]:
+          - /url: /search?q=site:fifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sca_esv=9063533dd0cd7df7&ei=rZYsavbmLqKy5OUP28akyQY&start=60&sa=N&sstk=AU9db-DZf5P9wm2duGGhcAQ5sC19z-IQt4kitqpzej_zsSINNxxmINuEvfUfpqzHgpc3pTNbm_VYLx4q15uUnP_IQSY2hnIxw5IxAA&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQ8tMDegQIMBAO
+          - text: "7"
+        - link "Page 8" [ref=e514] [cursor=pointer]:
+          - /url: /search?q=site:fifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sca_esv=9063533dd0cd7df7&ei=rZYsavbmLqKy5OUP28akyQY&start=70&sa=N&sstk=AU9db-DZf5P9wm2duGGhcAQ5sC19z-IQt4kitqpzej_zsSINNxxmINuEvfUfpqzHgpc3pTNbm_VYLx4q15uUnP_IQSY2hnIxw5IxAA&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQ8tMDegQIMBAQ
+          - text: "8"
+        - link "Page 9" [ref=e516] [cursor=pointer]:
+          - /url: /search?q=site:fifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sca_esv=9063533dd0cd7df7&ei=rZYsavbmLqKy5OUP28akyQY&start=80&sa=N&sstk=AU9db-DZf5P9wm2duGGhcAQ5sC19z-IQt4kitqpzej_zsSINNxxmINuEvfUfpqzHgpc3pTNbm_VYLx4q15uUnP_IQSY2hnIxw5IxAA&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQ8tMDegQIMBAS
+          - text: "9"
+        - link "Page 10" [ref=e518] [cursor=pointer]:
+          - /url: /search?q=site:fifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sca_esv=9063533dd0cd7df7&ei=rZYsavbmLqKy5OUP28akyQY&start=90&sa=N&sstk=AU9db-DZf5P9wm2duGGhcAQ5sC19z-IQt4kitqpzej_zsSINNxxmINuEvfUfpqzHgpc3pTNbm_VYLx4q15uUnP_IQSY2hnIxw5IxAA&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQ8tMDegQIMBAU
+          - text: "10"
+        - heading "Siguiente" [level=2] [ref=e520]:
+          - link "Siguiente" [ref=e521] [cursor=pointer]:
+            - /url: /search?q=site:fifa.com+2026+world+cup+format+12+groups+best+third-placed+teams&sca_esv=9063533dd0cd7df7&ei=rZYsavbmLqKy5OUP28akyQY&start=10&sa=N&sstk=AU9db-DZf5P9wm2duGGhcAQ5sC19z-IQt4kitqpzej_zsSINNxxmINuEvfUfpqzHgpc3pTNbm_VYLx4q15uUnP_IQSY2hnIxw5IxAA&ved=2ahUKEwi28bPx7YKVAxUiGbkGHVsjKWkQ8NMDegQIMBAW
+            - generic [ref=e523]: Siguiente
+      - navigation
+    - contentinfo [ref=e524]:
+      - heading "Vínculos a pie de página" [level=1] [ref=e525]
+      - generic [ref=e529]:
+        - generic [ref=e531]:
+          - text: Chile
+          - generic [ref=e533]:
+            - button "Estación Central - A través de tu dirección IP" [ref=e535] [cursor=pointer]:
+              - generic [ref=e536]: Estación Central
+              - generic [ref=e538]:
+                - text: "-"
+                - generic [ref=e539]: A través de tu dirección IP
+            - text: "-"
+            - button "Actualizar ubicación" [ref=e541] [cursor=pointer]: Actualizar ubicación
+        - generic [ref=e544]:
+          - link "Ayuda" [ref=e545] [cursor=pointer]:
+            - /url: https://support.google.com/websearch/?p=ws_results_help&hl=es-419&fg=1
+          - link "Enviar comentarios" [ref=e546] [cursor=pointer]:
+            - /url: "#"
+          - link "Privacidad" [ref=e547] [cursor=pointer]:
+            - /url: https://policies.google.com/privacy?hl=es-419&fg=1
+          - link "Condiciones" [ref=e548] [cursor=pointer]:
+            - /url: https://policies.google.com/terms?hl=es-419&fg=1

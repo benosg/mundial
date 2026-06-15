@@ -1,0 +1,3 @@
+[     503ms] ReferenceError: process is not defined
+    at readEnv (http://localhost:4321/src/lib/supabase.ts:4:35)
+    at http://localhost:4321/src/lib/supabase.ts:6:21

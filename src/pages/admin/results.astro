@@ -1,6 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import { groupedMatches } from "../../data/site";
+import { knockoutFixturesByPhase } from "../../data/knockout";
 ---
 
 <Layout
@@ -34,13 +35,15 @@ import { groupedMatches } from "../../data/site";
       </div>
 
       <div class="groups-grid" id="results-groups"></div>
+      <div class="groups-grid" id="results-knockout" style="margin-top:1.5rem"></div>
 
       <p id="save-status" class="save-status" aria-live="polite"></p>
     </div>
   </main>
 
-  <script is:inline define:vars={{ groupedMatchesJson: JSON.stringify(groupedMatches) }}>
+  <script is:inline define:vars={{ groupedMatchesJson: JSON.stringify(groupedMatches), knockoutPhasesJson: JSON.stringify(knockoutFixturesByPhase) }}>
     const groupedMatches = JSON.parse(groupedMatchesJson);
+    const knockoutPhases = JSON.parse(knockoutPhasesJson);
 
     function escapeHtml(value) {
       return String(value)
@@ -69,6 +72,7 @@ import { groupedMatches } from "../../data/site";
     }
 
     const groupsContainer = document.getElementById("results-groups");
+    const knockoutContainer = document.getElementById("results-knockout");
     const syncBtn = document.getElementById("sync-fifa-btn");
     const saveBtn = document.getElementById("save-results-btn");
     const resultsCount = document.getElementById("results-count");
@@ -85,6 +89,16 @@ import { groupedMatches } from "../../data/site";
           total++;
           const homeInput = document.getElementById(`${match.id}-home`);
           const awayInput = document.getElementById(`${match.id}-away`);
+          if (homeInput && awayInput && homeInput.value !== "" && awayInput.value !== "") {
+            count++;
+          }
+        });
+      });
+      knockoutPhases.forEach((phase) => {
+        phase.matches.forEach((match) => {
+          total++;
+          const homeInput = document.getElementById(`ko-${match.id}-home-score`);
+          const awayInput = document.getElementById(`ko-${match.id}-away-score`);
           if (homeInput && awayInput && homeInput.value !== "" && awayInput.value !== "") {
             count++;
           }
@@ -171,6 +185,54 @@ import { groupedMatches } from "../../data/site";
       updateResultsCount();
     }
 
+    function createKnockoutRow(match, saved = {}) {
+      const homeTeam = saved.home_team || match.homeSlot;
+      const awayTeam = saved.away_team || match.awaySlot;
+      const homeValue = Number.isInteger(saved.home_result) ? saved.home_result : "";
+      const awayValue = Number.isInteger(saved.away_result) ? saved.away_result : "";
+      const penaltiesWinner = saved.penalties_winner || "";
+
+      return `
+        <div class="simple-match-card" data-knockout-id="${match.id}">
+          <div class="simple-match-main simple-match-main--stack">
+            <strong>${escapeHtml(match.label)}</strong>
+            <div class="muted small-note">${new Date(match.kickoffAt).toLocaleString("es-CL", { timeZone: "Etc/GMT+4", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false })} · ${escapeHtml(match.venue)}, ${escapeHtml(match.city)}</div>
+            <div class="knockout-admin-team-grid">
+              <input class="input-like" id="ko-${match.id}-home-team" value="${escapeHtml(homeTeam)}" placeholder="${escapeHtml(match.homeSlot)}" />
+              <input class="input-like" id="ko-${match.id}-home-score" type="number" min="0" max="20" value="${homeValue}" placeholder="—" inputmode="numeric" />
+              <span class="muted">-</span>
+              <input class="input-like" id="ko-${match.id}-away-score" type="number" min="0" max="20" value="${awayValue}" placeholder="—" inputmode="numeric" />
+              <input class="input-like" id="ko-${match.id}-away-team" value="${escapeHtml(awayTeam)}" placeholder="${escapeHtml(match.awaySlot)}" />
+            </div>
+            <select class="input-like" id="ko-${match.id}-pens">
+              <option value="">Ganador por penales (si empatan)</option>
+              <option value="home" ${penaltiesWinner === "home" ? "selected" : ""}>${escapeHtml(homeTeam)}</option>
+              <option value="away" ${penaltiesWinner === "away" ? "selected" : ""}>${escapeHtml(awayTeam)}</option>
+            </select>
+          </div>
+        </div>`;
+    }
+
+    function renderKnockout(savedMatches = {}) {
+      if (!knockoutContainer) return;
+      knockoutContainer.innerHTML = knockoutPhases.map((phase, idx) => `
+        <details class="group-card group-collapsible" ${idx < 2 ? "open" : ""}>
+          <summary class="group-head">
+            <div class="group-head-main">
+              <span class="group-tag tag">${phase.label}</span>
+              <h3 class="section-title-compact">${phase.label}</h3>
+            </div>
+          </summary>
+          <div class="simple-match-list">
+            ${phase.matches.map((match) => createKnockoutRow(match, savedMatches[match.id])).join("")}
+          </div>
+        </details>
+      `).join("");
+
+      attachInputListeners();
+      updateResultsCount();
+    }
+
     function attachInputListeners() {
       document.querySelectorAll('.simple-match-card input[type="number"]').forEach((input) => {
         input.addEventListener("input", () => {
@@ -196,13 +258,16 @@ import { groupedMatches } from "../../data/site";
       try {
         const res = await fetch("/api/admin/results");
         const data = await res.json();
-        if (data.ok && data.results) {
-          renderGroups(data.results);
+        if (data.ok) {
+          renderGroups(data.results || {});
+          renderKnockout(data.knockoutResults || {});
         } else {
           renderGroups();
+          renderKnockout();
         }
       } catch {
         renderGroups();
+        renderKnockout();
       }
     }
 
@@ -213,6 +278,7 @@ import { groupedMatches } from "../../data/site";
       if (saveStatus) saveStatus.textContent = "Guardando resultados...";
 
       const results = {};
+      const knockoutResults = {};
       groupedMatches.forEach((group) => {
         group.matches.forEach((match) => {
           const homeInput = document.getElementById(`${match.id}-home`);
@@ -228,11 +294,28 @@ import { groupedMatches } from "../../data/site";
         });
       });
 
+      knockoutPhases.forEach((phase) => {
+        phase.matches.forEach((match) => {
+          const homeTeam = document.getElementById(`ko-${match.id}-home-team`)?.value?.trim() || match.homeSlot;
+          const awayTeam = document.getElementById(`ko-${match.id}-away-team`)?.value?.trim() || match.awaySlot;
+          const homeVal = document.getElementById(`ko-${match.id}-home-score`)?.value?.trim() ?? "";
+          const awayVal = document.getElementById(`ko-${match.id}-away-score`)?.value?.trim() ?? "";
+          const penaltiesWinner = document.getElementById(`ko-${match.id}-pens`)?.value || null;
+          knockoutResults[match.id] = {
+            home_team: homeTeam,
+            away_team: awayTeam,
+            home_result: homeVal === "" ? null : parseInt(homeVal, 10),
+            away_result: awayVal === "" ? null : parseInt(awayVal, 10),
+            penalties_winner: penaltiesWinner,
+          };
+        });
+      });
+
       try {
         const res = await fetch("/api/admin/results", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ results }),
+          body: JSON.stringify({ results, knockoutResults }),
         });
         const data = await res.json();
         if (data.ok) {

@@ -1,0 +1,402 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { knockoutFixturesByPhase, knockoutPhaseOrder } from "../data/knockout";
+---
+
+<Layout
+  title="Llaves"
+  currentPath="/bracket"
+  description="Pronósticos del cuadro eliminatorio del Mundial 2026, fase por fase y con definición por penales cuando corresponde."
+>
+  <div class="simple-main bracket-page">
+    <section class="simple-top" aria-labelledby="bracket-title">
+      <div class="site-shell simple-stack">
+        <div class="hero-copy-block bracket-hero-copy">
+          <span class="eyebrow">Cuadro eliminatorio</span>
+          <h1 class="simple-title" id="bracket-title">Pronóstico de llaves</h1>
+          <p class="section-copy section-copy-tight">Arma tu cuadro fase por fase en un formato horizontal clásico. La llave mantiene los bloqueos por horario, edición de marcadores y definición por penales cuando hay empate.</p>
+        </div>
+
+        <div class="hero-badges bracket-hero-badges" aria-label="Aspectos clave de la llave">
+          <span class="hero-badge">Desliza por fases</span>
+          <span class="hero-badge">Guarda cada columna</span>
+          <span class="hero-badge">Penales obligatorios en empates</span>
+        </div>
+
+        <div class="summary-grid">
+          <article class="summary-box highlight">
+            <div class="muted">Jugador</div>
+            <strong data-player-name-display>Inicia sesión para jugar</strong>
+            <span data-player-fav-display class="muted">Elige fase por fase y define penales en los empates</span>
+          </article>
+          <article class="summary-box">
+            <div class="muted">Fases</div>
+            <strong>{knockoutPhaseOrder.length}</strong>
+          </article>
+          <article class="summary-box">
+            <div class="muted">Partidos</div>
+            <strong>32</strong>
+          </article>
+          <article class="summary-box">
+            <div class="muted">Modo</div>
+            <strong>Cuadro separado</strong>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="page-section simple-section" data-auth-gate style="display:none">
+      <div class="site-shell">
+        <article class="panel auth-gate-panel">
+          <div class="auth-gate-inner">
+            <span class="eyebrow">Acceso requerido</span>
+            <h2 class="section-title">Inicia sesión para guardar tu llave</h2>
+            <p class="muted" style="margin-bottom:1.2rem">Necesitás una cuenta de Google para persistir tus pronósticos fase por fase.</p>
+            <a class="button" href="/api/auth/signin">Iniciar sesión con Google</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="page-section simple-section workspace-section" data-workspace-section style="display:none">
+      <div class="site-shell bracket-layout">
+        <article class="panel bracket-board-panel">
+          <div class="bracket-board-header">
+            <div>
+              <span class="eyebrow">Llave completa</span>
+              <h2 class="section-title section-title-compact">Vista horizontal por rondas</h2>
+              <p class="muted bracket-board-copy">Cada columna corresponde a una fase. Desliza horizontalmente en pantallas estrechas o usa los accesos rápidos para saltar entre rondas.</p>
+            </div>
+
+            <div class="bracket-phase-nav" aria-label="Ir a una fase del cuadro">
+              {knockoutFixturesByPhase.map((phase) => (
+                <button class="button-secondary bracket-phase-nav-button" type="button" data-bracket-jump={phase.phase}>{phase.label}</button>
+              ))}
+            </div>
+          </div>
+
+          <div class="bracket-scroll-shell" data-bracket-scroll-shell tabindex="0">
+            <div class="bracket-board" data-bracket-board>
+              {knockoutFixturesByPhase.map((phase) => (
+                <section class="bracket-phase-panel" data-phase-panel={phase.phase} id={`bracket-phase-${phase.phase.replaceAll("/", "-").replaceAll(" ", "-")}`}>
+                  <div class="bracket-phase-head">
+                    <div>
+                      <span class="eyebrow">Fase eliminatoria</span>
+                      <h2 class="entry-title">{phase.label}</h2>
+                    </div>
+                    <span class="tag" data-phase-status={phase.phase}>Pendiente</span>
+                  </div>
+
+                  <p class="muted bracket-phase-copy" data-phase-window={phase.phase}>Esperando información de la fase…</p>
+
+                  <div class="lock-banner" data-phase-banner={phase.phase} style="display:none" role="alert">
+                    <span class="lock-banner-icon">🔒</span>
+                    <span class="lock-banner-text" data-phase-banner-text={phase.phase}></span>
+                  </div>
+
+                  <div class="bracket-match-list" data-phase-matches={phase.phase}></div>
+
+                  <div class="inline-actions bracket-phase-actions">
+                    <button class="button" type="button" data-phase-save={phase.phase}>Guardar {phase.phase}</button>
+                  </div>
+                </section>
+              ))}
+            </div>
+          </div>
+        </article>
+
+        <div class="workspace-column workspace-sidebar-stack bracket-sidebar-stack">
+          <article class="panel compact-panel workspace-rules">
+            <span class="eyebrow">Reglas del cuadro</span>
+            <h2 class="section-title section-title-compact">Cómo puntúa la llave</h2>
+
+            <div class="rules-highlight">
+              <ul>
+                <li><strong>5 puntos</strong> por acertar marcador exacto.</li>
+                <li><strong>3 puntos</strong> por acertar el ganador del cruce.</li>
+                <li><strong>0 puntos</strong> si el ganador no coincide.</li>
+                <li>Si pronosticas <strong>empate</strong>, debes elegir ganador por <strong>penales</strong>.</li>
+                <li>En empates reales, el exacto exige <strong>marcador exacto + penales correctos</strong>.</li>
+              </ul>
+            </div>
+
+            <p class="fair-note">Cada fase abre cuando termina la anterior y se bloquea una hora antes del primer partido de esa fase. Los puntos de la llave se suman al ranking general.</p>
+
+            <div class="inline-actions">
+              <a class="button-secondary" href="/groups">Ver fase de grupos</a>
+              <a class="button-secondary" href="/companions">Ver ranking</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script is:inline define:vars={{ phasesJson: JSON.stringify(knockoutFixturesByPhase) }}>
+    const phasesData = JSON.parse(phasesJson);
+    const STORAGE_KEY = "mundial-2026-player-id";
+    const authGate = document.querySelector("[data-auth-gate]");
+    const workspaceSection = document.querySelector("[data-workspace-section]");
+    const playerNameDisplay = document.querySelector("[data-player-name-display]");
+    const playerFavDisplay = document.querySelector("[data-player-fav-display]");
+    let currentPlayerKey = null;
+    let currentServerPlayer = null;
+    let matchesById = new Map();
+    let predictionsById = new Map();
+    let phaseStates = {};
+
+    function getPlayerId() {
+      let id = localStorage.getItem(STORAGE_KEY);
+      if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem(STORAGE_KEY, id);
+      }
+      return id;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function formatChileDate(iso) {
+      return new Intl.DateTimeFormat("es-CL", {
+        timeZone: "Etc/GMT+4",
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).format(new Date(iso)).replace(",", " ·");
+    }
+
+    function statusText(state) {
+      if (!state) return "Pendiente";
+      if (state.status === "open") return "Abierto";
+      if (state.status === "completed") return "Completado";
+      if (state.status === "locked") return "Cerrado";
+      return "Pendiente";
+    }
+
+    function windowText(state) {
+      if (!state) return "Sin información de ventana.";
+      const cutoff = formatChileDate(state.cutoffAt);
+      if (state.status === "pending") return `Se abre cuando termine ${state.dependencyLabel}.`;
+      if (state.status === "completed") return `Fase cerrada. El corte fue ${cutoff}.`;
+      if (state.status === "locked") return `Edición cerrada desde ${cutoff}.`;
+      return `Puedes editar hasta ${cutoff}.`;
+    }
+
+    function phaseClassName(phase) {
+      return phase
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replaceAll("/", "-")
+        .replaceAll(" ", "-")
+        .toLowerCase();
+    }
+
+    function renderMatch(match, prediction, editable, phase, index, total) {
+      const homeValue = Number.isInteger(prediction?.home_score) ? prediction.home_score : "";
+      const awayValue = Number.isInteger(prediction?.away_score) ? prediction.away_score : "";
+      const needsPens = prediction && prediction.home_score === prediction.away_score;
+      const showPens = needsPens || (match.home_result !== null && match.home_result === match.away_result);
+      const classes = [
+        "bracket-match-card",
+        `bracket-match-card--${phaseClassName(phase)}`,
+        phase !== "16avos" ? "bracket-match-card--has-source" : "",
+        phase !== "final" && phase !== "3er/4to lugar" ? "bracket-match-card--feeds-next" : "",
+        total > 1 && index % 2 === 0 ? "bracket-match-card--pair-top" : "",
+        total > 1 && index % 2 === 1 ? "bracket-match-card--pair-bottom" : "",
+      ].filter(Boolean).join(" ");
+      const actualResult = match.home_result !== null && match.away_result !== null
+        ? `<div class="bracket-result-note muted small-note">Real: ${match.home_result}-${match.away_result}${match.home_result === match.away_result && match.penalties_winner ? ` · penales ${match.penalties_winner === 'home' ? escapeHtml(match.home_team) : escapeHtml(match.away_team)}` : ""}</div>`
+        : "";
+
+      return `
+        <article class="${classes}" data-match-card="${match.id}">
+          <div class="bracket-match-top">
+            <span class="tag bracket-match-tag">${escapeHtml(match.label)}</span>
+            <div class="muted small-note bracket-match-meta">${formatChileDate(match.kickoff_at)} · ${escapeHtml(match.city)}</div>
+          </div>
+
+          <div class="bracket-match-subhead muted small-note">${escapeHtml(match.venue)}, ${escapeHtml(match.city)}</div>
+
+          <div class="bracket-teams-grid">
+            <div class="bracket-team-row">
+              <div class="bracket-team-copy">
+                <span class="bracket-slot">${escapeHtml(match.home_slot)}</span>
+                <strong class="bracket-team-name">${escapeHtml(match.home_team)}</strong>
+              </div>
+              <div class="bracket-score-inputs">
+                <input type="number" min="0" max="20" inputmode="numeric" data-match-score="${match.id}" data-side="home" value="${homeValue}" ${editable ? "" : "disabled"} />
+              </div>
+            </div>
+            <div class="bracket-team-row">
+              <div class="bracket-team-copy">
+                <span class="bracket-slot">${escapeHtml(match.away_slot)}</span>
+                <strong class="bracket-team-name">${escapeHtml(match.away_team)}</strong>
+              </div>
+              <div class="bracket-score-inputs">
+                <input type="number" min="0" max="20" inputmode="numeric" data-match-score="${match.id}" data-side="away" value="${awayValue}" ${editable ? "" : "disabled"} />
+              </div>
+            </div>
+          </div>
+
+          <div class="bracket-penalties" data-match-penalties="${match.id}" style="display:${showPens ? "grid" : "none"}">
+            <span class="muted">Penales si termina empate:</span>
+            <label><input type="radio" name="pens-${match.id}" value="home" ${prediction?.penalties_winner === "home" ? "checked" : ""} ${editable ? "" : "disabled"} /> ${escapeHtml(match.home_team)}</label>
+            <label><input type="radio" name="pens-${match.id}" value="away" ${prediction?.penalties_winner === "away" ? "checked" : ""} ${editable ? "" : "disabled"} /> ${escapeHtml(match.away_team)}</label>
+          </div>
+
+          ${actualResult}
+        </article>`;
+    }
+
+    function updatePenaltiesVisibility(matchId) {
+      const homeInput = document.querySelector(`[data-match-score="${matchId}"][data-side="home"]`);
+      const awayInput = document.querySelector(`[data-match-score="${matchId}"][data-side="away"]`);
+      const penalties = document.querySelector(`[data-match-penalties="${matchId}"]`);
+      if (!homeInput || !awayInput || !penalties) return;
+      const show = homeInput.value !== "" && awayInput.value !== "" && homeInput.value === awayInput.value;
+      penalties.style.display = show ? "grid" : "none";
+      if (!show) {
+        penalties.querySelectorAll('input[type="radio"]').forEach((input) => { input.checked = false; });
+      }
+    }
+
+    function render() {
+      phasesData.forEach((phaseBlock) => {
+        const phase = phaseBlock.phase;
+        const state = phaseStates[phase];
+        const editable = !!state?.editable;
+        const statusNode = document.querySelector(`[data-phase-status="${phase}"]`);
+        const windowNode = document.querySelector(`[data-phase-window="${phase}"]`);
+        const banner = document.querySelector(`[data-phase-banner="${phase}"]`);
+        const bannerText = document.querySelector(`[data-phase-banner-text="${phase}"]`);
+        const saveButton = document.querySelector(`[data-phase-save="${phase}"]`);
+        const container = document.querySelector(`[data-phase-matches="${phase}"]`);
+        if (statusNode) statusNode.textContent = statusText(state);
+        if (windowNode) windowNode.textContent = windowText(state);
+        if (saveButton) saveButton.disabled = !editable;
+
+        if (banner && bannerText) {
+          if (state?.status === "pending") {
+            banner.style.display = "";
+            bannerText.textContent = `Esta fase se habilita al terminar ${state.dependencyLabel}.`;
+          } else if (state?.status === "locked" || state?.status === "completed") {
+            banner.style.display = "";
+            bannerText.textContent = `Esta fase ya no admite cambios.`;
+          } else {
+            banner.style.display = "none";
+            bannerText.textContent = "";
+          }
+        }
+
+        if (container) {
+          container.innerHTML = phaseBlock.matches
+            .map((fixture, index, items) => renderMatch(matchesById.get(fixture.id), predictionsById.get(fixture.id), editable, phase, index, items.length))
+            .join("");
+        }
+      });
+
+      document.querySelectorAll("[data-match-score]").forEach((input) => {
+        input.addEventListener("input", () => updatePenaltiesVisibility(input.dataset.matchScore));
+      });
+    }
+
+    function collectPhasePredictions(phase) {
+      const phaseBlock = phasesData.find((item) => item.phase === phase);
+      if (!phaseBlock) return [];
+
+      return phaseBlock.matches.map((fixture) => {
+        const homeInput = document.querySelector(`[data-match-score="${fixture.id}"][data-side="home"]`);
+        const awayInput = document.querySelector(`[data-match-score="${fixture.id}"][data-side="away"]`);
+        const pensInput = document.querySelector(`input[name="pens-${fixture.id}"]:checked`);
+        if (!homeInput || !awayInput || homeInput.value === "" || awayInput.value === "") {
+          return null;
+        }
+
+        const homeScore = Number.parseInt(homeInput.value, 10);
+        const awayScore = Number.parseInt(awayInput.value, 10);
+        return {
+          match_id: fixture.id,
+          home_score: homeScore,
+          away_score: awayScore,
+          penalties_winner: homeScore === awayScore ? pensInput?.value ?? null : null,
+        };
+      }).filter(Boolean);
+    }
+
+    async function savePhase(phase) {
+      const rows = collectPhasePredictions(phase);
+      try {
+        const response = await fetch("/api/bracket/predictions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phase, player_id: currentPlayerKey, predictions: rows }),
+        });
+        const data = await response.json();
+        if (!data.ok) {
+          alert(data.error || "No se pudo guardar esta fase.");
+          return;
+        }
+        await loadBracket();
+      } catch {
+        alert("Error de red al guardar la llave.");
+      }
+    }
+
+    async function loadBracket() {
+      const response = await fetch(`/api/bracket/bootstrap?player_id=${encodeURIComponent(currentPlayerKey)}`, { cache: "no-store" });
+      const data = await response.json();
+      if (!data.ok) {
+        throw new Error(data.error || "No se pudo cargar la llave");
+      }
+
+      currentServerPlayer = data.player;
+      matchesById = new Map((data.matches || []).map((match) => [match.id, match]));
+      predictionsById = new Map((data.predictions || []).map((prediction) => [prediction.match_id, prediction]));
+      phaseStates = data.phaseStates || {};
+
+      if (playerNameDisplay) playerNameDisplay.textContent = currentServerPlayer?.name || "Jugador registrado";
+      if (playerFavDisplay) playerFavDisplay.textContent = currentServerPlayer?.favorite_team ? `Favorito: ${currentServerPlayer.favorite_team}` : "Sin favorito cargado";
+
+      render();
+    }
+
+    async function init() {
+      currentPlayerKey = getPlayerId();
+      try {
+        const sessionRes = await fetch("/api/auth/session", { cache: "no-store" });
+        const sessionData = await sessionRes.json();
+        if (!sessionData.ok || !sessionData.user) {
+          if (authGate) authGate.style.display = "";
+          return;
+        }
+
+        if (workspaceSection) workspaceSection.style.display = "";
+        await loadBracket();
+
+        document.querySelectorAll("[data-bracket-jump]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const target = document.querySelector(`[data-phase-panel="${button.dataset.bracketJump}"]`);
+            target?.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+          });
+        });
+
+        document.querySelectorAll("[data-phase-save]").forEach((button) => {
+          button.addEventListener("click", () => savePhase(button.dataset.phaseSave));
+        });
+      } catch {
+        if (authGate) authGate.style.display = "";
+      }
+    }
+
+    init();
+  </script>
+</Layout>

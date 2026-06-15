@@ -1,0 +1,51 @@
+- generic [active] [ref=e1]:
+  - link "Saltar al contenido" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - link "⚽ Pronósticos del Mundial" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e6]: ⚽
+        - generic [ref=e8]: Pronósticos del Mundial
+      - navigation "Principal" [ref=e9]:
+        - link "Inicio" [ref=e10] [cursor=pointer]:
+          - /url: /
+        - link "Compañeros" [ref=e11] [cursor=pointer]:
+          - /url: /companions
+        - link "Grupos" [ref=e12] [cursor=pointer]:
+          - /url: /#grupos
+        - link "Reglas" [ref=e13] [cursor=pointer]:
+          - /url: /#reglas
+  - main [ref=e14]:
+    - main [ref=e15]:
+      - generic [ref=e16]:
+        - generic [ref=e18]:
+          - text: Compañeros
+          - heading "Ranking de Jugadores" [level=1] [ref=e19]
+        - paragraph [ref=e20]: Cargando ranking...
+        - table [ref=e22]:
+          - rowgroup [ref=e23]:
+            - row "Pos Jugador Favorito Puntos Exactos (5) Ganador (3) Bonus Fav (+1) Completados Pronósticos" [ref=e24]:
+              - columnheader "Pos" [ref=e25]
+              - columnheader "Jugador" [ref=e26]
+              - columnheader "Favorito" [ref=e27]
+              - columnheader "Puntos" [ref=e28]
+              - columnheader "Exactos (5)" [ref=e29]
+              - columnheader "Ganador (3)" [ref=e30]
+              - columnheader "Bonus Fav (+1)" [ref=e31]
+              - columnheader "Completados" [ref=e32]
+              - columnheader "Pronósticos" [ref=e33]
+          - rowgroup
+        - paragraph [ref=e34]: Solo se muestran puntos de partidos con resultado real ingresado.
+        - link "← Volver al inicio" [ref=e36] [cursor=pointer]:
+          - /url: /
+  - contentinfo [ref=e37]:
+    - generic [ref=e38]:
+      - paragraph [ref=e39]: Pronósticos del Mundial · Fixture oficial de fase de grupos 2026 armado sobre datos de FIFA y horarios mostrados para Chile.
+      - generic [ref=e40]:
+        - link "Compañeros" [ref=e41] [cursor=pointer]:
+          - /url: /companions
+        - link "Planilla completa" [ref=e42] [cursor=pointer]:
+          - /url: "#grupos"
+        - link "Reglas" [ref=e43] [cursor=pointer]:
+          - /url: "#reglas"

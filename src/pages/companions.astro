@@ -316,64 +316,118 @@ groupedMatches.forEach((g) => {
             : "Sin equipo favorito";
         }
 
-        if (!data.predictions || data.predictions.length === 0) {
+        const hasGroupPredictions = Array.isArray(data.predictions) && data.predictions.length > 0;
+        const hasBracketPredictions = Array.isArray(data.bracketPredictions) && data.bracketPredictions.length > 0;
+
+        if (!hasGroupPredictions && !hasBracketPredictions) {
           playerPredictionsContent.innerHTML = '<p class="muted">Este jugador aún no ha cargado pronósticos.</p>';
           return;
         }
 
-        const grouped = {};
-        data.predictions.forEach((pred) => {
-          const group = pred.match_id.charAt(0);
-          if (!grouped[group]) grouped[group] = [];
-          grouped[group].push(pred);
-        });
+        let html = "";
 
-        const renderedGroups = playerPredictionsContent.querySelectorAll("details[data-group]");
+        const renderedGroups = playerPredictionsContent.querySelectorAll("details[data-group], details[data-phase]");
         const hasPreviousGroupState = renderedGroups.length > 0;
         const openGroups = new Set(
-          Array.from(playerPredictionsContent.querySelectorAll("details[data-group][open]"))
-            .map((detail) => detail.getAttribute("data-group"))
+          Array.from(playerPredictionsContent.querySelectorAll("details[open]"))
+            .map((detail) => detail.getAttribute("data-group") || detail.getAttribute("data-phase"))
             .filter(Boolean)
         );
 
-        let html = "";
-        const sortedGroups = Object.keys(grouped).sort();
-
-        sortedGroups.forEach((group, i) => {
-          const preds = grouped[group];
-          const shouldOpen = hasPreviousGroupState ? openGroups.has(group) : i < 2;
-          const openAttr = shouldOpen ? ' open' : '';
-          html += `<details class="group-collapsible player-group-card" data-group="${group}"${openAttr}>
-            <summary class="group-head"><span>Grupo ${group}</span></summary>
-            <div class="readonly-list">`;
-
-          preds.forEach((pred) => {
-            const match = allMatches[pred.match_id];
-            if (!match) return;
-            const pointsInfo = pred.points > 0
-              ? `<span class="tag ${pred.type === 'exact' ? 'success' : ''}" style="font-size:0.75rem; margin-left:0.5rem;">+${pred.points} ${pred.favoriteBonus ? '★' : ''}</span>`
-              : pred.type === "pending"
-              ? '<span class="muted" style="font-size:0.75rem; margin-left:0.5rem;">Pendiente</span>'
-              : '<span class="muted" style="font-size:0.75rem; margin-left:0.5rem;">0 pts</span>';
-
-            html += `
-              <div class="readonly-row">
-                <div class="fixture-cell" style="min-width:auto">
-                  <span>${flagWithLabel(match.homeFlag, match.home)}</span>
-                  <span class="muted">vs</span>
-                  <span>${flagWithLabel(match.awayFlag, match.away)}</span>
-                </div>
-                <div class="readonly-score">
-                  <span class="readonly-pill">${pred.home_score}</span>
-                  <span class="muted">-</span>
-                  <span class="readonly-pill">${pred.away_score}</span>
-                  ${pointsInfo}
-                </div>
-              </div>`;
+        if (hasGroupPredictions) {
+          const grouped = {};
+          data.predictions.forEach((pred) => {
+            const group = pred.match_id.charAt(0);
+            if (!grouped[group]) grouped[group] = [];
+            grouped[group].push(pred);
           });
 
-          html += `</div></details>`;
-        });
+          const sortedGroups = Object.keys(grouped).sort();
+
+          sortedGroups.forEach((group, i) => {
+            const preds = grouped[group];
+            const shouldOpen = hasPreviousGroupState ? openGroups.has(group) : i < 2;
+            const openAttr = shouldOpen ? ' open' : '';
+            html += `<details class="group-collapsible player-group-card" data-group="${group}"${openAttr}>
+              <summary class="group-head"><span>Grupo ${group}</span></summary>
+              <div class="readonly-list">`;
+
+            preds.forEach((pred) => {
+              const match = allMatches[pred.match_id];
+              if (!match) return;
+              const pointsInfo = pred.points > 0
+                ? `<span class="tag ${pred.type === 'exact' ? 'success' : ''}" style="font-size:0.75rem; margin-left:0.5rem;">+${pred.points} ${pred.favoriteBonus ? '★' : ''}</span>`
+                : pred.type === "pending"
+                ? '<span class="muted" style="font-size:0.75rem; margin-left:0.5rem;">Pendiente</span>'
+                : '<span class="muted" style="font-size:0.75rem; margin-left:0.5rem;">0 pts</span>';
+
+              html += `
+                <div class="readonly-row">
+                  <div class="fixture-cell" style="min-width:auto">
+                    <span>${flagWithLabel(match.homeFlag, match.home)}</span>
+                    <span class="muted">vs</span>
+                    <span>${flagWithLabel(match.awayFlag, match.away)}</span>
+                  </div>
+                  <div class="readonly-score">
+                    <span class="readonly-pill">${pred.home_score}</span>
+                    <span class="muted">-</span>
+                    <span class="readonly-pill">${pred.away_score}</span>
+                    ${pointsInfo}
+                  </div>
+                </div>`;
+            });
+
+            html += `</div></details>`;
+          });
+        }
+
+        if (hasBracketPredictions) {
+          const phaseOrder = ["16avos", "8vos", "4tos", "semis", "3er/4to lugar", "final"];
+          const groupedBracket = {};
+          data.bracketPredictions.forEach((pred) => {
+            const phase = pred.phase || "Otras";
+            if (!groupedBracket[phase]) groupedBracket[phase] = [];
+            groupedBracket[phase].push(pred);
+          });
+
+          phaseOrder.filter((phase) => groupedBracket[phase]).forEach((phase, i) => {
+            const preds = groupedBracket[phase];
+            const shouldOpen = hasPreviousGroupState ? openGroups.has(phase) : !hasGroupPredictions && i < 2;
+            html += `<details class="group-collapsible player-group-card" data-phase="${phase}"${shouldOpen ? " open" : ""}>
+              <summary class="group-head"><span>${phase}</span></summary>
+              <div class="readonly-list">`;
+
+            preds.forEach((pred) => {
+              const pointsInfo = pred.points > 0
+                ? `<span class="tag ${pred.type === 'exact' ? 'success' : ''}" style="font-size:0.75rem; margin-left:0.5rem;">+${pred.points}</span>`
+                : pred.type === "pending"
+                ? '<span class="muted" style="font-size:0.75rem; margin-left:0.5rem;">Pendiente</span>'
+                : '<span class="muted" style="font-size:0.75rem; margin-left:0.5rem;">0 pts</span>';
+              const pensInfo = pred.home_score === pred.away_score && pred.penalties_winner
+                ? `<div class="muted small-note">Penales: ${escapeHtml(pred.penalties_winner === 'home' ? pred.home : pred.away)}</div>`
+                : "";
+
+              html += `
+                <div class="readonly-row readonly-row--stacked">
+                  <div class="fixture-cell" style="min-width:auto">
+                    <strong>${escapeHtml(pred.label)}</strong>
+                    <span>${escapeHtml(pred.home)}</span>
+                    <span class="muted">vs</span>
+                    <span>${escapeHtml(pred.away)}</span>
+                  </div>
+                  <div class="readonly-score">
+                    <span class="readonly-pill">${pred.home_score}</span>
+                    <span class="muted">-</span>
+                    <span class="readonly-pill">${pred.away_score}</span>
+                    ${pointsInfo}
+                  </div>
+                  ${pensInfo}
+                </div>`;
+            });
+
+            html += `</div></details>`;
+          });
+        }
 
         playerPredictionsContent.innerHTML = html;
       } catch {

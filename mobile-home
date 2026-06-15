@@ -1,0 +1,70 @@
+- generic [active] [ref=e1] [box=0,0,375,1368]:
+  - link "Saltar al contenido" [ref=e2] [cursor=pointer] [box=16,-55,167,44]:
+    - /url: "#main-content"
+  - banner [ref=e3] [box=0,0,375,110]:
+    - generic [ref=e4] [box=16,0,343,109]:
+      - link "⚽ Pronósticos del Mundial" [ref=e5] [cursor=pointer] [box=16,16,229,42]:
+        - /url: /
+        - generic [ref=e6] [box=16,16,42,42]: ⚽
+        - generic [ref=e8] [box=72,28,172,19]: Pronósticos del Mundial
+      - navigation "Principal" [ref=e9] [box=16,74,343,19]:
+        - link "Inicio" [ref=e10] [cursor=pointer] [box=16,74,41,19]:
+          - /url: /
+        - link "Compañeros" [ref=e11] [cursor=pointer] [box=73,74,95,19]:
+          - /url: /companions
+        - link "Grupos" [ref=e12] [cursor=pointer] [box=184,74,55,19]:
+          - /url: /#grupos
+        - link "Reglas" [ref=e13] [cursor=pointer] [box=255,74,51,19]:
+          - /url: /#reglas
+  - main [ref=e14] [box=0,110,375,1000]:
+    - generic [ref=e15] [box=0,110,375,1000]:
+      - region "Pronóstico Mundial" [ref=e16] [box=0,110,375,552]:
+        - generic [ref=e17] [box=10,142,356,504]:
+          - generic [ref=e18] [box=10,142,356,72]:
+            - text: Pronósticos del Mundial 2026
+            - heading "Pronóstico Mundial" [level=1] [ref=e19] [box=10,166,356,37]
+          - generic [ref=e20] [box=10,230,356,415]:
+            - article [ref=e21] [box=10,230,356,120]:
+              - generic [ref=e22] [box=28,247,319,19]: Jugador
+              - strong [ref=e23] [box=28,270,319,21]: Inicia sesión para jugar
+              - text: Ingresa con Google para cargar tus pronósticos
+            - article [ref=e24] [box=10,365,356,83]:
+              - generic [ref=e25] [box=28,382,319,19]: Grupos
+              - strong [ref=e26] [box=28,406,319,21]: "12"
+            - article [ref=e27] [box=10,464,356,83]:
+              - generic [ref=e28] [box=28,481,319,19]: Partidos
+              - strong [ref=e29] [box=28,504,319,21]: "72"
+            - article [ref=e30] [box=10,563,356,83]:
+              - generic [ref=e31] [box=28,580,319,19]: TV Chile
+              - strong [ref=e32] [box=28,603,319,21]: CHV* + DSPORTS + DGO
+      - article [ref=e42] [box=10,709,356,321]:
+        - generic [ref=e43] [box=35,734,306,271]:
+          - text: Acceso requerido
+          - heading "Inicia sesión para jugar" [level=2] [ref=e44] [box=51,789,274,22]
+          - paragraph [ref=e45] [box=51,827,274,77]: Necesitás una cuenta de Google para guardar tus pronósticos y que queden persistidos.
+          - link "Iniciar sesión con Google" [ref=e46] [cursor=pointer] [box=71,923,234,49]:
+            - /url: /api/auth/signin
+      - text: ▾ ▾ ▸ ▸ ▸ ▸ ▸ ▸ ▸ ▸ ▸ ▸
+  - contentinfo [ref=e33] [box=0,1142,375,226]:
+    - generic [ref=e34] [box=16,1175,343,145]:
+      - paragraph [ref=e35] [box=16,1205,343,51]: Pronósticos del Mundial · Fixture oficial de fase de grupos 2026 armado sobre datos de FIFA y horarios mostrados para Chile.
+      - generic [ref=e36] [box=16,1287,269,17]:
+        - link "Compañeros" [ref=e37] [cursor=pointer] [box=16,1287,84,17]:
+          - /url: /companions
+        - link "Planilla completa" [ref=e38] [cursor=pointer] [box=113,1287,114,17]:
+          - /url: "#grupos"
+        - link "Reglas" [ref=e39] [cursor=pointer] [box=240,1287,44,17]:
+          - /url: "#reglas"
+  - generic [ref=e49] [box=101,795,173,40]:
+    - button "Menu" [ref=e50] [box=101,795,42,40]:
+      - img [ref=e52] [box=114,805,20,20]
+      - generic [box=97,714,54,27]: Menu
+    - button "Inspect" [ref=e56] [box=143,795,44,40]:
+      - img [ref=e58] [box=155,805,20,20]
+      - generic [box=132,714,66,27]: Inspect
+    - button "Audit" [ref=e60] [box=187,795,44,40]:
+      - img [ref=e62] [box=199,805,20,20]
+      - generic [box=183,714,52,27]: Audit
+    - button "Settings" [ref=e65] [box=232,795,42,40]:
+      - img [ref=e67] [box=241,805,20,20]
+      - generic [box=215,714,71,27]: Settings

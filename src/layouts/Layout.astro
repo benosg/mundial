@@ -23,9 +23,11 @@ const { isAdmin } = await getSessionContext(Astro.request);
 
 const navigation = [
   { href: "/", label: "Inicio" },
+  { href: "/resultados", label: "Resultados" },
+  { href: "/bracket", label: "Llaves" },
+  { href: "/groups", label: "Grupos" },
   { href: "/companions", label: "Compañeros" },
-  { href: "/#grupos", label: "Grupos" },
-  { href: "/#reglas", label: "Reglas" },
+  { href: "/groups#reglas", label: "Reglas" },
   ...(isAdmin ? [{ href: "/admin/results", label: "Admin" }] : []),
 ];
 
@@ -118,9 +120,11 @@ const structuredData = {
       <div class="footer-inner">
         <p>{siteName} · Fixture oficial de fase de grupos 2026 armado sobre datos de FIFA y horarios mostrados para Chile.</p>
         <div class="list-inline">
+          <a href="/resultados">Resultados</a>
+          <a href="/bracket">Llaves</a>
           <a href="/companions">Compañeros</a>
-          <a href="#grupos">Planilla completa</a>
-          <a href="#reglas">Reglas</a>
+          <a href="/groups#grupos">Planilla completa</a>
+          <a href="/groups#reglas">Reglas</a>
         </div>
       </div>
     </footer>

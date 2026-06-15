@@ -1,0 +1,291 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { getFlagImageUrlFromEmoji } from "../lib/flags";
+import { getResultsSyncIntervalMs } from "../lib/results-sync";
+import { buildResultsTimeline, type ResultsTimelineSection } from "../lib/results-timeline";
+import { createServerClient, isSupabaseConfigured } from "../lib/supabase";
+
+type PageState = {
+  sections: ResultsTimelineSection[];
+  completedMatches: number;
+  totalMatches: number;
+  focusSectionId: string | null;
+  loadError: string | null;
+};
+
+let pageState: PageState = {
+  ...buildResultsTimeline(),
+  loadError: null,
+};
+
+if (isSupabaseConfigured) {
+  try {
+    const supabase = createServerClient(Astro.request, new Headers());
+    const { data, error } = await supabase.from("matches").select("id, home_result, away_result");
+
+    if (!error) {
+      const resultsById = Object.fromEntries(
+        (data ?? []).map((match) => [
+          match.id,
+          {
+            home_result: match.home_result,
+            away_result: match.away_result,
+          },
+        ]),
+      );
+
+      pageState = {
+        ...buildResultsTimeline(resultsById),
+        loadError: null,
+      };
+    } else {
+      pageState.loadError = error.message;
+    }
+  } catch (error) {
+    pageState.loadError = error instanceof Error ? error.message : "No se pudieron cargar los resultados.";
+  }
+}
+
+function renderStatusClass(statusLabel: string) {
+  if (statusLabel === "Final") return "results-status results-status--final";
+  if (statusLabel === "Esperando oficial") return "results-status results-status--pending";
+  return "results-status";
+}
+---
+
+<Layout
+  title="Resultados"
+  currentPath="/resultados"
+  description="Resultados oficiales de la fase de grupos del Mundial 2026, ordenados por día y actualizados automáticamente."
+>
+  <div class="simple-main">
+    <section class="simple-top results-top" aria-labelledby="resultados-title">
+      <div class="site-shell simple-stack">
+        <div class="hero-copy-block results-hero-copy">
+          <span class="eyebrow">Resultados oficiales</span>
+          <h1 class="simple-title" id="resultados-title">Resultados</h1>
+          <p class="section-copy section-copy-tight">Fase de grupos completa, en orden cronológico y con refresco automático cada 30 segundos.</p>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="page-section simple-section">
+      <div class="site-shell">
+        <article class="panel results-panel">
+          <div class="table-row-head results-panel-head">
+            <div>
+              <span class="eyebrow">Fase de grupos A–L</span>
+              <h2 class="section-title section-title-compact">Cronología oficial</h2>
+            </div>
+            <span class="muted" data-results-refresh-note>
+              {pageState.loadError
+                ? `Cargando con datos guardados: ${pageState.loadError}`
+                : `Se actualiza cada 30 segundos. FIFA se consulta como máximo cada ${Math.round(getResultsSyncIntervalMs() / 1000)} segundos.`}
+            </span>
+          </div>
+
+          <div class="results-timeline-shell" data-results-scroll-shell data-results-focus-section={pageState.focusSectionId ?? ""}>
+            <div class="results-timeline" data-results-sections>
+              {pageState.sections.map((section) => (
+                <section class="results-day-section" id={section.id} data-results-section-id={section.id}>
+                  <div class="results-day-heading">
+                    <h3>{section.label}</h3>
+                    <span class="muted">{section.matches.length} partido{section.matches.length !== 1 ? "s" : ""}</span>
+                  </div>
+
+                  <div class="results-card-list">
+                    {section.matches.map((match) => (
+                      <article class="results-match-card">
+                        <div class="results-match-topline">
+                          <div class="results-match-tags">
+                            <span class="tag">Grupo {match.group}</span>
+                            <span class={renderStatusClass(match.statusLabel)}>{match.statusLabel}</span>
+                          </div>
+                          <strong class="results-kickoff">{match.kickoffChile}</strong>
+                        </div>
+
+                        <div class="results-teams-grid">
+                          <div class="results-team results-team--home">
+                            <span class="flag-inline"><img class="flag-icon" src={getFlagImageUrlFromEmoji(match.homeFlag)} alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>{match.home}</span></span>
+                          </div>
+                          <div class="results-score-box" aria-label={`Marcador ${match.home} vs ${match.away}`}>
+                            {match.isFinal ? (
+                              <>
+                                <strong>{match.homeResult}</strong>
+                                <span>-</span>
+                                <strong>{match.awayResult}</strong>
+                              </>
+                            ) : (
+                              <span class="muted">vs</span>
+                            )}
+                          </div>
+                          <div class="results-team results-team--away">
+                            <span class="flag-inline"><img class="flag-icon" src={getFlagImageUrlFromEmoji(match.awayFlag)} alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>{match.away}</span></span>
+                          </div>
+                        </div>
+
+                        <div class="results-meta-grid muted">
+                          <span>{match.venue} · {match.city}</span>
+                          {match.broadcasters.length > 0 && <span>{match.broadcasters.join(" · ")}</span>}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <script is:inline>
+    const AUTO_REFRESH_MS = 30000;
+    const scrollShell = document.querySelector("[data-results-scroll-shell]");
+    const sectionsContainer = document.querySelector("[data-results-sections]");
+    const refreshNote = document.querySelector("[data-results-refresh-note]");
+     let initialScrollDone = false;
+     let refreshInFlight = null;
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function statusClass(label) {
+      if (label === "Final") return "results-status results-status--final";
+      if (label === "Esperando oficial") return "results-status results-status--pending";
+      return "results-status";
+    }
+
+    function emojiToCdn(flag) {
+      return `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${Array.from(flag || "🏳️").map((char) => char.codePointAt(0).toString(16)).join("-")}.svg`;
+    }
+
+    function renderSection(section) {
+      return `
+        <section class="results-day-section" id="${escapeHtml(section.id)}" data-results-section-id="${escapeHtml(section.id)}">
+          <div class="results-day-heading">
+            <h3>${escapeHtml(section.label)}</h3>
+            <span class="muted">${section.matches.length} partido${section.matches.length !== 1 ? "s" : ""}</span>
+          </div>
+          <div class="results-card-list">
+            ${section.matches.map((match) => `
+              <article class="results-match-card">
+                <div class="results-match-topline">
+                  <div class="results-match-tags">
+                    <span class="tag">Grupo ${escapeHtml(match.group)}</span>
+                    <span class="${statusClass(match.statusLabel)}">${escapeHtml(match.statusLabel)}</span>
+                  </div>
+                  <strong class="results-kickoff">${escapeHtml(match.kickoffChile)}</strong>
+                </div>
+                <div class="results-teams-grid">
+                  <div class="results-team results-team--home">
+                    <span class="flag-inline"><img class="flag-icon" src="${emojiToCdn(match.homeFlag)}" alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>${escapeHtml(match.home)}</span></span>
+                  </div>
+                  <div class="results-score-box" aria-label="Marcador ${escapeHtml(match.home)} vs ${escapeHtml(match.away)}">
+                    ${match.isFinal
+                      ? `<strong>${match.homeResult}</strong><span>-</span><strong>${match.awayResult}</strong>`
+                      : '<span class="muted">vs</span>'}
+                  </div>
+                  <div class="results-team results-team--away">
+                    <span class="flag-inline"><img class="flag-icon" src="${emojiToCdn(match.awayFlag)}" alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>${escapeHtml(match.away)}</span></span>
+                  </div>
+                </div>
+                <div class="results-meta-grid muted">
+                  <span>${escapeHtml(match.venue)} · ${escapeHtml(match.city)}</span>
+                  ${(match.broadcasters || []).length > 0 ? `<span>${escapeHtml(match.broadcasters.join(" · "))}</span>` : ""}
+                </div>
+              </article>
+            `).join("")}
+          </div>
+        </section>
+      `;
+    }
+
+    function maybeScrollToFocus(force = false) {
+      if (!scrollShell || (!force && initialScrollDone) || (!force && window.location.hash)) return;
+
+      const focusSectionId = scrollShell.getAttribute("data-results-focus-section");
+      if (!focusSectionId) return;
+
+      const focusSection = scrollShell.querySelector(`[data-results-section-id="${focusSectionId}"]`);
+      if (!focusSection) return;
+
+      if (!force && scrollShell.scrollTop > 24) {
+        initialScrollDone = true;
+        return;
+      }
+
+      const targetTop = Math.max(0, focusSection.offsetTop - scrollShell.offsetTop - 18);
+      scrollShell.scrollTo({ top: targetTop, behavior: force ? "auto" : "smooth" });
+      initialScrollDone = true;
+    }
+
+    async function loadResults(options = {}) {
+      if (refreshInFlight) return refreshInFlight;
+      const { silent = false, forceScroll = false } = options;
+
+      refreshInFlight = (async () => {
+        if (!silent && refreshNote) {
+          refreshNote.textContent = "Actualizando resultados oficiales...";
+        }
+
+        try {
+          const res = await fetch("/api/results/group-stage", { cache: "no-store" });
+          const data = await res.json();
+
+          if (!data.ok) {
+            if (refreshNote) refreshNote.textContent = data.error || "No se pudo actualizar esta vista.";
+            return;
+          }
+
+          if (sectionsContainer && Array.isArray(data.sections)) {
+            sectionsContainer.innerHTML = data.sections.map(renderSection).join("");
+          }
+
+          if (scrollShell && data.focusSectionId) {
+            scrollShell.setAttribute("data-results-focus-section", data.focusSectionId);
+          }
+
+          const throttleSeconds = Math.round((data.upstreamThrottleMs || 60000) / 1000);
+          const syncNote = data.syncError
+            ? `Mostrando resultados guardados. ${data.syncError}`
+            : data.source === "fifa"
+              ? "Resultados oficiales revisados recién."
+              : "Resultados cargados desde la sincronización más reciente.";
+          if (refreshNote) {
+            refreshNote.textContent = `${syncNote} Esta vista se refresca cada 30 segundos y FIFA se consulta como máximo cada ${throttleSeconds} segundos.`;
+          }
+
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              maybeScrollToFocus(forceScroll);
+            });
+          });
+        } catch {
+          if (refreshNote) {
+            refreshNote.textContent = "Error de red al actualizar resultados. Se mantienen los últimos datos visibles.";
+          }
+        } finally {
+          refreshInFlight = null;
+        }
+      })();
+
+      return refreshInFlight;
+    }
+
+    document.addEventListener("astro:page-load", () => {
+      loadResults({ silent: true, forceScroll: true });
+      window.setInterval(() => {
+        loadResults({ silent: true });
+      }, AUTO_REFRESH_MS);
+    }, { once: true });
+  </script>
+</Layout>
