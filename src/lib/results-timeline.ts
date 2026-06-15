@@ -23,6 +23,8 @@ type StoredResult = {
   away_result: number | null;
 };
 
+const LIVE_MATCH_WINDOW_MS = 3 * 60 * 60 * 1000;
+
 export type ResultsTimelineMatch = {
   id: string;
   group: string;
@@ -64,6 +66,7 @@ function parseKickoffChile(value: string) {
       dayKey: `${TOURNAMENT_YEAR}-01-01`,
       kickoffTime: value,
       sortValue: Number.MAX_SAFE_INTEGER,
+      kickoffUtcMs: Number.NaN,
     };
   }
 
@@ -78,7 +81,15 @@ function parseKickoffChile(value: string) {
     dayKey,
     kickoffTime: `${hourText.padStart(2, "0")}:${minuteText}`,
     sortValue: Date.UTC(TOURNAMENT_YEAR, month, day, hour, minute),
+    kickoffUtcMs: Date.UTC(TOURNAMENT_YEAR, month, day, hour + 4, minute),
   };
+}
+
+function isLikelyLiveMatch(referenceDate: Date, kickoffUtcMs: number, hasScore: boolean) {
+  if (!hasScore || !Number.isFinite(kickoffUtcMs)) return false;
+
+  const nowMs = referenceDate.getTime();
+  return nowMs >= kickoffUtcMs && nowMs <= kickoffUtcMs + LIVE_MATCH_WINDOW_MS;
 }
 
 function getChileDayKey(referenceDate: Date) {
@@ -136,11 +147,12 @@ export function buildResultsTimeline(
       const parsedKickoff = parseKickoffChile(match.kickoffChile);
       const result = storedResults[match.id];
       const isFinal = Number.isInteger(result?.home_result) && Number.isInteger(result?.away_result);
+      const isLive = isLikelyLiveMatch(referenceDate, parsedKickoff.kickoffUtcMs, isFinal);
       const statusLabel = isFinal
-        ? "Final"
-        : parsedKickoff.dayKey < todayKey
-          ? "Esperando oficial"
-          : parsedKickoff.dayKey === todayKey
+         ? (isLive ? "En juego" : "Final")
+         : parsedKickoff.dayKey < todayKey
+           ? "Esperando oficial"
+           : parsedKickoff.dayKey === todayKey
             ? "Hoy"
             : "Programado";
 
