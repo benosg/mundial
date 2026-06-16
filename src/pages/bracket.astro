@@ -92,6 +92,15 @@ const bracketColumns = {
                 <button class="button-secondary bracket-phase-nav-button" type="button" data-bracket-jump={phase.phase}>{phase.label}</button>
               ))}
             </div>
+
+            <div class="bracket-save-row" aria-label="Guardar pronosticos por fase">
+              <button class="button button-compact bracket-save-button" type="button" data-phase-save="16avos">Guardar 16avos</button>
+              <button class="button button-compact bracket-save-button" type="button" data-phase-save="8vos">Guardar 8vos</button>
+              <button class="button button-compact bracket-save-button" type="button" data-phase-save="4tos">Guardar 4tos</button>
+              <button class="button button-compact bracket-save-button" type="button" data-phase-save="semis">Guardar semis</button>
+              <button class="button button-compact bracket-save-button" type="button" data-phase-save="3er/4to lugar">Guardar 3er/4to lugar</button>
+              <button class="button button-compact bracket-save-button" type="button" data-phase-save="final">Guardar final</button>
+            </div>
           </div>
 
           <div class="bracket-scroll-shell" data-bracket-scroll-shell tabindex="0">
@@ -104,26 +113,24 @@ const bracketColumns = {
                         <span class="eyebrow">Fase eliminatoria</span>
                         <h2 class="entry-title">{column.label}</h2>
                       </div>
-                      <button class="button button-compact bracket-save-button" type="button" data-phase-save={column.phase}>Guardar</button>
                     </div>
 
-                    <div class="bracket-match-list" data-phase-matches={column.phase} data-match-ids={column.matchIds.join(",")}></div>
+                    <div class="bracket-match-list" data-phase-matches={column.phase} data-match-ids={column.matchIds.join(",")} data-bracket-side="left" data-bracket-depth={index}></div>
                   </section>
                 ))}
               </div>
 
               <div class="bracket-center" aria-label="Finales de la llave">
                 {bracketColumns.center.map((column, index) => (
-                  <section class="bracket-phase-panel bracket-phase-panel--center" data-phase-panel={column.phase} data-bracket-side="center" id={`bracket-column-center-${index}`}>
+                  <section class="bracket-phase-panel bracket-phase-panel--center" data-phase-panel={column.phase} data-bracket-side="center" data-center-index={index} id={`bracket-column-center-${index}`}>
                     <div class="bracket-phase-head">
                       <div>
                         <span class="eyebrow">Centro</span>
                         <h2 class="entry-title">{column.label}</h2>
                       </div>
-                      <button class="button button-compact bracket-save-button" type="button" data-phase-save={column.phase}>Guardar</button>
                     </div>
 
-                    <div class="bracket-match-list" data-phase-matches={column.phase} data-match-ids={column.matchIds.join(",")}></div>
+                    <div class="bracket-match-list" data-phase-matches={column.phase} data-match-ids={column.matchIds.join(",")} data-bracket-side="center" data-center-index={index}></div>
                   </section>
                 ))}
               </div>
@@ -136,10 +143,9 @@ const bracketColumns = {
                         <span class="eyebrow">Fase eliminatoria</span>
                         <h2 class="entry-title">{column.label}</h2>
                       </div>
-                      <button class="button button-compact bracket-save-button" type="button" data-phase-save={column.phase}>Guardar</button>
                     </div>
 
-                    <div class="bracket-match-list" data-phase-matches={column.phase} data-match-ids={column.matchIds.join(",")}></div>
+                    <div class="bracket-match-list" data-phase-matches={column.phase} data-match-ids={column.matchIds.join(",")} data-bracket-side="right" data-bracket-depth={index}></div>
                   </section>
                 ))}
               </div>
@@ -225,7 +231,16 @@ const bracketColumns = {
         .toLowerCase();
     }
 
-    function renderMatch(match, prediction, editable, phase, index, total) {
+    function getBracketSlot(index, total, side, centerIndex) {
+      if (side === "center") {
+        return { start: centerIndex === "1" ? 10 : 7, span: 3 };
+      }
+
+      const span = Math.max(2, 16 / total);
+      return { start: Math.round(index * span) + 1, span };
+    }
+
+    function renderMatch(match, prediction, editable, phase, slot) {
       const homeValue = Number.isInteger(prediction?.home_score) ? prediction.home_score : "";
       const awayValue = Number.isInteger(prediction?.away_score) ? prediction.away_score : "";
       const needsPens = prediction && prediction.home_score === prediction.away_score;
@@ -233,24 +248,17 @@ const bracketColumns = {
       const classes = [
         "bracket-match-card",
         `bracket-match-card--${phaseClassName(phase)}`,
-        phase !== "16avos" ? "bracket-match-card--has-source" : "",
-        phase !== "final" && phase !== "3er/4to lugar" ? "bracket-match-card--feeds-next" : "",
-        total > 1 && index % 2 === 0 ? "bracket-match-card--pair-top" : "",
-        total > 1 && index % 2 === 1 ? "bracket-match-card--pair-bottom" : "",
       ].filter(Boolean).join(" ");
       const actualResult = match.home_result !== null && match.away_result !== null
         ? `<div class="bracket-result-note muted small-note">Real: ${match.home_result}-${match.away_result}${match.home_result === match.away_result && match.penalties_winner ? ` · penales ${match.penalties_winner === 'home' ? escapeHtml(match.home_team) : escapeHtml(match.away_team)}` : ""}</div>`
-        : "";
-      const pairConnector = total > 1 && phase !== "final" && phase !== "3er/4to lugar"
-        ? `<span class="bracket-pair-connector" aria-hidden="true"></span>`
         : "";
       const broadcasters = Array.isArray(match.broadcasters) && match.broadcasters.length > 0
         ? `<div class="bracket-broadcasters muted small-note">${escapeHtml(match.broadcasters.join(" · "))}</div>`
         : "";
 
       return `
+        <div class="bracket-match-slot" style="--slot-start:${slot.start}; --slot-span:${slot.span}">
         <article class="${classes}" data-match-card="${match.id}">
-          ${pairConnector}
           <div class="bracket-match-top">
             <span class="tag bracket-match-tag">${escapeHtml(match.label)}</span>
             <div class="muted small-note bracket-match-meta">${formatChileDate(match.kickoff_at)} · ${escapeHtml(match.city)}</div>
@@ -287,7 +295,8 @@ const bracketColumns = {
           </div>
 
           ${actualResult}
-        </article>`;
+        </article>
+        </div>`;
     }
 
     function updatePenaltiesVisibility(matchId) {
@@ -320,8 +329,9 @@ const bracketColumns = {
             ? phaseBlock.matches.filter((fixture) => matchIds.includes(fixture.id))
             : phaseBlock.matches;
 
+          const side = container.dataset.bracketSide || "left";
           container.innerHTML = fixtures
-            .map((fixture, index, items) => renderMatch(matchesById.get(fixture.id), predictionsById.get(fixture.id), editable, phase, index, items.length))
+            .map((fixture, index) => renderMatch(matchesById.get(fixture.id), predictionsById.get(fixture.id), editable, phase, getBracketSlot(index, fixtures.length, side, container.dataset.centerIndex)))
             .join("");
         });
       });
