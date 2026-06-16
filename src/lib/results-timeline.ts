@@ -1,4 +1,4 @@
-import { groupedMatches } from "../data/site";
+import { groupedMatches, isChvBroadcastMatch } from "../data/site";
 
 const TOURNAMENT_YEAR = 2026;
 const CHILE_TIME_ZONE = "Etc/GMT+4";
@@ -116,6 +116,11 @@ function formatAbsoluteDayLabel(dayKey: string) {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
+function getMatchBroadcasters(matchId: string, broadcasters: string[]) {
+  if (!isChvBroadcastMatch(matchId)) return broadcasters;
+  return ["CHV", ...broadcasters.filter((item) => item !== "CHV")];
+}
+
 function describeDay(dayKey: string, todayKey: string) {
   const dayMs = Date.parse(`${dayKey}T00:00:00Z`);
   const todayMs = Date.parse(`${todayKey}T00:00:00Z`);
@@ -169,7 +174,7 @@ export function buildResultsTimeline(
         kickoffTime: parsedKickoff.kickoffTime,
         venue: match.venue,
         city: match.city,
-        broadcasters: match.broadcasters,
+        broadcasters: getMatchBroadcasters(match.id, match.broadcasters),
         homeResult: isFinal ? result?.home_result ?? null : null,
         awayResult: isFinal ? result?.away_result ?? null : null,
         statusLabel,
