@@ -1,6 +1,25 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { knockoutFixturesByPhase, knockoutPhaseOrder } from "../data/knockout";
+
+const bracketColumns = {
+  left: [
+    { phase: "16avos", label: "16avos 1-8", matchIds: ["73", "74", "75", "76", "77", "78", "79", "80"] },
+    { phase: "8vos", label: "8vos 1-4", matchIds: ["89", "90", "91", "92"] },
+    { phase: "4tos", label: "4tos 1-2", matchIds: ["97", "98"] },
+    { phase: "semis", label: "Semi 1", matchIds: ["101"] },
+  ],
+  center: [
+    { phase: "final", label: "Final", matchIds: ["104"] },
+    { phase: "3er/4to lugar", label: "3er y 4to lugar", matchIds: ["103"] },
+  ],
+  right: [
+    { phase: "semis", label: "Semi 2", matchIds: ["102"] },
+    { phase: "4tos", label: "4tos 3-4", matchIds: ["99", "100"] },
+    { phase: "8vos", label: "8vos 5-8", matchIds: ["93", "94", "95", "96"] },
+    { phase: "16avos", label: "16avos 9-16", matchIds: ["81", "82", "83", "84", "85", "86", "87", "88"] },
+  ],
+} as const;
 ---
 
 <Layout
@@ -64,8 +83,8 @@ import { knockoutFixturesByPhase, knockoutPhaseOrder } from "../data/knockout";
           <div class="bracket-board-header">
             <div>
               <span class="eyebrow">Llave completa</span>
-              <h2 class="section-title section-title-compact">Vista horizontal por rondas</h2>
-              <p class="muted bracket-board-copy">Cada columna corresponde a una fase. Desliza horizontalmente en pantallas estrechas o usa los accesos rápidos para saltar entre rondas.</p>
+              <h2 class="section-title section-title-compact">Vista clásica de llaves</h2>
+              <p class="muted bracket-board-copy">Los cruces avanzan desde ambos lados hacia el centro. Desliza horizontalmente en pantallas estrechas o usa los accesos rápidos para saltar entre rondas.</p>
             </div>
 
             <div class="bracket-phase-nav" aria-label="Ir a una fase del cuadro">
@@ -77,30 +96,86 @@ import { knockoutFixturesByPhase, knockoutPhaseOrder } from "../data/knockout";
 
           <div class="bracket-scroll-shell" data-bracket-scroll-shell tabindex="0">
             <div class="bracket-board" data-bracket-board>
-              {knockoutFixturesByPhase.map((phase) => (
-                <section class="bracket-phase-panel" data-phase-panel={phase.phase} id={`bracket-phase-${phase.phase.replaceAll("/", "-").replaceAll(" ", "-")}`}>
-                  <div class="bracket-phase-head">
-                    <div>
-                      <span class="eyebrow">Fase eliminatoria</span>
-                      <h2 class="entry-title">{phase.label}</h2>
+              <div class="bracket-wing bracket-wing--left" aria-label="Lado izquierdo de la llave">
+                {bracketColumns.left.map((column, index) => (
+                  <section class="bracket-phase-panel bracket-phase-panel--split" data-phase-panel={column.phase} data-bracket-side="left" data-bracket-depth={index} id={`bracket-column-left-${column.phase.replaceAll("/", "-").replaceAll(" ", "-")}-${index}`}>
+                    <div class="bracket-phase-head">
+                      <div>
+                        <span class="eyebrow">Fase eliminatoria</span>
+                        <h2 class="entry-title">{column.label}</h2>
+                      </div>
+                      <span class="tag" data-phase-status={column.phase}>Pendiente</span>
                     </div>
-                    <span class="tag" data-phase-status={phase.phase}>Pendiente</span>
-                  </div>
 
-                  <p class="muted bracket-phase-copy" data-phase-window={phase.phase}>Esperando información de la fase…</p>
+                    <p class="muted bracket-phase-copy" data-phase-window={column.phase}>Esperando información de la fase…</p>
 
-                  <div class="lock-banner" data-phase-banner={phase.phase} style="display:none" role="alert">
-                    <span class="lock-banner-icon">🔒</span>
-                    <span class="lock-banner-text" data-phase-banner-text={phase.phase}></span>
-                  </div>
+                    <div class="lock-banner" data-phase-banner={column.phase} style="display:none" role="alert">
+                      <span class="lock-banner-icon">🔒</span>
+                      <span class="lock-banner-text" data-phase-banner-text={column.phase}></span>
+                    </div>
 
-                  <div class="bracket-match-list" data-phase-matches={phase.phase}></div>
+                    <div class="bracket-match-list" data-phase-matches={column.phase} data-match-ids={column.matchIds.join(",")}></div>
 
-                  <div class="inline-actions bracket-phase-actions">
-                    <button class="button" type="button" data-phase-save={phase.phase}>Guardar {phase.phase}</button>
-                  </div>
-                </section>
-              ))}
+                    <div class="inline-actions bracket-phase-actions">
+                      <button class="button" type="button" data-phase-save={column.phase}>Guardar {column.phase}</button>
+                    </div>
+                  </section>
+                ))}
+              </div>
+
+              <div class="bracket-center" aria-label="Finales de la llave">
+                {bracketColumns.center.map((column, index) => (
+                  <section class="bracket-phase-panel bracket-phase-panel--center" data-phase-panel={column.phase} data-bracket-side="center" id={`bracket-column-center-${index}`}>
+                    <div class="bracket-phase-head">
+                      <div>
+                        <span class="eyebrow">Centro</span>
+                        <h2 class="entry-title">{column.label}</h2>
+                      </div>
+                      <span class="tag" data-phase-status={column.phase}>Pendiente</span>
+                    </div>
+
+                    <p class="muted bracket-phase-copy" data-phase-window={column.phase}>Esperando información de la fase…</p>
+
+                    <div class="lock-banner" data-phase-banner={column.phase} style="display:none" role="alert">
+                      <span class="lock-banner-icon">🔒</span>
+                      <span class="lock-banner-text" data-phase-banner-text={column.phase}></span>
+                    </div>
+
+                    <div class="bracket-match-list" data-phase-matches={column.phase} data-match-ids={column.matchIds.join(",")}></div>
+
+                    <div class="inline-actions bracket-phase-actions">
+                      <button class="button" type="button" data-phase-save={column.phase}>Guardar {column.phase}</button>
+                    </div>
+                  </section>
+                ))}
+              </div>
+
+              <div class="bracket-wing bracket-wing--right" aria-label="Lado derecho de la llave">
+                {bracketColumns.right.map((column, index) => (
+                  <section class="bracket-phase-panel bracket-phase-panel--split" data-phase-panel={column.phase} data-bracket-side="right" data-bracket-depth={index} id={`bracket-column-right-${column.phase.replaceAll("/", "-").replaceAll(" ", "-")}-${index}`}>
+                    <div class="bracket-phase-head">
+                      <div>
+                        <span class="eyebrow">Fase eliminatoria</span>
+                        <h2 class="entry-title">{column.label}</h2>
+                      </div>
+                      <span class="tag" data-phase-status={column.phase}>Pendiente</span>
+                    </div>
+
+                    <p class="muted bracket-phase-copy" data-phase-window={column.phase}>Esperando información de la fase…</p>
+
+                    <div class="lock-banner" data-phase-banner={column.phase} style="display:none" role="alert">
+                      <span class="lock-banner-icon">🔒</span>
+                      <span class="lock-banner-text" data-phase-banner-text={column.phase}></span>
+                    </div>
+
+                    <div class="bracket-match-list" data-phase-matches={column.phase} data-match-ids={column.matchIds.join(",")}></div>
+
+                    <div class="inline-actions bracket-phase-actions">
+                      <button class="button" type="button" data-phase-save={column.phase}>Guardar {column.phase}</button>
+                    </div>
+                  </section>
+                ))}
+              </div>
             </div>
           </div>
         </article>
@@ -282,17 +357,19 @@ import { knockoutFixturesByPhase, knockoutPhaseOrder } from "../data/knockout";
         const phase = phaseBlock.phase;
         const state = phaseStates[phase];
         const editable = !!state?.editable;
-        const statusNode = document.querySelector(`[data-phase-status="${phase}"]`);
-        const windowNode = document.querySelector(`[data-phase-window="${phase}"]`);
-        const banner = document.querySelector(`[data-phase-banner="${phase}"]`);
-        const bannerText = document.querySelector(`[data-phase-banner-text="${phase}"]`);
-        const saveButton = document.querySelector(`[data-phase-save="${phase}"]`);
-        const container = document.querySelector(`[data-phase-matches="${phase}"]`);
-        if (statusNode) statusNode.textContent = statusText(state);
-        if (windowNode) windowNode.textContent = windowText(state);
-        if (saveButton) saveButton.disabled = !editable;
+        document.querySelectorAll(`[data-phase-status="${phase}"]`).forEach((statusNode) => {
+          statusNode.textContent = statusText(state);
+        });
+        document.querySelectorAll(`[data-phase-window="${phase}"]`).forEach((windowNode) => {
+          windowNode.textContent = windowText(state);
+        });
+        document.querySelectorAll(`[data-phase-save="${phase}"]`).forEach((saveButton) => {
+          saveButton.disabled = !editable;
+        });
 
-        if (banner && bannerText) {
+        document.querySelectorAll(`[data-phase-banner="${phase}"]`).forEach((banner) => {
+          const bannerText = banner.querySelector(`[data-phase-banner-text="${phase}"]`);
+          if (!bannerText) return;
           if (state?.status === "pending") {
             banner.style.display = "";
             bannerText.textContent = `Esta fase se habilita al terminar ${state.dependencyLabel}.`;
@@ -303,13 +380,21 @@ import { knockoutFixturesByPhase, knockoutPhaseOrder } from "../data/knockout";
             banner.style.display = "none";
             bannerText.textContent = "";
           }
-        }
+        });
 
-        if (container) {
-          container.innerHTML = phaseBlock.matches
+        document.querySelectorAll(`[data-phase-matches="${phase}"]`).forEach((container) => {
+          const matchIds = (container.dataset.matchIds || "")
+            .split(",")
+            .map((id) => id.trim())
+            .filter(Boolean);
+          const fixtures = matchIds.length > 0
+            ? phaseBlock.matches.filter((fixture) => matchIds.includes(fixture.id))
+            : phaseBlock.matches;
+
+          container.innerHTML = fixtures
             .map((fixture, index, items) => renderMatch(matchesById.get(fixture.id), predictionsById.get(fixture.id), editable, phase, index, items.length))
             .join("");
-        }
+        });
       });
 
       document.querySelectorAll("[data-match-score]").forEach((input) => {
