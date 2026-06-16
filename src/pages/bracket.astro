@@ -84,7 +84,7 @@ const bracketColumns = {
             <div>
               <span class="eyebrow">Llave completa</span>
               <h2 class="section-title section-title-compact">Vista clásica de llaves</h2>
-              <p class="muted bracket-board-copy">Los cruces avanzan desde ambos lados hacia el centro. Desliza horizontalmente en pantallas estrechas o usa los accesos rápidos para saltar entre rondas.</p>
+              <p class="muted bracket-board-copy">Los cruces avanzan desde ambos lados hacia el centro. Cada fase se habilita cuando finaliza la anterior.</p>
             </div>
 
             <div class="bracket-phase-nav" aria-label="Ir a una fase del cuadro">
@@ -104,21 +104,10 @@ const bracketColumns = {
                         <span class="eyebrow">Fase eliminatoria</span>
                         <h2 class="entry-title">{column.label}</h2>
                       </div>
-                      <span class="tag" data-phase-status={column.phase}>Pendiente</span>
-                    </div>
-
-                    <p class="muted bracket-phase-copy" data-phase-window={column.phase}>Esperando información de la fase…</p>
-
-                    <div class="lock-banner" data-phase-banner={column.phase} style="display:none" role="alert">
-                      <span class="lock-banner-icon">🔒</span>
-                      <span class="lock-banner-text" data-phase-banner-text={column.phase}></span>
+                      <button class="button button-compact bracket-save-button" type="button" data-phase-save={column.phase}>Guardar</button>
                     </div>
 
                     <div class="bracket-match-list" data-phase-matches={column.phase} data-match-ids={column.matchIds.join(",")}></div>
-
-                    <div class="inline-actions bracket-phase-actions">
-                      <button class="button" type="button" data-phase-save={column.phase}>Guardar {column.phase}</button>
-                    </div>
                   </section>
                 ))}
               </div>
@@ -131,21 +120,10 @@ const bracketColumns = {
                         <span class="eyebrow">Centro</span>
                         <h2 class="entry-title">{column.label}</h2>
                       </div>
-                      <span class="tag" data-phase-status={column.phase}>Pendiente</span>
-                    </div>
-
-                    <p class="muted bracket-phase-copy" data-phase-window={column.phase}>Esperando información de la fase…</p>
-
-                    <div class="lock-banner" data-phase-banner={column.phase} style="display:none" role="alert">
-                      <span class="lock-banner-icon">🔒</span>
-                      <span class="lock-banner-text" data-phase-banner-text={column.phase}></span>
+                      <button class="button button-compact bracket-save-button" type="button" data-phase-save={column.phase}>Guardar</button>
                     </div>
 
                     <div class="bracket-match-list" data-phase-matches={column.phase} data-match-ids={column.matchIds.join(",")}></div>
-
-                    <div class="inline-actions bracket-phase-actions">
-                      <button class="button" type="button" data-phase-save={column.phase}>Guardar {column.phase}</button>
-                    </div>
                   </section>
                 ))}
               </div>
@@ -158,21 +136,10 @@ const bracketColumns = {
                         <span class="eyebrow">Fase eliminatoria</span>
                         <h2 class="entry-title">{column.label}</h2>
                       </div>
-                      <span class="tag" data-phase-status={column.phase}>Pendiente</span>
-                    </div>
-
-                    <p class="muted bracket-phase-copy" data-phase-window={column.phase}>Esperando información de la fase…</p>
-
-                    <div class="lock-banner" data-phase-banner={column.phase} style="display:none" role="alert">
-                      <span class="lock-banner-icon">🔒</span>
-                      <span class="lock-banner-text" data-phase-banner-text={column.phase}></span>
+                      <button class="button button-compact bracket-save-button" type="button" data-phase-save={column.phase}>Guardar</button>
                     </div>
 
                     <div class="bracket-match-list" data-phase-matches={column.phase} data-match-ids={column.matchIds.join(",")}></div>
-
-                    <div class="inline-actions bracket-phase-actions">
-                      <button class="button" type="button" data-phase-save={column.phase}>Guardar {column.phase}</button>
-                    </div>
                   </section>
                 ))}
               </div>
@@ -247,23 +214,6 @@ const bracketColumns = {
         minute: "2-digit",
         hour12: false,
       }).format(new Date(iso)).replace(",", " ·");
-    }
-
-    function statusText(state) {
-      if (!state) return "Pendiente";
-      if (state.status === "open") return "Abierto";
-      if (state.status === "completed") return "Completado";
-      if (state.status === "locked") return "Cerrado";
-      return "Pendiente";
-    }
-
-    function windowText(state) {
-      if (!state) return "Sin información de ventana.";
-      const cutoff = formatChileDate(state.cutoffAt);
-      if (state.status === "pending") return `Se abre cuando termine ${state.dependencyLabel}.`;
-      if (state.status === "completed") return `Fase cerrada. El corte fue ${cutoff}.`;
-      if (state.status === "locked") return `Edición cerrada desde ${cutoff}.`;
-      return `Puedes editar hasta ${cutoff}.`;
     }
 
     function phaseClassName(phase) {
@@ -357,29 +307,8 @@ const bracketColumns = {
         const phase = phaseBlock.phase;
         const state = phaseStates[phase];
         const editable = !!state?.editable;
-        document.querySelectorAll(`[data-phase-status="${phase}"]`).forEach((statusNode) => {
-          statusNode.textContent = statusText(state);
-        });
-        document.querySelectorAll(`[data-phase-window="${phase}"]`).forEach((windowNode) => {
-          windowNode.textContent = windowText(state);
-        });
         document.querySelectorAll(`[data-phase-save="${phase}"]`).forEach((saveButton) => {
           saveButton.disabled = !editable;
-        });
-
-        document.querySelectorAll(`[data-phase-banner="${phase}"]`).forEach((banner) => {
-          const bannerText = banner.querySelector(`[data-phase-banner-text="${phase}"]`);
-          if (!bannerText) return;
-          if (state?.status === "pending") {
-            banner.style.display = "";
-            bannerText.textContent = `Esta fase se habilita al terminar ${state.dependencyLabel}.`;
-          } else if (state?.status === "locked" || state?.status === "completed") {
-            banner.style.display = "";
-            bannerText.textContent = `Esta fase ya no admite cambios.`;
-          } else {
-            banner.style.display = "none";
-            bannerText.textContent = "";
-          }
         });
 
         document.querySelectorAll(`[data-phase-matches="${phase}"]`).forEach((container) => {
