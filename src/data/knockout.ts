@@ -16,7 +16,13 @@ export interface KnockoutFixture {
   broadcasters: string[];
 }
 
-export const knockoutBroadcastersChile = ["CHV", "DSPORTS", "DGO"];
+export const knockoutBroadcastersChile = ["DSPORTS", "DGO"];
+export const knockoutChvBroadcastMatchIds = new Set(["103", "104"]);
+
+function getKnockoutBroadcasters(matchId: string) {
+  if (!knockoutChvBroadcastMatchIds.has(matchId)) return knockoutBroadcastersChile;
+  return ["CHV", ...knockoutBroadcastersChile];
+}
 
 export const knockoutPhaseLabels: Record<KnockoutPhase, string> = {
   "16avos": "16avos de final",
@@ -64,7 +70,7 @@ const knockoutFixtureBase = [
 
 export const knockoutFixtures: KnockoutFixture[] = knockoutFixtureBase.map((match) => ({
   ...match,
-  broadcasters: knockoutBroadcastersChile,
+  broadcasters: getKnockoutBroadcasters(match.id),
 }));
 
 export const knockoutFixturesByPhase = knockoutPhaseOrder.map((phase) => ({
