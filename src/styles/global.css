@@ -433,7 +433,13 @@ img {
 }
 
 .bracket-match-subhead {
+  margin-bottom: 0.25rem;
+}
+
+.bracket-broadcasters {
   margin-bottom: 0.55rem;
+  font-weight: 700;
+  color: var(--accent-strong);
 }
 
 .bracket-teams-grid {

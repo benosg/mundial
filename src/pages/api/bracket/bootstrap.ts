@@ -97,6 +97,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       kickoff_at: dbMatch?.kickoff_at || fixture.kickoffAt,
       venue: dbMatch?.venue || fixture.venue,
       city: dbMatch?.city || fixture.city,
+      broadcasters: fixture.broadcasters,
       home_result: dbMatch?.home_result ?? null,
       away_result: dbMatch?.away_result ?? null,
       penalties_winner: dbMatch?.penalties_winner ?? null,

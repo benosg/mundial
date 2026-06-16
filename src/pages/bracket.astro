@@ -219,6 +219,9 @@ import { knockoutFixturesByPhase, knockoutPhaseOrder } from "../data/knockout";
       const pairConnector = total > 1 && phase !== "final" && phase !== "3er/4to lugar"
         ? `<span class="bracket-pair-connector" aria-hidden="true"></span>`
         : "";
+      const broadcasters = Array.isArray(match.broadcasters) && match.broadcasters.length > 0
+        ? `<div class="bracket-broadcasters muted small-note">${escapeHtml(match.broadcasters.join(" · "))}</div>`
+        : "";
 
       return `
         <article class="${classes}" data-match-card="${match.id}">
@@ -229,6 +232,7 @@ import { knockoutFixturesByPhase, knockoutPhaseOrder } from "../data/knockout";
           </div>
 
           <div class="bracket-match-subhead muted small-note">${escapeHtml(match.venue)}, ${escapeHtml(match.city)}</div>
+          ${broadcasters}
 
           <div class="bracket-teams-grid">
             <div class="bracket-team-row">

@@ -13,7 +13,10 @@ export interface KnockoutFixture {
   kickoffAt: string;
   venue: string;
   city: string;
+  broadcasters: string[];
 }
+
+export const knockoutBroadcastersChile = ["CHV", "DSPORTS", "DGO"];
 
 export const knockoutPhaseLabels: Record<KnockoutPhase, string> = {
   "16avos": "16avos de final",
@@ -24,7 +27,7 @@ export const knockoutPhaseLabels: Record<KnockoutPhase, string> = {
   final: "Final",
 };
 
-export const knockoutFixtures = [
+const knockoutFixtureBase = [
   { id: "73", order: 73, phase: "16avos", label: "16avos 1", fifaMatchId: "400021518", homeSlot: "2A", awaySlot: "2B", kickoffAt: "2026-06-28T19:00:00Z", venue: "Los Angeles Stadium", city: "Los Angeles" },
   { id: "74", order: 74, phase: "16avos", label: "16avos 2", fifaMatchId: "400021513", homeSlot: "1E", awaySlot: "3ABCDF", kickoffAt: "2026-06-29T20:30:00Z", venue: "Boston Stadium", city: "Boston" },
   { id: "75", order: 75, phase: "16avos", label: "16avos 3", fifaMatchId: "400021522", homeSlot: "1F", awaySlot: "2C", kickoffAt: "2026-06-30T01:00:00Z", venue: "Monterrey Stadium", city: "Monterrey" },
@@ -57,7 +60,12 @@ export const knockoutFixtures = [
   { id: "102", order: 102, phase: "semis", label: "Semi 2", fifaMatchId: "400021540", homeSlot: "W99", awaySlot: "W100", kickoffAt: "2026-07-15T19:00:00Z", venue: "Atlanta Stadium", city: "Atlanta" },
   { id: "103", order: 103, phase: "3er/4to lugar", label: "3er y 4to lugar", fifaMatchId: "400021542", homeSlot: "RU101", awaySlot: "RU102", kickoffAt: "2026-07-18T21:00:00Z", venue: "Miami Stadium", city: "Miami" },
   { id: "104", order: 104, phase: "final", label: "Final", fifaMatchId: "400021543", homeSlot: "W101", awaySlot: "W102", kickoffAt: "2026-07-19T19:00:00Z", venue: "New York/New Jersey Stadium", city: "New Jersey" },
-] satisfies KnockoutFixture[];
+] satisfies Array<Omit<KnockoutFixture, "broadcasters">>;
+
+export const knockoutFixtures: KnockoutFixture[] = knockoutFixtureBase.map((match) => ({
+  ...match,
+  broadcasters: knockoutBroadcastersChile,
+}));
 
 export const knockoutFixturesByPhase = knockoutPhaseOrder.map((phase) => ({
   phase,
