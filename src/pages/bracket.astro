@@ -216,9 +216,13 @@ import { knockoutFixturesByPhase, knockoutPhaseOrder } from "../data/knockout";
       const actualResult = match.home_result !== null && match.away_result !== null
         ? `<div class="bracket-result-note muted small-note">Real: ${match.home_result}-${match.away_result}${match.home_result === match.away_result && match.penalties_winner ? ` · penales ${match.penalties_winner === 'home' ? escapeHtml(match.home_team) : escapeHtml(match.away_team)}` : ""}</div>`
         : "";
+      const pairConnector = total > 1 && phase !== "final" && phase !== "3er/4to lugar"
+        ? `<span class="bracket-pair-connector" aria-hidden="true"></span>`
+        : "";
 
       return `
         <article class="${classes}" data-match-card="${match.id}">
+          ${pairConnector}
           <div class="bracket-match-top">
             <span class="tag bracket-match-tag">${escapeHtml(match.label)}</span>
             <div class="muted small-note bracket-match-meta">${formatChileDate(match.kickoff_at)} · ${escapeHtml(match.city)}</div>
