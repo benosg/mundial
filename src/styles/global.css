@@ -311,7 +311,7 @@ img {
   display: grid;
   grid-template-columns: repeat(4, minmax(210px, 245px)) minmax(225px, 260px) repeat(4, minmax(210px, 245px));
   gap: 1rem;
-  align-items: center;
+  align-items: start;
   min-width: max-content;
   padding: 0.25rem 0.3rem 0.75rem;
 }
@@ -323,7 +323,8 @@ img {
 .bracket-center {
   display: grid;
   gap: 1rem;
-  align-self: center;
+  align-self: start;
+  margin-top: 14rem;
 }
 
 .bracket-phase-panel {
@@ -397,7 +398,7 @@ img {
 .bracket-match-list {
   display: grid;
   gap: 0.58rem;
-  align-content: center;
+  align-content: start;
 }
 
 .bracket-phase-panel[data-bracket-side="left"][data-bracket-depth="0"] .bracket-match-list,
@@ -405,14 +406,29 @@ img {
   gap: 0.42rem;
 }
 
+.bracket-phase-panel[data-bracket-side="left"][data-bracket-depth="1"],
+.bracket-phase-panel[data-bracket-side="right"][data-bracket-depth="2"] {
+  margin-top: 5.2rem;
+}
+
 .bracket-phase-panel[data-bracket-side="left"][data-bracket-depth="1"] .bracket-match-list,
 .bracket-phase-panel[data-bracket-side="right"][data-bracket-depth="2"] .bracket-match-list {
-  gap: 1.35rem;
+  gap: 5.1rem;
+}
+
+.bracket-phase-panel[data-bracket-side="left"][data-bracket-depth="2"],
+.bracket-phase-panel[data-bracket-side="right"][data-bracket-depth="1"] {
+  margin-top: 15.6rem;
 }
 
 .bracket-phase-panel[data-bracket-side="left"][data-bracket-depth="2"] .bracket-match-list,
 .bracket-phase-panel[data-bracket-side="right"][data-bracket-depth="1"] .bracket-match-list {
-  gap: 3.25rem;
+  gap: 16.4rem;
+}
+
+.bracket-phase-panel[data-bracket-side="left"][data-bracket-depth="3"],
+.bracket-phase-panel[data-bracket-side="right"][data-bracket-depth="0"] {
+  margin-top: 36.4rem;
 }
 
 .bracket-phase-panel[data-bracket-side="left"][data-bracket-depth="3"] .bracket-match-list,
@@ -617,11 +633,16 @@ img {
 
   .bracket-center {
     align-self: start;
+    margin-top: 0;
   }
 
   .bracket-phase-panel[data-bracket-side] .bracket-match-list,
   .bracket-phase-panel--center .bracket-match-list {
     gap: 0.75rem;
+  }
+
+  .bracket-phase-panel[data-bracket-side] {
+    margin-top: 0 !important;
   }
 
   .bracket-team-row {
