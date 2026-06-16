@@ -309,6 +309,7 @@ img {
 
 .bracket-board {
   --bracket-connector-run: 0.85rem;
+  --bracket-connector-overlap: 0.18rem;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(220px, 270px);
@@ -385,14 +386,14 @@ img {
 }
 
 .bracket-match-card--has-source::before {
-  left: calc(var(--bracket-connector-run) * -1);
-  width: var(--bracket-connector-run);
+  left: calc((var(--bracket-connector-run) + var(--bracket-connector-overlap)) * -1);
+  width: calc(var(--bracket-connector-run) + var(--bracket-connector-overlap));
   border-top: 2px solid rgba(148, 163, 184, 0.8);
 }
 
 .bracket-match-card--feeds-next::after {
   right: calc(var(--bracket-connector-run) * -1);
-  width: var(--bracket-connector-run);
+  width: calc(var(--bracket-connector-run) + var(--bracket-connector-overlap));
   border-top: 2px solid rgba(148, 163, 184, 0.8);
 }
 
