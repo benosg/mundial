@@ -195,10 +195,13 @@ const groupTeamsByGroup = Object.fromEntries(
                               </div>
                             </td>
                             <td>
-                              <div class="score-inputs">
-                                <input type="number" min="0" max="20" inputmode="numeric" placeholder="" data-score-input data-match={match.id} data-side="home" aria-label={`Resultado ${match.home}`} disabled />
-                                <span>-</span>
-                                <input type="number" min="0" max="20" inputmode="numeric" placeholder="" data-score-input data-match={match.id} data-side="away" aria-label={`Resultado ${match.away}`} disabled />
+                              <div class="score-inputs-wrap">
+                                <div class="score-inputs">
+                                  <input type="number" min="0" max="20" inputmode="numeric" placeholder="" data-score-input data-match={match.id} data-side="home" aria-label={`Resultado ${match.home}`} disabled />
+                                  <span>-</span>
+                                  <input type="number" min="0" max="20" inputmode="numeric" placeholder="" data-score-input data-match={match.id} data-side="away" aria-label={`Resultado ${match.away}`} disabled />
+                                </div>
+                                <div class="prediction-real-result muted" data-official-result={match.id} hidden></div>
                               </div>
                             </td>
                             <td>
@@ -430,6 +433,7 @@ const groupTeamsByGroup = Object.fromEntries(
     function applyLockState() {
       if (isLocked()) {
         setInputsDisabled(true);
+        renderOfficialResults();
         if (lockBanner) {
           lockBanner.style.display = "";
           const unlockDate = FIRST_MATCH_KICKOFF.toLocaleString("es-CL", { timeZone: "Etc/GMT+4", dateStyle: "long", timeStyle: "short" });
@@ -515,6 +519,29 @@ const groupTeamsByGroup = Object.fromEntries(
           };
         }),
       }));
+
+      renderOfficialResults();
+    }
+
+    function renderOfficialResults() {
+      const officialMatchesById = new Map(
+        officialGroupsData.flatMap((group) => group.matches.map((match) => [match.id, match]))
+      );
+
+      document.querySelectorAll("[data-official-result]").forEach((node) => {
+        const matchId = node.dataset.officialResult;
+        const match = officialMatchesById.get(matchId);
+        const hasOfficialResult = Number.isInteger(match?.home_result) && Number.isInteger(match?.away_result);
+
+        if (!isLocked() || !hasOfficialResult) {
+          node.hidden = true;
+          node.textContent = "";
+          return;
+        }
+
+        node.hidden = false;
+        node.textContent = `${match.home_result} - ${match.away_result}`;
+      });
     }
 
     function buildStandings(group) {
@@ -691,6 +718,7 @@ const groupTeamsByGroup = Object.fromEntries(
         if (awayInput && Number.isFinite(p.away_score)) awayInput.value = String(p.away_score);
       });
       updateProgress();
+      renderOfficialResults();
       renderStandings();
     }
 
