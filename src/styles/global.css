@@ -1952,8 +1952,18 @@ tbody tr:last-child td {
 }
 
 .prediction-real-result {
+  display: grid;
+  grid-template-columns: 52px auto 52px;
+  align-items: center;
+  justify-items: center;
+  gap: 0.45rem;
   font-size: 0.78rem;
   line-height: 1.2;
+  color: var(--danger);
+}
+
+.prediction-real-separator {
+  color: var(--danger);
 }
 
 .score-inputs input {
