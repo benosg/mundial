@@ -25,3 +25,6 @@ pnpm-debug.log*
 .vercel
 .agents/
 skills-lock.json
+
+# Playwright MCP artifacts
+.playwright-mcp/

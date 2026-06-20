@@ -20,6 +20,7 @@ const bracketColumns = {
     { phase: "16avos", label: "16avos 9-16", matchIds: ["81", "82", "83", "84", "85", "86", "87", "88"] },
   ],
 } as const;
+const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003c");
 ---
 
 <Layout
@@ -101,6 +102,7 @@ const bracketColumns = {
               <button class="button button-compact bracket-save-button" type="button" data-phase-save="3er/4to lugar">Guardar 3er/4to lugar</button>
               <button class="button button-compact bracket-save-button" type="button" data-phase-save="final">Guardar final</button>
             </div>
+            <p class="save-status" data-bracket-save-status role="status"></p>
           </div>
 
           <div class="bracket-scroll-shell" data-bracket-scroll-shell tabindex="0">
@@ -180,13 +182,16 @@ const bracketColumns = {
     </section>
   </div>
 
-  <script is:inline define:vars={{ phasesJson: JSON.stringify(knockoutFixturesByPhase) }}>
-    const phasesData = JSON.parse(phasesJson);
+  <script id="knockout-phases-json" type="application/json" is:inline set:html={phasesJson}></script>
+
+  <script is:inline>
+    const phasesData = JSON.parse(document.getElementById("knockout-phases-json")?.textContent || "[]");
     const STORAGE_KEY = "mundial-2026-player-id";
     const authGate = document.querySelector("[data-auth-gate]");
     const workspaceSection = document.querySelector("[data-workspace-section]");
     const playerNameDisplay = document.querySelector("[data-player-name-display]");
     const playerFavDisplay = document.querySelector("[data-player-fav-display]");
+    const bracketSaveStatus = document.querySelector("[data-bracket-save-status]");
     let currentPlayerKey = null;
     let currentServerPlayer = null;
     let matchesById = new Map();
@@ -238,6 +243,12 @@ const bracketColumns = {
 
       const span = Math.max(2, 16 / total);
       return { start: Math.round(index * span) + 1, span };
+    }
+
+    function setBracketStatus(message, state = "") {
+      if (!bracketSaveStatus) return;
+      bracketSaveStatus.textContent = message;
+      bracketSaveStatus.dataset.state = state;
     }
 
     function renderMatch(match, prediction, editable, phase, slot) {
@@ -366,6 +377,12 @@ const bracketColumns = {
 
     async function savePhase(phase) {
       const rows = collectPhasePredictions(phase);
+      const buttons = Array.from(document.querySelectorAll(`[data-phase-save="${phase}"]`));
+      buttons.forEach((button) => {
+        button.disabled = true;
+        button.dataset.saving = "true";
+      });
+      setBracketStatus(`Guardando ${phase}...`, "loading");
       try {
         const response = await fetch("/api/bracket/predictions", {
           method: "POST",
@@ -374,12 +391,19 @@ const bracketColumns = {
         });
         const data = await response.json();
         if (!data.ok) {
-          alert(data.error || "No se pudo guardar esta fase.");
+          setBracketStatus(data.error || "No se pudo guardar esta fase.", "error");
           return;
         }
         await loadBracket();
+        setBracketStatus(`Listo: ${data.saved} pronóstico${data.saved === 1 ? "" : "s"} guardado${data.saved === 1 ? "" : "s"} en ${phase}.`, "success");
       } catch {
-        alert("Error de red al guardar la llave.");
+        setBracketStatus("Error de red al guardar la llave.", "error");
+      } finally {
+        buttons.forEach((button) => {
+          button.dataset.saving = "false";
+          const state = phaseStates[phase];
+          button.disabled = !state?.editable;
+        });
       }
     }
 
@@ -387,6 +411,7 @@ const bracketColumns = {
       const response = await fetch(`/api/bracket/bootstrap?player_id=${encodeURIComponent(currentPlayerKey)}`, { cache: "no-store" });
       const data = await response.json();
       if (!data.ok) {
+        setBracketStatus(data.error || "No se pudo cargar la llave", "error");
         throw new Error(data.error || "No se pudo cargar la llave");
       }
 

@@ -25,5 +25,7 @@ try {
   target = "/groups";
 }
 
-return Astro.redirect(target);
+const redirectResponse = Astro.redirect(target);
+void redirectResponse;
+return redirectResponse;
 ---

@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { createServerClient } from "../../../lib/supabase";
 import { getSessionContext } from "../../../lib/session";
+import { clearRankingCache } from "../../../lib/ranking";
 
 export const prerender = false;
 
@@ -9,6 +10,14 @@ function json(data: unknown, status = 200) {
     status,
     headers: { "Content-Type": "application/json" },
   });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isIntegerScore(value: unknown): value is number {
+  return Number.isInteger(value);
 }
 
 export const GET: APIRoute = async ({ request }) => {
@@ -63,55 +72,68 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ ok: false, error: "No autorizado" }, 401);
   }
 
-  const body = await request.json();
-  const { results, knockoutResults } = body;
+  const body = await request.json().catch(() => null);
+  if (!isRecord(body)) {
+    return json({ ok: false, error: "Invalid JSON body" }, 400);
+  }
 
-  if ((!results || typeof results !== "object") && (!knockoutResults || typeof knockoutResults !== "object")) {
+  const results = body.results;
+  const knockoutResults = body.knockoutResults;
+
+  if (!isRecord(results) && !isRecord(knockoutResults)) {
     return json({ ok: false, error: "results or knockoutResults object required" }, 400);
   }
 
   const supabase = createServerClient(request, new Headers());
 
-  const updates = Object.entries(results || {}).map(([matchId, result]: [string, any]) => {
+  const updates = [];
+  for (const [matchId, result] of Object.entries(isRecord(results) ? results : {})) {
+    if (!isRecord(result)) {
+      return json({ ok: false, error: `Invalid result for match ${matchId}` }, 400);
+    }
     const home = result?.home_result;
     const away = result?.away_result;
     if (typeof home !== "number" || typeof away !== "number") {
-      throw new Error(`Invalid result for match ${matchId}`);
+      return json({ ok: false, error: `Invalid result for match ${matchId}` }, 400);
     }
     if (home < 0 || home > 20 || away < 0 || away > 20) {
-      throw new Error(`Score out of range for match ${matchId}`);
+      return json({ ok: false, error: `Score out of range for match ${matchId}` }, 400);
     }
-    return { id: matchId, home_result: home, away_result: away };
-  });
+    updates.push({ id: matchId, home_result: home, away_result: away });
+  }
 
-  const knockoutUpdates = Object.entries(knockoutResults || {}).map(([matchId, result]: [string, any]) => {
+  const knockoutUpdates = [];
+  for (const [matchId, result] of Object.entries(isRecord(knockoutResults) ? knockoutResults : {})) {
+    if (!isRecord(result)) {
+      return json({ ok: false, error: `Invalid knockout result for match ${matchId}` }, 400);
+    }
     const home = result?.home_result;
     const away = result?.away_result;
     const penaltiesWinner = result?.penalties_winner ?? null;
     const homeTeam = typeof result?.home_team === "string" ? result.home_team.trim() : "";
     const awayTeam = typeof result?.away_team === "string" ? result.away_team.trim() : "";
 
-    if ((home !== null || away !== null) && (!Number.isInteger(home) || !Number.isInteger(away))) {
-      throw new Error(`Invalid knockout result for match ${matchId}`);
+    if ((home !== null || away !== null) && (!isIntegerScore(home) || !isIntegerScore(away))) {
+      return json({ ok: false, error: `Invalid knockout result for match ${matchId}` }, 400);
     }
 
-    if (Number.isInteger(home) && Number.isInteger(away) && (home < 0 || home > 20 || away < 0 || away > 20)) {
-      throw new Error(`Knockout score out of range for match ${matchId}`);
+    if (isIntegerScore(home) && isIntegerScore(away) && (home < 0 || home > 20 || away < 0 || away > 20)) {
+      return json({ ok: false, error: `Knockout score out of range for match ${matchId}` }, 400);
     }
 
-    if (Number.isInteger(home) && Number.isInteger(away) && home === away && penaltiesWinner !== "home" && penaltiesWinner !== "away") {
-      throw new Error(`Penalty winner required for knockout draw ${matchId}`);
+    if (isIntegerScore(home) && isIntegerScore(away) && home === away && penaltiesWinner !== "home" && penaltiesWinner !== "away") {
+      return json({ ok: false, error: `Penalty winner required for knockout draw ${matchId}` }, 400);
     }
 
-    return {
+    knockoutUpdates.push({
       id: matchId,
       home_team: homeTeam,
       away_team: awayTeam,
-      home_result: Number.isInteger(home) ? home : null,
-      away_result: Number.isInteger(away) ? away : null,
-      penalties_winner: Number.isInteger(home) && Number.isInteger(away) && home === away ? penaltiesWinner : null,
-    };
-  });
+      home_result: isIntegerScore(home) ? home : null,
+      away_result: isIntegerScore(away) ? away : null,
+      penalties_winner: isIntegerScore(home) && isIntegerScore(away) && home === away ? penaltiesWinner : null,
+    });
+  }
 
   let updated = 0;
   for (const update of updates) {
@@ -143,6 +165,10 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     updated++;
+  }
+
+  if (updated > 0) {
+    clearRankingCache();
   }
 
   return json({ ok: true, updated });

@@ -9,17 +9,19 @@
 
 ## Development
 
+Package manager: pnpm (via `packageManager` in `package.json`; run `corepack enable` once if needed).
+
 ```sh
-npm run dev       # astro dev → http://localhost:4321
-npm run build     # astro build (SSR output for Vercel)
-npm run preview   # astro preview
+pnpm dev       # astro dev → http://localhost:4321
+pnpm build     # astro build (SSR output for Vercel)
+pnpm preview   # astro preview
 ```
 
 No tests configured. No linter/formatter config in repo.
 
-Type checking (not in scripts — run explicitly):
+Type checking:
 ```sh
-npx astro check
+pnpm check
 ```
 
 ## Environment

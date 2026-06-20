@@ -1,4 +1,5 @@
 import { fetchFifaGroupStageResults, type FifaSyncSummary } from "./fifa-results";
+import { clearRankingCache } from "./ranking";
 import { createServerClient } from "./supabase";
 
 const DEFAULT_SYNC_INTERVAL_MS = 60_000;
@@ -81,6 +82,9 @@ async function applyFifaUpdates(request: Request | undefined, syncSummary: FifaS
 async function runSync(request: Request | undefined, minIntervalMs: number): Promise<ResultsSyncResponse> {
   const syncSummary = await fetchFifaGroupStageResults();
   const updated = await applyFifaUpdates(request, syncSummary);
+  if (updated > 0) {
+    clearRankingCache();
+  }
   const completedAt = Date.now();
 
   return {

@@ -11,6 +11,7 @@ const groupTeamsByGroup = Object.fromEntries(
     [...new Set(group.matches.flatMap((match) => [match.home, match.away]))],
   ])
 );
+const groupedMatchesJson = JSON.stringify(groupedMatches).replace(/</g, "\\u003c");
 ---
 
 <Layout
@@ -341,20 +342,21 @@ const groupTeamsByGroup = Object.fromEntries(
     </div>
   </div>
 
-  <script is:inline define:vars={{ groupedMatchesJson: JSON.stringify(groupedMatches) }}>
-    const groupsData = JSON.parse(groupedMatchesJson);
+  <script id="grouped-matches-json" type="application/json" is:inline set:html={groupedMatchesJson}></script>
+
+  <script is:inline>
+    const groupsData = JSON.parse(document.getElementById("grouped-matches-json")?.textContent || "[]");
     let officialGroupsData = groupsData.map((group) => ({
       ...group,
       matches: group.matches.map((match) => ({ ...match, home_result: null, away_result: null })),
     }));
-    const STORAGE_KEY = "mundial-2026-player-id";
     const FIRST_MATCH_KICKOFF = new Date("2026-06-11T15:00:00-04:00"); // Chile time (UTC-4)
     const LOCK_CUTOFF = new Date(FIRST_MATCH_KICKOFF.getTime() - 60 * 60 * 1000); // 1 hour before
     const inputs = Array.from(document.querySelectorAll("[data-score-input]"));
     const progressNode = document.querySelector("[data-progress-count]");
     const saveButton = document.querySelector("[data-save-all]");
     const clearButton = document.querySelector("[data-clear-all]");
-    const saveStatus = document.querySelector("[data-save-status]");
+    const saveStatusNodes = Array.from(document.querySelectorAll("[data-save-status]"));
     const playerNameDisplay = document.querySelector("[data-player-name-display]");
     const playerFavDisplay = document.querySelector("[data-player-fav-display]");
     const companionsSummaryBody = document.querySelector("[data-companions-summary-body]");
@@ -384,17 +386,18 @@ const groupTeamsByGroup = Object.fromEntries(
 
     // ---- helpers ----
 
-    function getPlayerId() {
-      let id = localStorage.getItem(STORAGE_KEY);
-      if (!id) {
-        id = crypto.randomUUID();
-        localStorage.setItem(STORAGE_KEY, id);
-      }
-      return id;
+    function announce(msg, state = "") {
+      saveStatusNodes.forEach((node) => {
+        node.textContent = msg;
+        node.dataset.state = state;
+      });
     }
 
-    function announce(msg) {
-      if (saveStatus) saveStatus.textContent = msg;
+    function setActionBusy(isBusy, message = "", state = "") {
+      if (message) announce(message, state);
+      setInputsDisabled(isBusy);
+      if (saveButton) saveButton.textContent = isBusy ? "Guardando..." : "Guardar todo";
+      if (clearButton) clearButton.textContent = isBusy ? "Espera..." : "Limpiar";
     }
 
     function escapeHtml(value) {
@@ -404,6 +407,10 @@ const groupTeamsByGroup = Object.fromEntries(
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#39;");
+    }
+
+    function safeNumber(value, fallback = 0) {
+      return Number.isFinite(Number(value)) ? Number(value) : fallback;
     }
 
     function flagCodePoints(flag) {
@@ -478,14 +485,6 @@ const groupTeamsByGroup = Object.fromEntries(
         if (h && a && h.value !== "" && a.value !== "") completed += 1;
       });
       if (progressNode) progressNode.textContent = `${completed}/${matchIds.size}`;
-    }
-
-    function getPredictedScore(matchId, side) {
-      const input = document.querySelector(`[data-score-input][data-match="${matchId}"][data-side="${side}"]`);
-      if (!input) return null;
-      if (input.value === "") return null;
-      const value = input.valueAsNumber;
-      return Number.isInteger(value) ? value : null;
     }
 
     function getTeamFlagMap() {
@@ -643,13 +642,14 @@ const groupTeamsByGroup = Object.fromEntries(
 
           if (companionsSummaryBody) {
             companionsSummaryBody.innerHTML = topPlayers.map((player, index) => {
-              const points = player?.points_breakdown?.total_points ?? 0;
-              const rankingPosition = player?.ranking_position ?? index + 1;
+              const points = safeNumber(player?.points_breakdown?.total_points);
+              const rankingPosition = safeNumber(player?.ranking_position, index + 1);
+              const tieCount = safeNumber(player?.ranking_tie_count, 1);
               const topClass = rankingPosition <= 3 ? ` companions-summary-item--top-${rankingPosition}` : "";
               return `
                 <li class="companions-summary-item${topClass}">
                   <span class="companions-summary-rank">${rankingPosition}</span>
-                  <span class="companions-summary-name">${escapeHtml(player?.name || "Sin nombre")}</span>
+                  <span class="companions-summary-name">${escapeHtml(player?.name || "Sin nombre")}${tieCount > 1 ? '<small class="ranking-tie-note">Empate · premio compartido</small>' : ''}</span>
                   <strong class="companions-summary-points">${points} pts</strong>
                 </li>
               `;
@@ -790,7 +790,7 @@ const groupTeamsByGroup = Object.fromEntries(
         updatePlayerDisplay(serverPlayer);
         hideFavModal();
         showFavLockedModal(data.player.favorite_flag, data.player.favorite_team);
-        announce("Equipo favorito guardado.");
+        announce("Equipo favorito guardado.", "success");
         if (favStatus) favStatus.textContent = "";
       } catch {
         if (favStatus) favStatus.textContent = "Error de red al guardar favorito.";
@@ -801,7 +801,7 @@ const groupTeamsByGroup = Object.fromEntries(
 
     async function saveAllPredictions() {
       if (!currentPlayerId) {
-        announce("Error: no hay sesión de jugador.");
+        announce("Error: no hay sesión de jugador.", "error");
         return;
       }
 
@@ -827,6 +827,7 @@ const groupTeamsByGroup = Object.fromEntries(
         }
       });
 
+      setActionBusy(true, "Guardando pronósticos...", "loading");
       try {
         const res = await fetch("/api/predictions", {
           method: "POST",
@@ -835,13 +836,15 @@ const groupTeamsByGroup = Object.fromEntries(
         });
         const data = await res.json();
         if (data.ok) {
-          announce(`Pronósticos guardados (${data.saved} partidos).`);
           await bootstrap();
+          announce(`Listo: ${data.saved} pronóstico${data.saved === 1 ? "" : "s"} guardado${data.saved === 1 ? "" : "s"}.`, "success");
         } else {
-          announce(`Error al guardar: ${data.error}`);
+          announce(`Error al guardar: ${data.error}`, "error");
         }
       } catch (err) {
-        announce("Error de red al guardar.");
+        announce("Error de red al guardar.", "error");
+      } finally {
+        setActionBusy(false);
       }
 
       updateProgress();
@@ -850,6 +853,7 @@ const groupTeamsByGroup = Object.fromEntries(
     async function clearPredictions() {
       if (!currentPlayerId) return;
 
+      setActionBusy(true, "Borrando pronósticos...", "loading");
       try {
         const res = await fetch("/api/predictions", {
           method: "DELETE",
@@ -861,13 +865,15 @@ const groupTeamsByGroup = Object.fromEntries(
           inputs.forEach((input) => (input.value = ""));
           updateProgress();
           renderStandings();
-          announce("Pronósticos borrados.");
           await bootstrap();
+          announce("Pronósticos borrados.", "success");
         } else {
-          if (favStatus) favStatus.textContent = `Error: ${data.error}`;
+          announce(`Error al borrar: ${data.error}`, "error");
         }
       } catch {
-        if (favStatus) favStatus.textContent = "Error de red al guardar favorito.";
+        announce("Error de red al borrar pronósticos.", "error");
+      } finally {
+        setActionBusy(false);
       }
     }
 

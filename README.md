@@ -9,7 +9,8 @@ App de pronósticos para el Mundial 2026 — grupos privados, puntaje transparen
 ## Setup rápido
 
 ```sh
-npm install
+corepack enable
+pnpm install
 cp .env.example .env   # llena SUPABASE_URL y SUPABASE_KEY
 ```
 
@@ -39,10 +40,10 @@ Las tablas **no se crean automáticamente**. Corre en el SQL Editor de Supabase:
 ## Desarrollo
 
 ```sh
-npm run dev       # → http://localhost:4321
-npm run build     # build SSR para Vercel
-npm run preview   # preview local del build
-npx astro check   # type checking (no está en scripts)
+pnpm dev       # → http://localhost:4321
+pnpm build     # build SSR para Vercel
+pnpm preview   # preview local del build
+pnpm check     # type checking
 ```
 
 No hay tests, linter ni formateador configurados en el repo.
@@ -123,7 +124,7 @@ Los usuarios con `players.is_admin = true` ven un link "Admin" en la navegación
 
 ## Flujo completo de prueba
 
-1. `npm run dev`
+1. `pnpm dev`
 2. Abrir `http://localhost:4321`
 3. "Iniciar sesión con Google" en el header
 4. Primer login → elegir país favorito (⚠️ irreversible)

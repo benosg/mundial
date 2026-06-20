@@ -6,6 +6,7 @@ const allMatches: Record<string, typeof groupedMatches[0]['matches'][0]> = {};
 groupedMatches.forEach((g) => {
   g.matches.forEach((m) => { allMatches[m.id] = m; });
 });
+const allMatchesJson = JSON.stringify(allMatches).replace(/</g, "\\u003c");
 ---
 
 <Layout
@@ -71,8 +72,10 @@ groupedMatches.forEach((g) => {
     </div>
   </div>
 
-  <script is:inline define:vars={{ allMatchesJson: JSON.stringify(allMatches) }}>
-    const allMatches = JSON.parse(allMatchesJson);
+  <script id="all-matches-json" type="application/json" is:inline set:html={allMatchesJson}></script>
+
+  <script is:inline>
+    const allMatches = JSON.parse(document.getElementById("all-matches-json")?.textContent || "{}");
 
     function escapeHtml(value) {
       return String(value)
@@ -81,6 +84,10 @@ groupedMatches.forEach((g) => {
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#39;");
+    }
+
+    function safeNumber(value, fallback = 0) {
+      return Number.isFinite(Number(value)) ? Number(value) : fallback;
     }
 
     function flagCodePoints(flag) {
@@ -246,21 +253,26 @@ groupedMatches.forEach((g) => {
           .map((p, index) => {
             const pb = p.points_breakdown || { total_points: 0, exact_count: 0, winner_count: 0, draw_count: 0, favorite_bonus_count: 0, completed_count: 0 };
             const isCurrentUser = currentPlayerRecordId && p.id === currentPlayerRecordId;
-            const rankingPosition = p.ranking_position ?? index + 1;
+            const rankingPosition = safeNumber(p.ranking_position, index + 1);
+            const tieCount = safeNumber(p.ranking_tie_count, 1);
+            const tieBadge = tieCount > 1 ? '<span class="ranking-tie-badge">Empate · premio compartido</span>' : '';
+            const safeName = escapeHtml(p.name || 'Sin nombre');
+            const safePlayerId = escapeHtml(p.id || '');
             return `
-            <tr class="companion-row" data-player-id="${p.id}" tabindex="0" role="button" aria-label="Ver pronósticos de ${p.name}">
+            <tr class="companion-row" data-player-id="${safePlayerId}" tabindex="0" role="button" aria-label="Ver pronósticos de ${safeName}">
               <td class="rank">${rankingPosition}</td>
               <td class="ranking-name-cell">
-                <div class="ranking-name">${p.name || 'Sin nombre'} ${isCurrentUser ? '<span class="tag-you">Tú</span>' : ''}</div>
+                <div class="ranking-name">${safeName} ${isCurrentUser ? '<span class="tag-you">Tú</span>' : ''}</div>
+                ${tieBadge}
               </td>
               <td>${p.favorite_team ? flagWithLabel(p.favorite_flag || '🏳️', p.favorite_team) : '<span class="muted">Sin favorito</span>'}</td>
-              <td class="points-cell"><strong class="points-total">${pb.total_points}</strong></td>
-              <td class="points-cell">${pb.exact_count}</td>
-              <td class="points-cell">${pb.winner_count}</td>
-              <td class="points-cell">${pb.draw_count || 0}</td>
-              <td class="points-cell">${pb.favorite_bonus_count}</td>
-              <td class="points-cell">${pb.completed_count}</td>
-              <td class="points-cell muted">${p.predictions_count || 0}</td>
+              <td class="points-cell"><strong class="points-total">${safeNumber(pb.total_points)}</strong></td>
+              <td class="points-cell">${safeNumber(pb.exact_count)}</td>
+              <td class="points-cell">${safeNumber(pb.winner_count)}</td>
+              <td class="points-cell">${safeNumber(pb.draw_count)}</td>
+              <td class="points-cell">${safeNumber(pb.favorite_bonus_count)}</td>
+              <td class="points-cell">${safeNumber(pb.completed_count)}</td>
+              <td class="points-cell muted">${safeNumber(p.predictions_count)}</td>
             </tr>`;
           })
           .join("");
@@ -358,8 +370,11 @@ groupedMatches.forEach((g) => {
             preds.forEach((pred) => {
               const match = allMatches[pred.match_id];
               if (!match) return;
-              const pointsInfo = pred.points > 0
-                ? `<span class="tag ${pred.type === 'exact' ? 'success' : ''}" style="font-size:0.75rem; margin-left:0.5rem;">+${pred.points} ${pred.favoriteBonus ? '★' : ''}</span>`
+              const predPoints = safeNumber(pred.points);
+              const homeScore = safeNumber(pred.home_score);
+              const awayScore = safeNumber(pred.away_score);
+              const pointsInfo = predPoints > 0
+                ? `<span class="tag ${pred.type === 'exact' ? 'success' : ''}" style="font-size:0.75rem; margin-left:0.5rem;">+${predPoints} ${pred.favoriteBonus ? '★' : ''}</span>`
                 : pred.type === "pending"
                 ? '<span class="muted" style="font-size:0.75rem; margin-left:0.5rem;">Pendiente</span>'
                 : '<span class="muted" style="font-size:0.75rem; margin-left:0.5rem;">0 pts</span>';
@@ -372,9 +387,9 @@ groupedMatches.forEach((g) => {
                     <span>${flagWithLabel(match.awayFlag, match.away)}</span>
                   </div>
                   <div class="readonly-score">
-                    <span class="readonly-pill">${pred.home_score}</span>
+                    <span class="readonly-pill">${homeScore}</span>
                     <span class="muted">-</span>
-                    <span class="readonly-pill">${pred.away_score}</span>
+                    <span class="readonly-pill">${awayScore}</span>
                     ${pointsInfo}
                   </div>
                 </div>`;
@@ -401,8 +416,11 @@ groupedMatches.forEach((g) => {
               <div class="readonly-list">`;
 
             preds.forEach((pred) => {
-              const pointsInfo = pred.points > 0
-                ? `<span class="tag ${pred.type === 'exact' ? 'success' : ''}" style="font-size:0.75rem; margin-left:0.5rem;">+${pred.points}</span>`
+              const predPoints = safeNumber(pred.points);
+              const homeScore = safeNumber(pred.home_score);
+              const awayScore = safeNumber(pred.away_score);
+              const pointsInfo = predPoints > 0
+                ? `<span class="tag ${pred.type === 'exact' ? 'success' : ''}" style="font-size:0.75rem; margin-left:0.5rem;">+${predPoints}</span>`
                 : pred.type === "pending"
                 ? '<span class="muted" style="font-size:0.75rem; margin-left:0.5rem;">Pendiente</span>'
                 : '<span class="muted" style="font-size:0.75rem; margin-left:0.5rem;">0 pts</span>';
@@ -419,9 +437,9 @@ groupedMatches.forEach((g) => {
                     <span>${escapeHtml(pred.away)}</span>
                   </div>
                   <div class="readonly-score">
-                    <span class="readonly-pill">${pred.home_score}</span>
+                    <span class="readonly-pill">${homeScore}</span>
                     <span class="muted">-</span>
-                    <span class="readonly-pill">${pred.away_score}</span>
+                    <span class="readonly-pill">${awayScore}</span>
                     ${pointsInfo}
                   </div>
                   ${pensInfo}
@@ -469,6 +487,19 @@ groupedMatches.forEach((g) => {
 
     .ranking-name-cell {
       min-width: 180px;
+    }
+
+    .ranking-tie-badge {
+      display: inline-flex;
+      width: fit-content;
+      margin-top: 0.25rem;
+      border: 1px solid rgba(245, 158, 11, 0.28);
+      border-radius: 999px;
+      padding: 0.12rem 0.45rem;
+      background: rgba(245, 158, 11, 0.12);
+      color: #92400e;
+      font-size: 0.72rem;
+      font-weight: 700;
     }
 
     .points-cell {

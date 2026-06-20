@@ -84,7 +84,7 @@ const structuredData = {
     <meta name="twitter:description" content={description} />
     {socialImageURL && <meta name="twitter:image" content={socialImageURL} />}
     <title>{pageTitle}</title>
-    <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structuredData)} />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Saltar al contenido</a>
@@ -136,6 +136,24 @@ const structuredData = {
         const slot = document.querySelector("[data-auth-slot]");
         if (!slot) return;
 
+        function escapeHtml(value: unknown) {
+          return String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#39;");
+        }
+
+        function safeImageUrl(value: unknown) {
+          try {
+            const url = new URL(String(value || ""), window.location.origin);
+            return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+          } catch {
+            return "";
+          }
+        }
+
         const renderLoginLink = () => {
           slot.innerHTML = `<a class="button nav-cta" href="/api/auth/signin" data-login-button>Iniciar sesión con Google</a>`;
           const loginButton = slot.querySelector("[data-login-button]");
@@ -171,8 +189,8 @@ const structuredData = {
               : "";
             slot.innerHTML = `
               <span class="auth-user-pill">
-                <img src="${data.user.avatar}" alt="" width="24" height="24" class="auth-avatar" referrerpolicy="no-referrer" />
-                <span class="auth-user-name">${data.user.name || data.user.email}</span>
+                <img src="${safeImageUrl(data.user.avatar)}" alt="" width="24" height="24" class="auth-avatar" referrerpolicy="no-referrer" />
+                <span class="auth-user-name">${escapeHtml(data.user.name || data.user.email)}</span>
                 ${rankingBadge}
                 ${adminBadge}
               </span>

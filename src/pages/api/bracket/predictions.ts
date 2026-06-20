@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { buildKnockoutPhaseStates, type WinnerSide } from "../../../lib/knockout";
+import { clearRankingCache } from "../../../lib/ranking";
 import { createServerClient } from "../../../lib/supabase";
 
 export const prerender = false;
@@ -11,7 +12,15 @@ function json(data: unknown, status = 200) {
   });
 }
 
-async function resolvePlayer(request: Request) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isIntegerScore(value: unknown): value is number {
+  return Number.isInteger(value);
+}
+
+async function resolvePlayer(request: Request, parsedBody?: Record<string, unknown>) {
   const supabase = createServerClient(request, new Headers());
   const { data: { session } } = await supabase.auth.getSession();
 
@@ -36,8 +45,9 @@ async function resolvePlayer(request: Request) {
   }
 
   const url = new URL(request.url);
-  const body = request.method === "POST" ? await request.clone().json().catch(() => ({})) : {};
-  const playerId = url.searchParams.get("player_id") || body.player_id;
+  const body = parsedBody ?? (request.method === "POST" ? await request.clone().json().catch(() => ({})) : {});
+  const bodyPlayerId = isRecord(body) && typeof body.player_id === "string" ? body.player_id : null;
+  const playerId = url.searchParams.get("player_id") || bodyPlayerId;
 
   if (!playerId) {
     return { supabase, player: null };
@@ -48,14 +58,18 @@ async function resolvePlayer(request: Request) {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!isRecord(body)) {
+    return json({ ok: false, error: "Invalid JSON body" }, 400);
+  }
+
   const { phase, predictions } = body;
 
   if (typeof phase !== "string" || !Array.isArray(predictions)) {
     return json({ ok: false, error: "phase and predictions are required" }, 400);
   }
 
-  const { supabase, player } = await resolvePlayer(request);
+  const { supabase, player } = await resolvePlayer(request, body);
   if (!player) return json({ ok: false, error: "Player not found" }, 404);
 
   const [groupMatchesResult, knockoutMatchesResult] = await Promise.all([
@@ -74,32 +88,43 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const phaseMatchIds = new Set((knockoutMatchesResult.data ?? []).filter((match) => match.phase === phase).map((match) => match.id));
-  const rows = predictions.map((prediction: { match_id: string; home_score: number; away_score: number; penalties_winner?: WinnerSide | null }) => {
-    if (!phaseMatchIds.has(prediction.match_id)) {
-      throw new Error(`El partido ${prediction.match_id} no pertenece a la fase ${phase}`);
+  const rows = [];
+
+  for (const prediction of predictions) {
+    if (!isRecord(prediction) || typeof prediction.match_id !== "string") {
+      return json({ ok: false, error: "Predicción inválida" }, 400);
     }
 
-    if (!Number.isInteger(prediction.home_score) || !Number.isInteger(prediction.away_score)) {
-      throw new Error(`Resultado inválido para ${prediction.match_id}`);
+    const matchId = prediction.match_id;
+    const homeScore = prediction.home_score;
+    const awayScore = prediction.away_score;
+    const requestedPenaltiesWinner = prediction.penalties_winner;
+
+    if (!phaseMatchIds.has(matchId)) {
+      return json({ ok: false, error: `El partido ${matchId} no pertenece a la fase ${phase}` }, 400);
     }
 
-    if (prediction.home_score < 0 || prediction.home_score > 20 || prediction.away_score < 0 || prediction.away_score > 20) {
-      throw new Error(`Marcador fuera de rango para ${prediction.match_id}`);
+    if (!isIntegerScore(homeScore) || !isIntegerScore(awayScore)) {
+      return json({ ok: false, error: `Resultado inválido para ${matchId}` }, 400);
     }
 
-    const penaltiesWinner = prediction.home_score === prediction.away_score ? prediction.penalties_winner ?? null : null;
-    if (prediction.home_score === prediction.away_score && penaltiesWinner !== "home" && penaltiesWinner !== "away") {
-      throw new Error(`Debes elegir ganador por penales para ${prediction.match_id}`);
+    if (homeScore < 0 || homeScore > 20 || awayScore < 0 || awayScore > 20) {
+      return json({ ok: false, error: `Marcador fuera de rango para ${matchId}` }, 400);
     }
 
-    return {
+    const penaltiesWinner = homeScore === awayScore ? requestedPenaltiesWinner ?? null : null;
+    if (homeScore === awayScore && penaltiesWinner !== "home" && penaltiesWinner !== "away") {
+      return json({ ok: false, error: `Debes elegir ganador por penales para ${matchId}` }, 400);
+    }
+
+    rows.push({
       player_id: player.id,
-      match_id: prediction.match_id,
-      home_score: prediction.home_score,
-      away_score: prediction.away_score,
-      penalties_winner: penaltiesWinner,
-    };
-  });
+      match_id: matchId,
+      home_score: homeScore,
+      away_score: awayScore,
+      penalties_winner: penaltiesWinner as WinnerSide | null,
+    });
+  }
 
   if (rows.length === 0) {
     return json({ ok: true, saved: 0 });
@@ -108,5 +133,6 @@ export const POST: APIRoute = async ({ request }) => {
   const { error } = await supabase.from("bracket_predictions").upsert(rows, { onConflict: "player_id,match_id" });
   if (error) return json({ ok: false, error: error.message }, 502);
 
+  clearRankingCache();
   return json({ ok: true, saved: rows.length });
 };

@@ -2,6 +2,9 @@
 import Layout from "../../layouts/Layout.astro";
 import { groupedMatches } from "../../data/site";
 import { knockoutFixturesByPhase } from "../../data/knockout";
+
+const groupedMatchesJson = JSON.stringify(groupedMatches).replace(/</g, "\\u003c");
+const knockoutPhasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003c");
 ---
 
 <Layout
@@ -41,9 +44,12 @@ import { knockoutFixturesByPhase } from "../../data/knockout";
     </div>
   </main>
 
-  <script is:inline define:vars={{ groupedMatchesJson: JSON.stringify(groupedMatches), knockoutPhasesJson: JSON.stringify(knockoutFixturesByPhase) }}>
-    const groupedMatches = JSON.parse(groupedMatchesJson);
-    const knockoutPhases = JSON.parse(knockoutPhasesJson);
+  <script id="grouped-matches-json" type="application/json" is:inline set:html={groupedMatchesJson}></script>
+  <script id="knockout-phases-json" type="application/json" is:inline set:html={knockoutPhasesJson}></script>
+
+  <script is:inline>
+    const groupedMatches = JSON.parse(document.getElementById("grouped-matches-json")?.textContent || "[]");
+    const knockoutPhases = JSON.parse(document.getElementById("knockout-phases-json")?.textContent || "[]");
 
     function escapeHtml(value) {
       return String(value)
@@ -81,6 +87,12 @@ import { knockoutFixturesByPhase } from "../../data/knockout";
 
     let hasUnsavedChanges = false;
 
+    function setSaveStatus(message, state = "") {
+      if (!saveStatus) return;
+      saveStatus.textContent = message;
+      saveStatus.dataset.state = state;
+    }
+
     function updateResultsCount() {
       let count = 0;
       let total = 0;
@@ -106,7 +118,6 @@ import { knockoutFixturesByPhase } from "../../data/knockout";
       });
       if (resultsCount) resultsCount.textContent = count;
       if (totalMatchesEl) totalMatchesEl.textContent = total;
-      hasUnsavedChanges = count > 0;
       if (saveBtn) saveBtn.disabled = !hasUnsavedChanges;
     }
 
@@ -275,7 +286,7 @@ import { knockoutFixturesByPhase } from "../../data/knockout";
       if (!saveBtn) return;
       saveBtn.disabled = true;
       saveBtn.textContent = "Guardando...";
-      if (saveStatus) saveStatus.textContent = "Guardando resultados...";
+      setSaveStatus("Guardando resultados...", "loading");
 
       const results = {};
       const knockoutResults = {};
@@ -319,16 +330,17 @@ import { knockoutFixturesByPhase } from "../../data/knockout";
         });
         const data = await res.json();
         if (data.ok) {
-          if (saveStatus) saveStatus.textContent = `✓ ${data.updated} resultados guardados`;
           hasUnsavedChanges = false;
-          loadResults();
+          await loadResults();
+          setSaveStatus(`✓ ${data.updated} resultados guardados`, "success");
+          saveBtn.textContent = "Guardar resultados";
         } else {
-          if (saveStatus) saveStatus.textContent = `Error: ${data.error}`;
+          setSaveStatus(`Error: ${data.error}`, "error");
           saveBtn.disabled = false;
           saveBtn.textContent = "Guardar resultados";
         }
       } catch {
-        if (saveStatus) saveStatus.textContent = "Error de red al guardar";
+        setSaveStatus("Error de red al guardar", "error");
         saveBtn.disabled = false;
         saveBtn.textContent = "Guardar resultados";
       }
@@ -339,7 +351,7 @@ import { knockoutFixturesByPhase } from "../../data/knockout";
 
       syncBtn.disabled = true;
       syncBtn.textContent = "Actualizando...";
-      if (saveStatus) saveStatus.textContent = "Consultando resultados oficiales en FIFA...";
+      setSaveStatus("Consultando resultados oficiales en FIFA...", "loading");
 
       try {
         const res = await fetch("/api/admin/results/fifa-sync", {
@@ -348,7 +360,7 @@ import { knockoutFixturesByPhase } from "../../data/knockout";
         const data = await res.json();
 
         if (!data.ok) {
-          if (saveStatus) saveStatus.textContent = `Error FIFA: ${data.error}`;
+          setSaveStatus(`Error FIFA: ${data.error}`, "error");
           return;
         }
 
@@ -356,14 +368,12 @@ import { knockoutFixturesByPhase } from "../../data/knockout";
           ? ` Atención: ${data.suspiciousGroups.join(" ")}`
           : "";
 
-        if (saveStatus) {
-          saveStatus.textContent = `✓ FIFA importó ${data.imported} resultado(s) y actualizó ${data.updated} partido(s).${suspiciousNote}`;
-        }
+        setSaveStatus(`✓ FIFA importó ${data.imported} resultado(s) y actualizó ${data.updated} partido(s).${suspiciousNote}`, "success");
 
         hasUnsavedChanges = false;
         await loadResults();
       } catch {
-        if (saveStatus) saveStatus.textContent = "Error de red al consultar FIFA";
+        setSaveStatus("Error de red al consultar FIFA", "error");
       } finally {
         syncBtn.disabled = false;
         syncBtn.textContent = "Actualizar desde FIFA";

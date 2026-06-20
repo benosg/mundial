@@ -64,9 +64,22 @@ export interface RankedPlayer {
   auth_user_id: string | null;
   points_breakdown: PlayerPointsBreakdown;
   ranking_position: number;
+  ranking_tie_count: number;
+}
+
+const RANKING_CACHE_TTL_MS = 10_000;
+let rankingCache: { createdAt: number; players: RankedPlayer[] } | null = null;
+
+export function clearRankingCache() {
+  rankingCache = null;
 }
 
 function applyCompetitionRanking(players: RankedPlayer[]): RankedPlayer[] {
+  const tieCounts = players.reduce<Record<number, number>>((counts, player) => {
+    const points = player.points_breakdown.total_points;
+    counts[points] = (counts[points] ?? 0) + 1;
+    return counts;
+  }, {});
   let previousPoints: number | null = null;
   let currentPosition = 0;
 
@@ -81,6 +94,7 @@ function applyCompetitionRanking(players: RankedPlayer[]): RankedPlayer[] {
     return {
       ...player,
       ranking_position: currentPosition,
+      ranking_tie_count: tieCounts[points] ?? 1,
     };
   });
 }
@@ -128,6 +142,10 @@ export async function getRankedPlayers(supabase: SupabaseClient): Promise<{
   players: RankedPlayer[];
   error: string | null;
 }> {
+  if (rankingCache && Date.now() - rankingCache.createdAt < RANKING_CACHE_TTL_MS) {
+    return { players: rankingCache.players, error: null };
+  }
+
   const { data: players, error } = await supabase
     .from("players")
     .select("id, name, email, favorite_team, favorite_flag, auth_user_id, created_at")
@@ -285,13 +303,16 @@ export async function getRankedPlayers(supabase: SupabaseClient): Promise<{
         completed_count: completedCount,
       },
       ranking_position: 0,
+      ranking_tie_count: 1,
     } satisfies RankedPlayer;
   });
 
   rankedPlayers.sort((a, b) => b.points_breakdown.total_points - a.points_breakdown.total_points);
+  const rankedWithPositions = applyCompetitionRanking(rankedPlayers);
+  rankingCache = { createdAt: Date.now(), players: rankedWithPositions };
 
   return {
-    players: applyCompetitionRanking(rankedPlayers),
+    players: rankedWithPositions,
     error: null,
   };
 }

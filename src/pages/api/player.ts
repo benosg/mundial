@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { createServerClient } from "../../lib/supabase";
 import { getFlag } from "../../lib/flags";
+import { clearRankingCache } from "../../lib/ranking";
 
 export const prerender = false;
 
@@ -60,6 +61,7 @@ export const POST: APIRoute = async ({ request }) => {
 
       if (error) return json({ ok: false, error: error.message }, 502);
 
+      clearRankingCache();
       return json({
         ok: true,
         player: data?.[0]
@@ -83,6 +85,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (error) return json({ ok: false, error: error.message }, 502);
 
+    clearRankingCache();
     return json({
       ok: true,
       player: data?.[0]
@@ -132,6 +135,7 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ ok: false, error: "No se pudo guardar el perfil del jugador" }, 502);
   }
 
+  clearRankingCache();
   return json({
     ok: true,
     player: {

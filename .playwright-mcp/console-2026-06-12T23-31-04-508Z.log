@@ -1,7 +1,0 @@
-[    1667ms] [WARNING] A preload for 'https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute. @ https://cdn.cookielaw.org/scripttemplates/otSDKStub.js:0
-[    2428ms] [WARNING] Cookie expired message for locale "en": Please try and login again @ https://www.fifa.com/static/js/main.5b524752.js:1
-[    3183ms] [WARNING] A preload for 'https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute. @ https://cdn.cookielaw.org/scripttemplates/otSDKStub.js:0
-[    3276ms] [WARNING] Cookie expired message for locale "en": Please try and login again @ https://www.fifa.com/static/js/main.5b524752.js:1
-[    5733ms] [WARNING] An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. @ https://stories.usestoryteller.com/amp/20260518.1/amp-story-player-v0.js:1
-[    5735ms] [WARNING] An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. @ https://stories.usestoryteller.com/amp/20260518.1/amp-story-player-v0.js:1
-[    7391ms] [ERROR] Unknown action %s. undefined @ https://stories.usestoryteller.com/amp/20260518.1/v0.js:1
