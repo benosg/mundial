@@ -645,11 +645,12 @@ const groupedMatchesJson = JSON.stringify(groupedMatches).replace(/</g, "\\u003c
               const points = safeNumber(player?.points_breakdown?.total_points);
               const rankingPosition = safeNumber(player?.ranking_position, index + 1);
               const tieCount = safeNumber(player?.ranking_tie_count, 1);
+              const hasPrizeTie = rankingPosition <= 3 && tieCount > 1;
               const topClass = rankingPosition <= 3 ? ` companions-summary-item--top-${rankingPosition}` : "";
               return `
                 <li class="companions-summary-item${topClass}">
                   <span class="companions-summary-rank">${rankingPosition}</span>
-                  <span class="companions-summary-name">${escapeHtml(player?.name || "Sin nombre")}${tieCount > 1 ? '<small class="ranking-tie-note">Empate · premio compartido</small>' : ''}</span>
+                  <span class="companions-summary-name">${escapeHtml(player?.name || "Sin nombre")}${hasPrizeTie ? '<small class="ranking-tie-note">Empate · premio compartido</small>' : ''}</span>
                   <strong class="companions-summary-points">${points} pts</strong>
                 </li>
               `;

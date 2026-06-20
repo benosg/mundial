@@ -255,7 +255,8 @@ const allMatchesJson = JSON.stringify(allMatches).replace(/</g, "\\u003c");
             const isCurrentUser = currentPlayerRecordId && p.id === currentPlayerRecordId;
             const rankingPosition = safeNumber(p.ranking_position, index + 1);
             const tieCount = safeNumber(p.ranking_tie_count, 1);
-            const tieBadge = tieCount > 1 ? '<span class="ranking-tie-badge">Empate · premio compartido</span>' : '';
+            const hasPrizeTie = rankingPosition <= 3 && tieCount > 1;
+            const tieBadge = hasPrizeTie ? '<span class="ranking-tie-badge">Empate · premio compartido</span>' : '';
             const safeName = escapeHtml(p.name || 'Sin nombre');
             const safePlayerId = escapeHtml(p.id || '');
             return `
