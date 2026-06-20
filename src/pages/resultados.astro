@@ -51,6 +51,12 @@ function renderStatusClass(statusLabel: string) {
   if (statusLabel === "Esperando oficial") return "results-status results-status--pending";
   return "results-status";
 }
+
+function renderGoalTypeSuffix(type: string) {
+  if (type === "penalty") return " (P)";
+  if (type === "own_goal") return " (AG)";
+  return "";
+}
 ---
 
 <Layout
@@ -125,6 +131,21 @@ function renderStatusClass(statusLabel: string) {
                           </div>
                         </div>
 
+                        {match.goalScorers.length > 0 && (
+                          <div class="results-scorers" aria-label={`Goleadores ${match.home} vs ${match.away}`}>
+                            {(["home", "away"] as const).map((side) => {
+                              const sideGoals = match.goalScorers.filter((goal) => goal.side === side);
+                              if (sideGoals.length === 0) return null;
+                              return (
+                                <div class="results-scorers-line">
+                                  <span class="results-scorers-team">{side === "home" ? match.home : match.away}</span>
+                                  <span>{sideGoals.map((goal) => `${goal.minute} ${goal.name}${renderGoalTypeSuffix(goal.type)}`).join(" · ")}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
                         <div class="results-meta-grid muted">
                           <span>{match.venue} · {match.city}</span>
                           {match.broadcasters.length > 0 && <span>{match.broadcasters.join(" · ")}</span>}
@@ -166,8 +187,40 @@ function renderStatusClass(statusLabel: string) {
       return "results-status";
     }
 
+    function goalTypeSuffix(type) {
+      if (type === "penalty") return " (P)";
+      if (type === "own_goal") return " (AG)";
+      return "";
+    }
+
     function emojiToCdn(flag) {
       return `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${Array.from(flag || "🏳️").map((char) => char.codePointAt(0).toString(16)).join("-")}.svg`;
+    }
+
+    function renderGoalScorers(match) {
+      const goals = Array.isArray(match.goalScorers) ? match.goalScorers : [];
+      if (goals.length === 0) return "";
+
+      const lines = ["home", "away"].map((side) => {
+        const sideGoals = goals.filter((goal) => goal?.side === side);
+        if (sideGoals.length === 0) return "";
+
+        const teamName = side === "home" ? match.home : match.away;
+        const scorers = sideGoals
+          .map((goal) => `${escapeHtml(goal.minute)} ${escapeHtml(goal.name)}${goalTypeSuffix(goal.type)}`)
+          .join(" · ");
+
+        return `
+          <div class="results-scorers-line">
+            <span class="results-scorers-team">${escapeHtml(teamName)}</span>
+            <span>${scorers}</span>
+          </div>
+        `;
+      }).filter(Boolean).join("");
+
+      if (!lines) return "";
+
+      return `<div class="results-scorers" aria-label="Goleadores ${escapeHtml(match.home)} vs ${escapeHtml(match.away)}">${lines}</div>`;
     }
 
     function renderSection(section) {
@@ -200,6 +253,7 @@ function renderStatusClass(statusLabel: string) {
                     <span class="flag-inline"><img class="flag-icon" src="${emojiToCdn(match.awayFlag)}" alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>${escapeHtml(match.away)}</span></span>
                   </div>
                 </div>
+                ${renderGoalScorers(match)}
                 <div class="results-meta-grid muted">
                   <span>${escapeHtml(match.venue)} · ${escapeHtml(match.city)}</span>
                   ${(match.broadcasters || []).length > 0 ? `<span>${escapeHtml(match.broadcasters.join(" · "))}</span>` : ""}

@@ -57,7 +57,7 @@ export const GET: APIRoute = async ({ request }) => {
       ]),
     );
 
-    const timeline = buildResultsTimeline(resultsById);
+    const timeline = buildResultsTimeline(resultsById, new Date(), syncResult?.goalScorers ?? {});
 
     return json({
       ok: true,

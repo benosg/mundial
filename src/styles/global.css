@@ -2768,6 +2768,29 @@ input[data-score-input][disabled] {
   line-height: 1;
 }
 
+.results-scorers {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 12px;
+  background: rgba(8, 17, 31, 0.035);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.results-scorers-line {
+  display: grid;
+  grid-template-columns: minmax(74px, auto) minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: start;
+}
+
+.results-scorers-team {
+  color: var(--ink);
+  font-weight: 800;
+}
+
 .results-meta-grid {
   display: flex;
   flex-wrap: wrap;

@@ -1,4 +1,5 @@
 import { groupedMatches, isChvBroadcastMatch } from "../data/site";
+import type { FifaGoalScorer, FifaGoalScorersByMatch } from "./fifa-results";
 
 const TOURNAMENT_YEAR = 2026;
 const CHILE_TIME_ZONE = "Etc/GMT+4";
@@ -40,6 +41,7 @@ export type ResultsTimelineMatch = {
   broadcasters: string[];
   homeResult: number | null;
   awayResult: number | null;
+  goalScorers: FifaGoalScorer[];
   statusLabel: string;
   isFinal: boolean;
 };
@@ -143,6 +145,7 @@ function resolveFocusSectionId(dayKeys: string[], todayKey: string) {
 export function buildResultsTimeline(
   storedResults: Record<string, StoredResult> = {},
   referenceDate = new Date(),
+  goalScorersByMatch: FifaGoalScorersByMatch = {},
 ): ResultsTimelineData {
   const todayKey = getChileDayKey(referenceDate);
   const dayMap = new Map<string, ResultsTimelineMatch[]>();
@@ -177,6 +180,7 @@ export function buildResultsTimeline(
         broadcasters: getMatchBroadcasters(match.id, match.broadcasters),
         homeResult: isFinal ? result?.home_result ?? null : null,
         awayResult: isFinal ? result?.away_result ?? null : null,
+        goalScorers: isFinal ? goalScorersByMatch[match.id] ?? [] : [],
         statusLabel,
         isFinal,
       };
