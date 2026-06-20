@@ -35,6 +35,7 @@ groupedMatches.forEach((g) => {
               <th scope="col">Puntos</th>
               <th scope="col">Exactos (5)</th>
               <th scope="col">Ganador (3)</th>
+              <th scope="col">Empate (3)</th>
               <th scope="col">Bonus Fav (+1)</th>
               <th scope="col">Completados</th>
               <th scope="col">Pronósticos</th>
@@ -224,6 +225,7 @@ groupedMatches.forEach((g) => {
                 total_points: 0,
                 exact_count: 0,
                 winner_count: 0,
+                draw_count: 0,
                 favorite_bonus_count: 0,
                 completed_count: 0,
               },
@@ -242,7 +244,7 @@ groupedMatches.forEach((g) => {
 
         rankingBody.innerHTML = allPlayers
           .map((p, index) => {
-            const pb = p.points_breakdown || { total_points: 0, exact_count: 0, winner_count: 0, favorite_bonus_count: 0, completed_count: 0 };
+            const pb = p.points_breakdown || { total_points: 0, exact_count: 0, winner_count: 0, draw_count: 0, favorite_bonus_count: 0, completed_count: 0 };
             const isCurrentUser = currentPlayerRecordId && p.id === currentPlayerRecordId;
             const rankingPosition = p.ranking_position ?? index + 1;
             return `
@@ -255,6 +257,7 @@ groupedMatches.forEach((g) => {
               <td class="points-cell"><strong class="points-total">${pb.total_points}</strong></td>
               <td class="points-cell">${pb.exact_count}</td>
               <td class="points-cell">${pb.winner_count}</td>
+              <td class="points-cell">${pb.draw_count || 0}</td>
               <td class="points-cell">${pb.favorite_bonus_count}</td>
               <td class="points-cell">${pb.completed_count}</td>
               <td class="points-cell muted">${p.predictions_count || 0}</td>
@@ -497,9 +500,11 @@ groupedMatches.forEach((g) => {
       .ranking-table th:nth-child(5),
       .ranking-table th:nth-child(6),
       .ranking-table th:nth-child(7),
+      .ranking-table th:nth-child(8),
       .ranking-table td:nth-child(5),
       .ranking-table td:nth-child(6),
-      .ranking-table td:nth-child(7) {
+      .ranking-table td:nth-child(7),
+      .ranking-table td:nth-child(8) {
         display: none;
       }
     }

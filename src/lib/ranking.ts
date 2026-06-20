@@ -49,6 +49,7 @@ export interface PlayerPointsBreakdown {
   bracket_points: number;
   exact_count: number;
   winner_count: number;
+  draw_count: number;
   favorite_bonus_count: number;
   completed_count: number;
 }
@@ -98,7 +99,7 @@ export function calculatePoints(
   favoriteTeam: string | null,
   homeTeam: string,
   awayTeam: string
-): { points: number; type: "exact" | "winner" | "none"; favoriteBonus: boolean } {
+): { points: number; type: "exact" | "winner" | "draw" | "none"; favoriteBonus: boolean } {
   if (homeResult === null || awayResult === null) {
     return { points: 0, type: "none", favoriteBonus: false };
   }
@@ -113,7 +114,11 @@ export function calculatePoints(
   const predSign = calcSign(homeScore, awayScore);
   if (resultSign === predSign) {
     const favBonus = !!favoriteTeam && (favoriteTeam === homeTeam || favoriteTeam === awayTeam);
-    return { points: 3 + (favBonus ? 1 : 0), type: "winner", favoriteBonus: favBonus };
+    return {
+      points: 3 + (favBonus ? 1 : 0),
+      type: resultSign === 0 ? "draw" : "winner",
+      favoriteBonus: favBonus,
+    };
   }
 
   return { points: 0, type: "none", favoriteBonus: false };
@@ -213,6 +218,7 @@ export async function getRankedPlayers(supabase: SupabaseClient): Promise<{
     let bracketPoints = 0;
     let exactCount = 0;
     let winnerCount = 0;
+    let drawCount = 0;
     let favoriteBonusCount = 0;
     let completedCount = 0;
 
@@ -235,6 +241,7 @@ export async function getRankedPlayers(supabase: SupabaseClient): Promise<{
       groupPoints += points.points;
       if (points.type === "exact") exactCount++;
       else if (points.type === "winner") winnerCount++;
+      else if (points.type === "draw") drawCount++;
       if (points.favoriteBonus) favoriteBonusCount++;
     });
 
@@ -273,6 +280,7 @@ export async function getRankedPlayers(supabase: SupabaseClient): Promise<{
         bracket_points: bracketPoints,
         exact_count: exactCount,
         winner_count: winnerCount,
+        draw_count: drawCount,
         favorite_bonus_count: favoriteBonusCount,
         completed_count: completedCount,
       },

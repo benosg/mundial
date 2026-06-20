@@ -80,6 +80,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     let totalPoints = 0;
     let exactCount = 0;
     let winnerCount = 0;
+    let drawCount = 0;
     let favoriteBonusCount = 0;
     let completedCount = 0;
 
@@ -103,6 +104,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       totalPoints += result.points;
       if (result.type === "exact") exactCount++;
       else if (result.type === "winner") winnerCount++;
+      else if (result.type === "draw") drawCount++;
       if (result.favoriteBonus) favoriteBonusCount++;
 
       return { ...p, points: result.points, type: result.type, favoriteBonus: result.favoriteBonus };
@@ -163,6 +165,7 @@ export const GET: APIRoute = async ({ request, url }) => {
         total_points: totalPoints,
         exact_count: exactCount,
         winner_count: winnerCount,
+        draw_count: drawCount,
         favorite_bonus_count: favoriteBonusCount,
         completed_count: completedCount,
       },
