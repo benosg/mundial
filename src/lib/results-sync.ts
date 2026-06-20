@@ -1,7 +1,8 @@
 import {
-  fetchFifaGroupStageGoalScorers,
+  fetchFifaGroupStageMatchEvents,
   fetchFifaGroupStageResults,
   type FifaGoalScorersByMatch,
+  type FifaRedCardsByMatch,
   type FifaSyncSummary,
 } from "./fifa-results";
 import { clearRankingCache } from "./ranking";
@@ -21,6 +22,7 @@ export type ResultsSyncResponse = {
   lastSyncAt: string | null;
   nextSyncAt: string | null;
   goalScorers: FifaGoalScorersByMatch;
+  redCards: FifaRedCardsByMatch;
 };
 
 type SyncState = {
@@ -87,9 +89,9 @@ async function applyFifaUpdates(request: Request | undefined, syncSummary: FifaS
 
 async function runSync(request: Request | undefined, minIntervalMs: number): Promise<ResultsSyncResponse> {
   const syncSummary = await fetchFifaGroupStageResults();
-  const [updated, goalScorers] = await Promise.all([
+  const [updated, matchEvents] = await Promise.all([
     applyFifaUpdates(request, syncSummary),
-    fetchFifaGroupStageGoalScorers(syncSummary.candidates),
+    fetchFifaGroupStageMatchEvents(syncSummary.candidates),
   ]);
 
   if (updated > 0) {
@@ -106,7 +108,8 @@ async function runSync(request: Request | undefined, minIntervalMs: number): Pro
     source: "fifa",
     lastSyncAt: toIso(completedAt),
     nextSyncAt: toIso(completedAt + minIntervalMs),
-    goalScorers,
+    goalScorers: matchEvents.goalScorers,
+    redCards: matchEvents.redCards,
   };
 }
 

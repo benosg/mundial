@@ -3,8 +3,8 @@ import { groupedMatches } from "../data/site";
 const FIFA_MATCHES_URL = "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idSeason=285023";
 const FIFA_LIVE_MATCH_URL = "https://api.fifa.com/api/v3/live/football";
 const GROUP_STAGE_NAME = "First Stage";
-const GOAL_SCORERS_CACHE_TTL_MS = 10 * 60_000;
-const GOAL_SCORERS_CONCURRENCY = 6;
+const LIVE_EVENTS_CACHE_TTL_MS = 10 * 60_000;
+const LIVE_EVENTS_CONCURRENCY = 6;
 
 type FifaLocalizedField = Array<{
   Description?: string;
@@ -36,6 +36,13 @@ type FifaLiveGoal = {
   Period?: number | null;
 };
 
+type FifaLiveBooking = {
+  Card?: number | null;
+  IdPlayer?: string | null;
+  Minute?: string | null;
+  Period?: number | null;
+};
+
 type FifaLivePlayer = {
   IdPlayer?: string | null;
   PlayerName?: FifaLocalizedField;
@@ -45,6 +52,7 @@ type FifaLivePlayer = {
 type FifaLiveTeam = {
   Players?: FifaLivePlayer[];
   Goals?: FifaLiveGoal[];
+  Bookings?: FifaLiveBooking[];
 };
 
 type FifaLiveMatchResponse = {
@@ -75,19 +83,33 @@ export type FifaGoalScorer = {
 
 export type FifaGoalScorersByMatch = Record<string, FifaGoalScorer[]>;
 
+export type FifaRedCard = {
+  side: GoalSide;
+  minute: string;
+  name: string;
+};
+
+export type FifaRedCardsByMatch = Record<string, FifaRedCard[]>;
+
+export type FifaMatchEventsByMatch = {
+  goalScorers: FifaGoalScorersByMatch;
+  redCards: FifaRedCardsByMatch;
+};
+
 export type FifaSyncSummary = {
   imported: number;
   suspiciousGroups: string[];
   candidates: FifaSyncCandidate[];
 };
 
-type GoalScorersCacheEntry = {
+type LiveEventsCacheEntry = {
   fetchedAt: number;
   scoreKey: string;
   goals: FifaGoalScorer[];
+  redCards: FifaRedCard[];
 };
 
-const goalScorersCache = new Map<string, GoalScorersCacheEntry>();
+const liveEventsCache = new Map<string, LiveEventsCacheEntry>();
 
 function getLocalizedDescription(field?: FifaLocalizedField): string {
   return field?.find((item) => item?.Description)?.Description?.trim() ?? "";
@@ -190,7 +212,7 @@ function parseGoalMinute(minute: string) {
   };
 }
 
-function sortGoals(left: FifaGoalScorer & { period: number }, right: FifaGoalScorer & { period: number }) {
+function sortTimedEvents(left: { minute: string; name: string; period: number }, right: { minute: string; name: string; period: number }) {
   const leftMinute = parseGoalMinute(left.minute);
   const rightMinute = parseGoalMinute(right.minute);
 
@@ -227,23 +249,42 @@ function extractGoalsForSide(
     .filter((goal): goal is FifaGoalScorer & { period: number } => goal !== null);
 }
 
-async function fetchGoalScorersForCandidate(candidate: FifaSyncCandidate): Promise<FifaGoalScorer[]> {
-  if (candidate.home_result + candidate.away_result === 0) {
-    return [];
-  }
+function extractRedCardsForSide(
+  side: GoalSide,
+  team: FifaLiveTeam | undefined,
+  playerNames: Map<string, string>,
+): Array<FifaRedCard & { period: number }> {
+  return (team?.Bookings ?? [])
+    .filter((booking) => booking.Card === 2)
+    .map((booking) => {
+      const playerName = booking.IdPlayer ? playerNames.get(booking.IdPlayer) : null;
+      const minute = booking.Minute?.trim();
 
+      if (!minute) return null;
+
+      return {
+        side,
+        minute,
+        name: playerName || "Expulsado",
+        period: Number.isInteger(booking.Period) ? Number(booking.Period) : Number.MAX_SAFE_INTEGER,
+      };
+    })
+    .filter((card): card is FifaRedCard & { period: number } => card !== null);
+}
+
+async function fetchLiveEventsForCandidate(candidate: FifaSyncCandidate): Promise<{ goals: FifaGoalScorer[]; redCards: FifaRedCard[] }> {
   const cacheKey = candidate.id;
   const scoreKey = getCandidateScoreKey(candidate);
-  const cached = goalScorersCache.get(cacheKey);
+  const cached = liveEventsCache.get(cacheKey);
   const now = Date.now();
 
-  if (cached && cached.scoreKey === scoreKey && now - cached.fetchedAt < GOAL_SCORERS_CACHE_TTL_MS) {
-    return cached.goals;
+  if (cached && cached.scoreKey === scoreKey && now - cached.fetchedAt < LIVE_EVENTS_CACHE_TTL_MS) {
+    return { goals: cached.goals, redCards: cached.redCards };
   }
 
   const liveMatchUrl = buildLiveMatchUrl(candidate);
   if (!liveMatchUrl) {
-    return cached?.scoreKey === scoreKey ? cached.goals : [];
+    return cached?.scoreKey === scoreKey ? { goals: cached.goals, redCards: cached.redCards } : { goals: [], redCards: [] };
   }
 
   const controller = new AbortController();
@@ -265,18 +306,25 @@ async function fetchGoalScorersForCandidate(candidate: FifaSyncCandidate): Promi
       ...extractGoalsForSide("home", liveMatch.HomeTeam, playerNames),
       ...extractGoalsForSide("away", liveMatch.AwayTeam, playerNames),
     ]
-      .sort(sortGoals)
+      .sort(sortTimedEvents)
       .map(({ period: _period, ...goal }) => goal);
+    const redCards = [
+      ...extractRedCardsForSide("home", liveMatch.HomeTeam, playerNames),
+      ...extractRedCardsForSide("away", liveMatch.AwayTeam, playerNames),
+    ]
+      .sort(sortTimedEvents)
+      .map(({ period: _period, ...card }) => card);
 
-    goalScorersCache.set(cacheKey, {
+    liveEventsCache.set(cacheKey, {
       fetchedAt: now,
       scoreKey,
       goals,
+      redCards,
     });
 
-    return goals;
+    return { goals, redCards };
   } catch {
-    return cached?.scoreKey === scoreKey ? cached.goals : [];
+    return cached?.scoreKey === scoreKey ? { goals: cached.goals, redCards: cached.redCards } : { goals: [], redCards: [] };
   } finally {
     clearTimeout(timeout);
   }
@@ -379,12 +427,22 @@ export async function fetchFifaGroupStageResults(): Promise<FifaSyncSummary> {
   }
 }
 
-export async function fetchFifaGroupStageGoalScorers(candidates: FifaSyncCandidate[]): Promise<FifaGoalScorersByMatch> {
-  const candidatesWithGoals = candidates.filter((candidate) => candidate.home_result + candidate.away_result > 0);
-  const goalEntries = await mapWithConcurrency(candidatesWithGoals, GOAL_SCORERS_CONCURRENCY, async (candidate) => [
+export async function fetchFifaGroupStageMatchEvents(candidates: FifaSyncCandidate[]): Promise<FifaMatchEventsByMatch> {
+  const eventEntries = await mapWithConcurrency(candidates, LIVE_EVENTS_CONCURRENCY, async (candidate) => [
     candidate.id,
-    await fetchGoalScorersForCandidate(candidate),
+    await fetchLiveEventsForCandidate(candidate),
   ] as const);
 
-  return Object.fromEntries(goalEntries.filter(([, goals]) => goals.length > 0));
+  return {
+    goalScorers: Object.fromEntries(
+      eventEntries
+        .map(([matchId, events]) => [matchId, events.goals] as const)
+        .filter(([, goals]) => goals.length > 0),
+    ),
+    redCards: Object.fromEntries(
+      eventEntries
+        .map(([matchId, events]) => [matchId, events.redCards] as const)
+        .filter(([, redCards]) => redCards.length > 0),
+    ),
+  };
 }

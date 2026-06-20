@@ -2768,7 +2768,7 @@ input[data-score-input][disabled] {
   line-height: 1;
 }
 
-.results-scorers {
+.results-events {
   display: grid;
   gap: 0.35rem;
   padding: 0.55rem 0.65rem;
@@ -2779,14 +2779,18 @@ input[data-score-input][disabled] {
   line-height: 1.35;
 }
 
-.results-scorers-line {
+.results-event-line {
   display: grid;
   grid-template-columns: minmax(74px, auto) minmax(0, 1fr);
   gap: 0.55rem;
   align-items: start;
 }
 
-.results-scorers-team {
+.results-event-line--red-card {
+  color: var(--danger);
+}
+
+.results-event-team {
   color: var(--ink);
   font-weight: 800;
 }

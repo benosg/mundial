@@ -1,5 +1,5 @@
 import { groupedMatches, isChvBroadcastMatch } from "../data/site";
-import type { FifaGoalScorer, FifaGoalScorersByMatch } from "./fifa-results";
+import type { FifaGoalScorer, FifaGoalScorersByMatch, FifaRedCard, FifaRedCardsByMatch } from "./fifa-results";
 
 const TOURNAMENT_YEAR = 2026;
 const CHILE_TIME_ZONE = "Etc/GMT+4";
@@ -42,6 +42,7 @@ export type ResultsTimelineMatch = {
   homeResult: number | null;
   awayResult: number | null;
   goalScorers: FifaGoalScorer[];
+  redCards: FifaRedCard[];
   statusLabel: string;
   isFinal: boolean;
 };
@@ -146,6 +147,7 @@ export function buildResultsTimeline(
   storedResults: Record<string, StoredResult> = {},
   referenceDate = new Date(),
   goalScorersByMatch: FifaGoalScorersByMatch = {},
+  redCardsByMatch: FifaRedCardsByMatch = {},
 ): ResultsTimelineData {
   const todayKey = getChileDayKey(referenceDate);
   const dayMap = new Map<string, ResultsTimelineMatch[]>();
@@ -181,6 +183,7 @@ export function buildResultsTimeline(
         homeResult: isFinal ? result?.home_result ?? null : null,
         awayResult: isFinal ? result?.away_result ?? null : null,
         goalScorers: isFinal ? goalScorersByMatch[match.id] ?? [] : [],
+        redCards: isFinal ? redCardsByMatch[match.id] ?? [] : [],
         statusLabel,
         isFinal,
       };
