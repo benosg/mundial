@@ -317,19 +317,18 @@ function renderStatusClass(statusLabel: string) {
 
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          maybeScrollToFocus({ force: true, behavior: "smooth" });
+          maybeScrollToFocus({ force: true, behavior: "auto" });
         });
       });
 
-      loadResults({ silent: true });
+      loadResults({ silent: true, forceScroll: true });
       window.setInterval(() => {
         loadResults({ silent: true });
       }, AUTO_REFRESH_MS);
     }
 
     document.addEventListener("astro:page-load", initResultsPage, { once: true });
-    if (document.readyState !== "loading") {
-      initResultsPage();
-    }
+    document.addEventListener("DOMContentLoaded", initResultsPage, { once: true });
+    initResultsPage();
   </script>
 </Layout>
