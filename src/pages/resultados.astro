@@ -133,26 +133,36 @@ function renderGoalTypeSuffix(type: string) {
 
                         {(match.goalScorers.length > 0 || match.redCards.length > 0) && (
                           <div class="results-events" aria-label={`Eventos ${match.home} vs ${match.away}`}>
-                            {(["home", "away"] as const).map((side) => {
-                              const sideGoals = match.goalScorers.filter((goal) => goal.side === side);
-                              if (sideGoals.length === 0) return null;
-                              return (
-                                <div class="results-event-line">
-                                  <span class="results-event-team">{side === "home" ? match.home : match.away}</span>
-                                  <span>{sideGoals.map((goal) => `${goal.minute} ${goal.name}${renderGoalTypeSuffix(goal.type)}`).join(" · ")}</span>
-                                </div>
-                              );
-                            })}
-                            {(["home", "away"] as const).map((side) => {
-                              const sideRedCards = match.redCards.filter((card) => card.side === side);
-                              if (sideRedCards.length === 0) return null;
-                              return (
-                                <div class="results-event-line results-event-line--red-card">
-                                  <span class="results-event-team">{side === "home" ? match.home : match.away}</span>
-                                  <span>{sideRedCards.map((card) => `🟥 ${card.minute} ${card.name}`).join(" · ")}</span>
-                                </div>
-                              );
-                            })}
+                            {match.goalScorers.length > 0 && (
+                              <div class="results-event-group">
+                                <span class="results-event-heading">Goles</span>
+                                {(["home", "away"] as const).map((side) => {
+                                  const sideGoals = match.goalScorers.filter((goal) => goal.side === side);
+                                  if (sideGoals.length === 0) return null;
+                                  return (
+                                    <div class="results-event-line">
+                                      <span class="results-event-team">{side === "home" ? match.home : match.away}</span>
+                                      <span>{sideGoals.map((goal) => `${goal.minute} ${goal.name}${renderGoalTypeSuffix(goal.type)}`).join(" · ")}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {match.redCards.length > 0 && (
+                              <div class="results-event-group">
+                                <span class="results-event-heading results-event-heading--red-card">Tarjetas rojas</span>
+                                {(["home", "away"] as const).map((side) => {
+                                  const sideRedCards = match.redCards.filter((card) => card.side === side);
+                                  if (sideRedCards.length === 0) return null;
+                                  return (
+                                    <div class="results-event-line results-event-line--red-card">
+                                      <span class="results-event-team">{side === "home" ? match.home : match.away}</span>
+                                      <span>{sideRedCards.map((card) => `🟥 ${card.minute} ${card.name}`).join(" · ")}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -228,6 +238,9 @@ function renderGoalTypeSuffix(type: string) {
           </div>
         `;
       }).filter(Boolean).join("");
+      const goalGroup = goalLines
+        ? `<div class="results-event-group"><span class="results-event-heading">Goles</span>${goalLines}</div>`
+        : "";
       const redCardLines = ["home", "away"].map((side) => {
         const sideRedCards = redCards.filter((card) => card?.side === side);
         if (sideRedCards.length === 0) return "";
@@ -244,7 +257,10 @@ function renderGoalTypeSuffix(type: string) {
           </div>
         `;
       }).filter(Boolean).join("");
-      const lines = `${goalLines}${redCardLines}`;
+      const redCardGroup = redCardLines
+        ? `<div class="results-event-group"><span class="results-event-heading results-event-heading--red-card">Tarjetas rojas</span>${redCardLines}</div>`
+        : "";
+      const lines = `${goalGroup}${redCardGroup}`;
 
       if (!lines) return "";
 
