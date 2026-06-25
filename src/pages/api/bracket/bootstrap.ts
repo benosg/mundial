@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { knockoutFixtures } from "../../../data/knockout";
+import { fetchFifaKnockoutMatchUpdates } from "../../../lib/fifa-results";
 import { getFlag } from "../../../lib/flags";
 import { buildKnockoutPhaseStates, shouldUseKnockoutAsDefaultView } from "../../../lib/knockout";
 import { createServerClient } from "../../../lib/supabase";
@@ -62,7 +63,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     player = browserPlayer;
   }
 
-  const [groupMatchesResult, knockoutMatchesResult, predictionsResult] = await Promise.all([
+  const [groupMatchesResult, knockoutMatchesResult, predictionsResult, fifaKnockoutUpdates] = await Promise.all([
     supabase.from("matches").select("home_result, away_result"),
     supabase
       .from("knockout_matches")
@@ -74,15 +75,19 @@ export const GET: APIRoute = async ({ request, url }) => {
           .select("match_id, home_score, away_score, penalties_winner")
           .eq("player_id", player.id)
       : Promise.resolve({ data: [] as Array<{ match_id: string; home_score: number; away_score: number; penalties_winner: "home" | "away" | null }> }),
+    fetchFifaKnockoutMatchUpdates().catch(() => []),
   ]);
 
   if (groupMatchesResult.error) return json({ ok: false, error: groupMatchesResult.error.message }, 502);
   if (knockoutMatchesResult.error) return json({ ok: false, error: knockoutMatchesResult.error.message }, 502);
 
+  const fifaUpdatesById = new Map(fifaKnockoutUpdates.map((match) => [match.id, match]));
+
   const knockoutMatches = knockoutFixtures.map((fixture) => {
     const dbMatch = (knockoutMatchesResult.data ?? []).find((match) => match.id === fixture.id);
-    const homeTeam = dbMatch?.home_team?.trim() || fixture.homeSlot;
-    const awayTeam = dbMatch?.away_team?.trim() || fixture.awaySlot;
+    const fifaMatch = fifaUpdatesById.get(fixture.id);
+    const homeTeam = dbMatch?.home_team?.trim() || fifaMatch?.home_team?.trim() || fixture.homeSlot;
+    const awayTeam = dbMatch?.away_team?.trim() || fifaMatch?.away_team?.trim() || fixture.awaySlot;
 
     return {
       id: fixture.id,
@@ -98,9 +103,9 @@ export const GET: APIRoute = async ({ request, url }) => {
       venue: dbMatch?.venue || fixture.venue,
       city: dbMatch?.city || fixture.city,
       broadcasters: fixture.broadcasters,
-      home_result: dbMatch?.home_result ?? null,
-      away_result: dbMatch?.away_result ?? null,
-      penalties_winner: dbMatch?.penalties_winner ?? null,
+      home_result: dbMatch?.home_result ?? fifaMatch?.home_result ?? null,
+      away_result: dbMatch?.away_result ?? fifaMatch?.away_result ?? null,
+      penalties_winner: dbMatch?.penalties_winner ?? fifaMatch?.penalties_winner ?? null,
     };
   });
 

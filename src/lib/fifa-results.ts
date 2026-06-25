@@ -1,4 +1,5 @@
 import { groupedMatches } from "../data/site";
+import { knockoutFixtures } from "../data/knockout";
 
 const FIFA_MATCHES_URL = "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idSeason=285023";
 const FIFA_LIVE_MATCH_URL = "https://api.fifa.com/api/v3/live/football";
@@ -10,6 +11,12 @@ type FifaLocalizedField = Array<{
   Description?: string;
 }>;
 
+type FifaTeam = {
+  Score?: number | null;
+  TeamName?: FifaLocalizedField;
+  ShortClubName?: string;
+};
+
 type FifaMatch = {
   IdCompetition?: string;
   IdSeason?: string;
@@ -19,8 +26,12 @@ type FifaMatch = {
   Date?: string;
   GroupName?: FifaLocalizedField;
   StageName?: FifaLocalizedField;
+  Home?: FifaTeam | null;
+  Away?: FifaTeam | null;
   HomeTeamScore?: number | null;
   AwayTeamScore?: number | null;
+  HomeTeamPenaltyScore?: number | null;
+  AwayTeamPenaltyScore?: number | null;
 };
 
 type FifaMatchesResponse = {
@@ -102,6 +113,15 @@ export type FifaSyncSummary = {
   candidates: FifaSyncCandidate[];
 };
 
+export type FifaKnockoutMatchUpdate = {
+  id: string;
+  home_team: string | null;
+  away_team: string | null;
+  home_result: number | null;
+  away_result: number | null;
+  penalties_winner: "home" | "away" | null;
+};
+
 type LiveEventsCacheEntry = {
   fetchedAt: number;
   scoreKey: string;
@@ -111,8 +131,70 @@ type LiveEventsCacheEntry = {
 
 const liveEventsCache = new Map<string, LiveEventsCacheEntry>();
 
+const fifaTeamNameToDisplayName: Record<string, string> = {
+  "South Africa": "Sudáfrica",
+  "Korea Republic": "Corea del Sur",
+  Czechia: "Chequia",
+  Canada: "Canadá",
+  "Bosnia and Herzegovina": "Bosnia y Herzegovina",
+  Switzerland: "Suiza",
+  Brazil: "Brasil",
+  Morocco: "Marruecos",
+  Haiti: "Haití",
+  Scotland: "Escocia",
+  Türkiye: "Turquía",
+  Germany: "Alemania",
+  Curaçao: "Curazao",
+  "Côte d'Ivoire": "Costa de Marfil",
+  "Cote d'Ivoire": "Costa de Marfil",
+  Netherlands: "Países Bajos",
+  Japan: "Japón",
+  Sweden: "Suecia",
+  Tunisia: "Túnez",
+  Belgium: "Bélgica",
+  Egypt: "Egipto",
+  "IR Iran": "Irán",
+  "New Zealand": "Nueva Zelanda",
+  Spain: "España",
+  "Cabo Verde": "Cabo Verde",
+  "Saudi Arabia": "Arabia Saudita",
+  France: "Francia",
+  Senegal: "Senegal",
+  Iraq: "Irak",
+  Norway: "Noruega",
+  Argentina: "Argentina",
+  Algeria: "Argelia",
+  Austria: "Austria",
+  Jordan: "Jordania",
+  Portugal: "Portugal",
+  "Congo DR": "Congo DR",
+  Uzbekistan: "Uzbekistán",
+  Colombia: "Colombia",
+  England: "Inglaterra",
+  Croatia: "Croacia",
+  Ghana: "Ghana",
+  Panama: "Panamá",
+  Mexico: "México",
+  USA: "USA",
+  Paraguay: "Paraguay",
+  Australia: "Australia",
+  Ecuador: "Ecuador",
+  Uruguay: "Uruguay",
+  Qatar: "Qatar",
+};
+
+let knockoutUpdatesCache: { fetchedAt: number; updates: FifaKnockoutMatchUpdate[] } | null = null;
+const KNOCKOUT_UPDATES_CACHE_TTL_MS = 60_000;
+
 function getLocalizedDescription(field?: FifaLocalizedField): string {
   return field?.find((item) => item?.Description)?.Description?.trim() ?? "";
+}
+
+function getDisplayTeamName(team?: FifaTeam | null) {
+  const rawName = getLocalizedDescription(team?.TeamName) || team?.ShortClubName?.trim() || "";
+  if (!rawName) return null;
+
+  return fifaTeamNameToDisplayName[rawName] ?? rawName;
 }
 
 function normalizePlayerName(value: string) {
@@ -132,6 +214,19 @@ function getGroupLetter(match: FifaMatch): string | null {
 
 function isGroupStageMatch(match: FifaMatch): boolean {
   return getLocalizedDescription(match.StageName) === GROUP_STAGE_NAME;
+}
+
+function getPenaltyWinner(match: FifaMatch) {
+  if (!Number.isInteger(match.HomeTeamPenaltyScore) || !Number.isInteger(match.AwayTeamPenaltyScore)) {
+    return null;
+  }
+
+  const homePenaltyScore = Number(match.HomeTeamPenaltyScore);
+  const awayPenaltyScore = Number(match.AwayTeamPenaltyScore);
+
+  if (homePenaltyScore > awayPenaltyScore) return "home" as const;
+  if (awayPenaltyScore > homePenaltyScore) return "away" as const;
+  return null;
 }
 
 function hasNumericFinalScore(match: FifaMatch): match is FifaMatch & { HomeTeamScore: number; AwayTeamScore: number } {
@@ -352,7 +447,7 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
-export async function fetchFifaGroupStageResults(): Promise<FifaSyncSummary> {
+async function fetchFifaCalendarMatches() {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12000);
 
@@ -367,64 +462,98 @@ export async function fetchFifaGroupStageResults(): Promise<FifaSyncSummary> {
     }
 
     const payload = (await response.json()) as FifaMatchesResponse;
-    const allMatches = Array.isArray(payload.Results) ? payload.Results : [];
-    const groupStageMatches = allMatches.filter(isGroupStageMatch);
-    const matchesByGroup = new Map<string, FifaMatch[]>();
-
-    groupStageMatches.forEach((match) => {
-      const groupLetter = getGroupLetter(match);
-      if (!groupLetter) return;
-      const groupMatches = matchesByGroup.get(groupLetter) ?? [];
-      groupMatches.push(match);
-      matchesByGroup.set(groupLetter, groupMatches);
-    });
-
-    const suspiciousGroups: string[] = [];
-    const candidates: FifaSyncCandidate[] = [];
-
-    groupedMatches.forEach((groupBlock) => {
-      const localMatches = groupBlock.matches;
-      const fifaMatches = sortMatchesChronologically(matchesByGroup.get(groupBlock.group) ?? []);
-
-      if (fifaMatches.length !== localMatches.length) {
-        suspiciousGroups.push(`Grupo ${groupBlock.group}: FIFA entregó ${fifaMatches.length} partidos y se esperaban ${localMatches.length}.`);
-        return;
-      }
-
-      const hasInvalidDate = fifaMatches.some((match) => !match.Date || Number.isNaN(Date.parse(match.Date)));
-      if (hasInvalidDate) {
-        suspiciousGroups.push(`Grupo ${groupBlock.group}: FIFA entregó partidos sin fecha válida; se omitió por seguridad.`);
-        return;
-      }
-
-      fifaMatches.forEach((fifaMatch, index) => {
-        if (!hasNumericFinalScore(fifaMatch)) return;
-
-        const localMatch = localMatches[index];
-        if (!localMatch) return;
-
-        candidates.push({
-          id: localMatch.id,
-          group: groupBlock.group,
-          home_result: fifaMatch.HomeTeamScore,
-          away_result: fifaMatch.AwayTeamScore,
-          fifaCompetitionId: fifaMatch.IdCompetition ?? null,
-          fifaSeasonId: fifaMatch.IdSeason ?? null,
-          fifaStageId: fifaMatch.IdStage ?? null,
-          fifaMatchId: fifaMatch.IdMatch ?? null,
-          fifaDate: fifaMatch.Date ?? null,
-        });
-      });
-    });
-
-    return {
-      imported: candidates.length,
-      suspiciousGroups,
-      candidates,
-    };
+    return Array.isArray(payload.Results) ? payload.Results : [];
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function fetchFifaGroupStageResults(): Promise<FifaSyncSummary> {
+  const allMatches = await fetchFifaCalendarMatches();
+  const groupStageMatches = allMatches.filter(isGroupStageMatch);
+  const matchesByGroup = new Map<string, FifaMatch[]>();
+
+  groupStageMatches.forEach((match) => {
+    const groupLetter = getGroupLetter(match);
+    if (!groupLetter) return;
+    const groupMatches = matchesByGroup.get(groupLetter) ?? [];
+    groupMatches.push(match);
+    matchesByGroup.set(groupLetter, groupMatches);
+  });
+
+  const suspiciousGroups: string[] = [];
+  const candidates: FifaSyncCandidate[] = [];
+
+  groupedMatches.forEach((groupBlock) => {
+    const localMatches = groupBlock.matches;
+    const fifaMatches = sortMatchesChronologically(matchesByGroup.get(groupBlock.group) ?? []);
+
+    if (fifaMatches.length !== localMatches.length) {
+      suspiciousGroups.push(`Grupo ${groupBlock.group}: FIFA entregó ${fifaMatches.length} partidos y se esperaban ${localMatches.length}.`);
+      return;
+    }
+
+    const hasInvalidDate = fifaMatches.some((match) => !match.Date || Number.isNaN(Date.parse(match.Date)));
+    if (hasInvalidDate) {
+      suspiciousGroups.push(`Grupo ${groupBlock.group}: FIFA entregó partidos sin fecha válida; se omitió por seguridad.`);
+      return;
+    }
+
+    fifaMatches.forEach((fifaMatch, index) => {
+      if (!hasNumericFinalScore(fifaMatch)) return;
+
+      const localMatch = localMatches[index];
+      if (!localMatch) return;
+
+      candidates.push({
+        id: localMatch.id,
+        group: groupBlock.group,
+        home_result: fifaMatch.HomeTeamScore,
+        away_result: fifaMatch.AwayTeamScore,
+        fifaCompetitionId: fifaMatch.IdCompetition ?? null,
+        fifaSeasonId: fifaMatch.IdSeason ?? null,
+        fifaStageId: fifaMatch.IdStage ?? null,
+        fifaMatchId: fifaMatch.IdMatch ?? null,
+        fifaDate: fifaMatch.Date ?? null,
+      });
+    });
+  });
+
+  return {
+    imported: candidates.length,
+    suspiciousGroups,
+    candidates,
+  };
+}
+
+export async function fetchFifaKnockoutMatchUpdates(): Promise<FifaKnockoutMatchUpdate[]> {
+  const now = Date.now();
+  if (knockoutUpdatesCache && now - knockoutUpdatesCache.fetchedAt < KNOCKOUT_UPDATES_CACHE_TTL_MS) {
+    return knockoutUpdatesCache.updates;
+  }
+
+  const allMatches = await fetchFifaCalendarMatches();
+  const matchesByFifaId = new Map(
+    allMatches
+      .filter((match) => match.IdMatch)
+      .map((match) => [String(match.IdMatch), match] as const)
+  );
+
+  const updates = knockoutFixtures.map((fixture) => {
+    const fifaMatch = matchesByFifaId.get(fixture.fifaMatchId);
+
+    return {
+      id: fixture.id,
+      home_team: getDisplayTeamName(fifaMatch?.Home),
+      away_team: getDisplayTeamName(fifaMatch?.Away),
+      home_result: Number.isInteger(fifaMatch?.HomeTeamScore) ? Number(fifaMatch?.HomeTeamScore) : null,
+      away_result: Number.isInteger(fifaMatch?.AwayTeamScore) ? Number(fifaMatch?.AwayTeamScore) : null,
+      penalties_winner: fifaMatch ? getPenaltyWinner(fifaMatch) : null,
+    } satisfies FifaKnockoutMatchUpdate;
+  });
+
+  knockoutUpdatesCache = { fetchedAt: now, updates };
+  return updates;
 }
 
 export async function fetchFifaGroupStageMatchEvents(candidates: FifaSyncCandidate[]): Promise<FifaMatchEventsByMatch> {
