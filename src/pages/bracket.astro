@@ -216,6 +216,19 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
         .replaceAll("'", "&#39;");
     }
 
+    function flagCodePoints(flag) {
+      return Array.from(flag || "🏳️")
+        .map((char) => char.codePointAt(0)?.toString(16))
+        .filter(Boolean)
+        .join("-");
+    }
+
+    function flagImage(flag) {
+      if (!flag || flag === "🏳️") return "";
+
+      return `<img class="flag-icon bracket-team-flag" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${flagCodePoints(flag)}.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" />`;
+    }
+
     function formatChileDate(iso) {
       return new Intl.DateTimeFormat("es-CL", {
         timeZone: "Etc/GMT+4",
@@ -282,7 +295,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
             <div class="bracket-team-row">
               <div class="bracket-team-copy">
                 <span class="bracket-slot">${escapeHtml(match.home_slot)}</span>
-                <strong class="bracket-team-name">${escapeHtml(match.home_team)}</strong>
+                <strong class="bracket-team-name">${flagImage(match.home_flag, match.home_team)}<span>${escapeHtml(match.home_team)}</span></strong>
               </div>
               <div class="bracket-score-inputs">
                 <input type="number" min="0" max="20" inputmode="numeric" data-match-score="${match.id}" data-side="home" value="${homeValue}" ${editable ? "" : "disabled"} />
@@ -291,7 +304,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
             <div class="bracket-team-row">
               <div class="bracket-team-copy">
                 <span class="bracket-slot">${escapeHtml(match.away_slot)}</span>
-                <strong class="bracket-team-name">${escapeHtml(match.away_team)}</strong>
+                <strong class="bracket-team-name">${flagImage(match.away_flag, match.away_team)}<span>${escapeHtml(match.away_team)}</span></strong>
               </div>
               <div class="bracket-score-inputs">
                 <input type="number" min="0" max="20" inputmode="numeric" data-match-score="${match.id}" data-side="away" value="${awayValue}" ${editable ? "" : "disabled"} />
