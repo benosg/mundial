@@ -16,7 +16,7 @@ export interface KnockoutFixture {
   broadcasters: string[];
 }
 
-export const knockoutBroadcastersChile = ["DSPORTS", "DGO"];
+export const knockoutBroadcastersChile = ["DGO"];
 export const knockoutChvBroadcastMatchIds = new Set(["103", "104"]);
 
 function getKnockoutBroadcasters(matchId: string) {
