@@ -4,7 +4,7 @@ export const siteDescription = "Pronósticos del Mundial 2026 con grupos privado
 
 export const siteOgImage = "/og/world-picks-cover.svg";
 
-export const broadcastersChile = ["DSPORTS", "DGO"];
+export const broadcastersChile = ["DGO"];
 
 export const chvBroadcastSource = {
   label: "CHV confirmó sus partidos para el Mundial 2026",
