@@ -1,4 +1,10 @@
+import {
+  roundOf32BestThirdPlaceMatrix,
+  roundOf32BestThirdPlaceOrder,
+  roundOf32BestThirdPlaceSlotOwners,
+} from "../data/round-of-32-best-third-place";
 import { knockoutFixtures, knockoutPhaseLabels, knockoutPhaseOrder, type KnockoutPhase } from "../data/knockout";
+import { buildStandingsByGroup, getBestThirdPlaceRows, type GroupMatchStandingLike, type GroupStandingRow, type GroupStandingsByGroup } from "./group-standings";
 
 export type WinnerSide = "home" | "away";
 
@@ -162,4 +168,76 @@ export function shouldUseKnockoutAsDefaultView(groupMatches: GroupResultLike[], 
 
 export function getKnockoutMatchFallback(matchId: string) {
   return knockoutFixtures.find((match) => match.id === matchId) ?? null;
+}
+
+export interface ProbableKnockoutTeam {
+  slot: string;
+  team: string;
+  flag: string;
+  provisional: true;
+}
+
+function resolveDirectStandingSlot(slot: string, standingsByGroup: GroupStandingsByGroup) {
+  const match = slot.match(/^([123])([A-L])$/);
+  if (!match) return null;
+
+  const [, position, group] = match;
+  const row = standingsByGroup[group]?.[Number(position) - 1] ?? null;
+  if (!row || row.played === 0) return null;
+  return row;
+}
+
+function buildBestThirdAssignments(standingsByGroup: GroupStandingsByGroup) {
+  const bestThirdRows = getBestThirdPlaceRows(standingsByGroup);
+  if (bestThirdRows.length !== 8) {
+    return new Map<string, GroupStandingRow>();
+  }
+
+  const combinationKey = bestThirdRows.map((row) => row.group).sort().join("");
+  const assignments = roundOf32BestThirdPlaceMatrix[combinationKey] ?? [];
+
+  const bestThirdRowsByGroup = new Map(bestThirdRows.map((row) => [row.group, row]));
+
+  return new Map(
+    assignments
+      .map((assignment, index) => [roundOf32BestThirdPlaceOrder[index], bestThirdRowsByGroup.get(assignment.slice(1)) ?? null] as const)
+      .filter((entry): entry is readonly [(typeof roundOf32BestThirdPlaceOrder)[number], GroupStandingRow] => Boolean(entry[1]))
+  );
+}
+
+export function resolveProbableRoundOf32Slot(slot: string, standingsByGroup: GroupStandingsByGroup): ProbableKnockoutTeam | null {
+  const directRow = resolveDirectStandingSlot(slot, standingsByGroup);
+  if (directRow) {
+    return {
+      slot,
+      team: directRow.team,
+      flag: directRow.flag,
+      provisional: true,
+    };
+  }
+
+  if (!/^3[A-L]+$/.test(slot)) {
+    return null;
+  }
+
+  const ownerGroup = roundOf32BestThirdPlaceSlotOwners[slot];
+  if (!ownerGroup) {
+    return null;
+  }
+
+  const mappedRow = buildBestThirdAssignments(standingsByGroup).get(ownerGroup);
+  if (!mappedRow || mappedRow.played === 0) {
+    return null;
+  }
+
+  return {
+    slot,
+    team: mappedRow.team,
+    flag: mappedRow.flag,
+    provisional: true,
+  };
+}
+
+export function buildGroupStandingsForKnockout(matches: GroupMatchStandingLike[]) {
+  return buildStandingsByGroup(matches);
 }

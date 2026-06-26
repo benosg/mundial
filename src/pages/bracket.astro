@@ -197,6 +197,10 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
     let matchesById = new Map();
     let predictionsById = new Map();
     let phaseStates = {};
+    let refreshEveryMs = 60000;
+    let bracketRefreshTimer = null;
+    let bracketLoadInFlight = null;
+    const phaseByMatchId = new Map(phasesData.flatMap((phaseBlock) => phaseBlock.matches.map((match) => [match.id, phaseBlock.phase])));
 
     function getPlayerId() {
       let id = localStorage.getItem(STORAGE_KEY);
@@ -264,6 +268,59 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       bracketSaveStatus.dataset.state = state;
     }
 
+    function captureDraftPredictions() {
+      const draft = new Map();
+
+      document.querySelectorAll("[data-match-score]").forEach((input) => {
+        const matchId = input.dataset.matchScore;
+        const side = input.dataset.side;
+        if (!matchId || !side) return;
+        const current = draft.get(matchId) || { home_score: "", away_score: "", penalties_winner: null };
+        current[`${side}_score`] = input.value;
+        draft.set(matchId, current);
+      });
+
+      draft.forEach((value, matchId) => {
+        const checked = document.querySelector(`input[name="pens-${matchId}"]:checked`);
+        value.penalties_winner = checked?.value || null;
+      });
+
+      return draft;
+    }
+
+    function restoreDraftPredictions(draft) {
+      draft.forEach((prediction, matchId) => {
+        const phase = phaseByMatchId.get(matchId);
+        if (!phaseStates[phase]?.editable) return;
+
+        const homeInput = document.querySelector(`[data-match-score="${matchId}"][data-side="home"]`);
+        const awayInput = document.querySelector(`[data-match-score="${matchId}"][data-side="away"]`);
+        if (homeInput) homeInput.value = prediction.home_score;
+        if (awayInput) awayInput.value = prediction.away_score;
+
+        document.querySelectorAll(`input[name="pens-${matchId}"]`).forEach((input) => {
+          input.checked = input.value === prediction.penalties_winner;
+        });
+
+        updatePenaltiesVisibility(matchId);
+      });
+    }
+
+    function scheduleBracketRefresh() {
+      if (bracketRefreshTimer) {
+        window.clearInterval(bracketRefreshTimer);
+      }
+
+      bracketRefreshTimer = window.setInterval(async () => {
+        if (document.visibilityState !== "visible") return;
+        if (document.querySelector('[data-phase-save][data-saving="true"]')) return;
+
+        try {
+          await loadBracket({ preserveDraft: true, silentErrors: true });
+        } catch {}
+      }, refreshEveryMs);
+    }
+
     function renderMatch(match, prediction, editable, phase, slot) {
       const homeValue = Number.isInteger(prediction?.home_score) ? prediction.home_score : "";
       const awayValue = Number.isInteger(prediction?.away_score) ? prediction.away_score : "";
@@ -279,6 +336,11 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       const broadcasters = Array.isArray(match.broadcasters) && match.broadcasters.length > 0
         ? `<div class="bracket-broadcasters muted small-note">${escapeHtml(match.broadcasters.join(" · "))}</div>`
         : "";
+      const provisionalNote = match.home_provisional || match.away_provisional
+        ? '<div class="bracket-provisional-note muted small-note">Equipos probables según la tabla actual.</div>'
+        : "";
+      const homeBadge = match.home_provisional ? '<span class="bracket-team-badge">Provisorio</span>' : "";
+      const awayBadge = match.away_provisional ? '<span class="bracket-team-badge">Provisorio</span>' : "";
 
       return `
         <div class="bracket-match-slot" style="--slot-start:${slot.start}; --slot-span:${slot.span}">
@@ -294,7 +356,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
             <div class="bracket-team-row">
               <div class="bracket-team-copy">
                 <span class="bracket-slot">${escapeHtml(match.home_slot)}</span>
-                <strong class="bracket-team-name">${flagImage(match.home_flag, match.home_team)}<span>${escapeHtml(match.home_team)}</span></strong>
+                <strong class="bracket-team-name">${flagImage(match.home_flag, match.home_team)}<span>${escapeHtml(match.home_team)}</span>${homeBadge}</strong>
               </div>
               <div class="bracket-score-inputs">
                 <input type="number" min="0" max="20" inputmode="numeric" data-match-score="${match.id}" data-side="home" value="${homeValue}" ${editable ? "" : "disabled"} />
@@ -303,13 +365,15 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
             <div class="bracket-team-row">
               <div class="bracket-team-copy">
                 <span class="bracket-slot">${escapeHtml(match.away_slot)}</span>
-                <strong class="bracket-team-name">${flagImage(match.away_flag, match.away_team)}<span>${escapeHtml(match.away_team)}</span></strong>
+                <strong class="bracket-team-name">${flagImage(match.away_flag, match.away_team)}<span>${escapeHtml(match.away_team)}</span>${awayBadge}</strong>
               </div>
               <div class="bracket-score-inputs">
                 <input type="number" min="0" max="20" inputmode="numeric" data-match-score="${match.id}" data-side="away" value="${awayValue}" ${editable ? "" : "disabled"} />
               </div>
             </div>
           </div>
+
+          ${provisionalNote}
 
           <div class="bracket-penalties" data-match-penalties="${match.id}" style="display:${showPens ? "grid" : "none"}">
             <span class="muted">Penales si termina empate:</span>
@@ -406,7 +470,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
           setBracketStatus(data.error || "No se pudo guardar esta fase.", "error");
           return;
         }
-        await loadBracket();
+        await loadBracket({ preserveDraft: true });
         setBracketStatus(`Listo: ${data.saved} pronóstico${data.saved === 1 ? "" : "s"} guardado${data.saved === 1 ? "" : "s"} en ${phase}.`, "success");
       } catch {
         setBracketStatus("Error de red al guardar la llave.", "error");
@@ -419,23 +483,41 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       }
     }
 
-    async function loadBracket() {
-      const response = await fetch(`/api/bracket/bootstrap?player_id=${encodeURIComponent(currentPlayerKey)}`, { cache: "no-store" });
-      const data = await response.json();
-      if (!data.ok) {
-        setBracketStatus(data.error || "No se pudo cargar la llave", "error");
-        throw new Error(data.error || "No se pudo cargar la llave");
-      }
+    async function loadBracket(options = {}) {
+      const { preserveDraft = false, silentErrors = false } = options;
+      if (bracketLoadInFlight) return bracketLoadInFlight;
 
-      currentServerPlayer = data.player;
-      matchesById = new Map((data.matches || []).map((match) => [match.id, match]));
-      predictionsById = new Map((data.predictions || []).map((prediction) => [prediction.match_id, prediction]));
-      phaseStates = data.phaseStates || {};
+      const draft = preserveDraft ? captureDraftPredictions() : null;
 
-      if (playerNameDisplay) playerNameDisplay.textContent = currentServerPlayer?.name || "Jugador registrado";
-      if (playerFavDisplay) playerFavDisplay.textContent = currentServerPlayer?.favorite_team ? `Favorito: ${currentServerPlayer.favorite_team}` : "Sin favorito cargado";
+      bracketLoadInFlight = (async () => {
+        const response = await fetch(`/api/bracket/bootstrap?player_id=${encodeURIComponent(currentPlayerKey)}`, { cache: "no-store" });
+        const data = await response.json();
+        if (!data.ok) {
+          if (!silentErrors) {
+            setBracketStatus(data.error || "No se pudo cargar la llave", "error");
+          }
+          throw new Error(data.error || "No se pudo cargar la llave");
+        }
 
-      render();
+        currentServerPlayer = data.player;
+        matchesById = new Map((data.matches || []).map((match) => [match.id, match]));
+        predictionsById = new Map((data.predictions || []).map((prediction) => [prediction.match_id, prediction]));
+        phaseStates = data.phaseStates || {};
+        refreshEveryMs = Number.isFinite(data.refreshEveryMs) ? data.refreshEveryMs : refreshEveryMs;
+
+        if (playerNameDisplay) playerNameDisplay.textContent = currentServerPlayer?.name || "Jugador registrado";
+        if (playerFavDisplay) playerFavDisplay.textContent = currentServerPlayer?.favorite_team ? `Favorito: ${currentServerPlayer.favorite_team}` : "Sin favorito cargado";
+
+        render();
+        if (draft) {
+          restoreDraftPredictions(draft);
+        }
+        scheduleBracketRefresh();
+      })().finally(() => {
+        bracketLoadInFlight = null;
+      });
+
+      return bracketLoadInFlight;
     }
 
     async function init() {
