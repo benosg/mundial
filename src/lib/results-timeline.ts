@@ -1,5 +1,11 @@
 import { groupedMatches, isChvBroadcastMatch } from "../data/site";
-import type { FifaGoalScorer, FifaGoalScorersByMatch, FifaRedCard, FifaRedCardsByMatch } from "./fifa-results";
+import type {
+  FifaGoalScorer,
+  FifaGoalScorersByMatch,
+  FifaMatchStatusesByMatch,
+  FifaRedCard,
+  FifaRedCardsByMatch,
+} from "./fifa-results";
 
 const TOURNAMENT_YEAR = 2026;
 const CHILE_TIME_ZONE = "Etc/GMT+4";
@@ -95,6 +101,11 @@ function isLikelyLiveMatch(referenceDate: Date, kickoffUtcMs: number, hasScore: 
   return nowMs >= kickoffUtcMs && nowMs <= kickoffUtcMs + LIVE_MATCH_WINDOW_MS;
 }
 
+function isFinishedByFifaStatus(status?: { matchStatus: number | null; period: number | null }) {
+  if (!status) return false;
+  return status.matchStatus === 0 || status.period === 10;
+}
+
 function getChileDayKey(referenceDate: Date) {
   const formatter = new Intl.DateTimeFormat("en", {
     timeZone: CHILE_TIME_ZONE,
@@ -148,6 +159,7 @@ export function buildResultsTimeline(
   referenceDate = new Date(),
   goalScorersByMatch: FifaGoalScorersByMatch = {},
   redCardsByMatch: FifaRedCardsByMatch = {},
+  fifaStatusesByMatch: FifaMatchStatusesByMatch = {},
 ): ResultsTimelineData {
   const todayKey = getChileDayKey(referenceDate);
   const dayMap = new Map<string, ResultsTimelineMatch[]>();
@@ -156,15 +168,20 @@ export function buildResultsTimeline(
     groupBlock.matches.map((match) => {
       const parsedKickoff = parseKickoffChile(match.kickoffChile);
       const result = storedResults[match.id];
-      const isFinal = Number.isInteger(result?.home_result) && Number.isInteger(result?.away_result);
-      const isLive = isLikelyLiveMatch(referenceDate, parsedKickoff.kickoffUtcMs, isFinal);
+      const hasScore = Number.isInteger(result?.home_result) && Number.isInteger(result?.away_result);
+      const fifaStatus = fifaStatusesByMatch[match.id];
+      const isHeuristicLive = isLikelyLiveMatch(referenceDate, parsedKickoff.kickoffUtcMs, hasScore);
+      const isFinal = hasScore && (fifaStatus ? isFinishedByFifaStatus(fifaStatus) : !isHeuristicLive);
+      const isLive = fifaStatus ? hasScore && !isFinishedByFifaStatus(fifaStatus) : isHeuristicLive;
       const statusLabel = isFinal
-         ? (isLive ? "En juego" : "Final")
-         : parsedKickoff.dayKey < todayKey
-           ? "Esperando oficial"
-           : parsedKickoff.dayKey === todayKey
-            ? "Hoy"
-            : "Programado";
+        ? "Final"
+        : isLive
+          ? "En juego"
+          : parsedKickoff.dayKey < todayKey
+            ? "Esperando oficial"
+            : parsedKickoff.dayKey === todayKey
+              ? "Hoy"
+              : "Programado";
 
       return {
         id: match.id,
@@ -180,10 +197,10 @@ export function buildResultsTimeline(
         venue: match.venue,
         city: match.city,
         broadcasters: getMatchBroadcasters(match.id, match.broadcasters),
-        homeResult: isFinal ? result?.home_result ?? null : null,
-        awayResult: isFinal ? result?.away_result ?? null : null,
-        goalScorers: isFinal ? goalScorersByMatch[match.id] ?? [] : [],
-        redCards: isFinal ? redCardsByMatch[match.id] ?? [] : [],
+        homeResult: hasScore ? result?.home_result ?? null : null,
+        awayResult: hasScore ? result?.away_result ?? null : null,
+        goalScorers: hasScore ? goalScorersByMatch[match.id] ?? [] : [],
+        redCards: hasScore ? redCardsByMatch[match.id] ?? [] : [],
         statusLabel,
         isFinal,
       };

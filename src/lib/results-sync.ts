@@ -2,6 +2,7 @@ import {
   fetchFifaGroupStageMatchEvents,
   fetchFifaGroupStageResults,
   type FifaGoalScorersByMatch,
+  type FifaMatchStatusesByMatch,
   type FifaRedCardsByMatch,
   type FifaSyncSummary,
 } from "./fifa-results";
@@ -23,6 +24,7 @@ export type ResultsSyncResponse = {
   nextSyncAt: string | null;
   goalScorers: FifaGoalScorersByMatch;
   redCards: FifaRedCardsByMatch;
+  statusesByMatch: FifaMatchStatusesByMatch;
 };
 
 type SyncState = {
@@ -110,6 +112,7 @@ async function runSync(request: Request | undefined, minIntervalMs: number): Pro
     nextSyncAt: toIso(completedAt + minIntervalMs),
     goalScorers: matchEvents.goalScorers,
     redCards: matchEvents.redCards,
+    statusesByMatch: syncSummary.statusesByMatch,
   };
 }
 

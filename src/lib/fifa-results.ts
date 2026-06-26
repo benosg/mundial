@@ -24,6 +24,8 @@ type FifaMatch = {
   IdMatch?: string;
   MatchNumber?: number;
   Date?: string;
+  MatchStatus?: number | null;
+  Period?: number | null;
   GroupName?: FifaLocalizedField;
   StageName?: FifaLocalizedField;
   Home?: FifaTeam | null;
@@ -111,7 +113,15 @@ export type FifaSyncSummary = {
   imported: number;
   suspiciousGroups: string[];
   candidates: FifaSyncCandidate[];
+  statusesByMatch: FifaMatchStatusesByMatch;
 };
+
+export type FifaMatchStatus = {
+  matchStatus: number | null;
+  period: number | null;
+};
+
+export type FifaMatchStatusesByMatch = Record<string, FifaMatchStatus>;
 
 export type FifaKnockoutMatchUpdate = {
   id: string;
@@ -483,6 +493,7 @@ export async function fetchFifaGroupStageResults(): Promise<FifaSyncSummary> {
 
   const suspiciousGroups: string[] = [];
   const candidates: FifaSyncCandidate[] = [];
+  const statusesByMatch: FifaMatchStatusesByMatch = {};
 
   groupedMatches.forEach((groupBlock) => {
     const localMatches = groupBlock.matches;
@@ -500,10 +511,15 @@ export async function fetchFifaGroupStageResults(): Promise<FifaSyncSummary> {
     }
 
     fifaMatches.forEach((fifaMatch, index) => {
-      if (!hasNumericFinalScore(fifaMatch)) return;
-
       const localMatch = localMatches[index];
       if (!localMatch) return;
+
+      statusesByMatch[localMatch.id] = {
+        matchStatus: Number.isInteger(fifaMatch.MatchStatus) ? Number(fifaMatch.MatchStatus) : null,
+        period: Number.isInteger(fifaMatch.Period) ? Number(fifaMatch.Period) : null,
+      };
+
+      if (!hasNumericFinalScore(fifaMatch)) return;
 
       candidates.push({
         id: localMatch.id,
@@ -523,6 +539,7 @@ export async function fetchFifaGroupStageResults(): Promise<FifaSyncSummary> {
     imported: candidates.length,
     suspiciousGroups,
     candidates,
+    statusesByMatch,
   };
 }
 
