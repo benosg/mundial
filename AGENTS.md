@@ -2,93 +2,70 @@
 
 ## Stack
 
-- **Astro 6.4** — SSR (`output: 'server'`), Vercel adapter
-- **Supabase** — auth (Google OAuth), database, cookie-based SSR client (custom, not `@astrojs/db`)
-- **TypeScript** — strict via `astro/tsconfigs/strict`
-- **Flags** — emoji-based via Twemoji SVG (not image files)
+- Astro 6 SSR (`@astrojs/vercel`), TypeScript strict, Supabase SSR/auth/database.
+- Package manager: `pnpm@11.6.0`.
+- Flags are rendered from emoji → Twemoji SVG. England and Scotland need the custom subdivision-flag handling already present in the UI/helpers.
 
-## Development
-
-Package manager: pnpm (via `packageManager` in `package.json`; run `corepack enable` once if needed).
+## Verified commands
 
 ```sh
-pnpm dev       # astro dev → http://localhost:4321
-pnpm build     # astro build (SSR output for Vercel)
-pnpm preview   # astro preview
+corepack enable
+pnpm install
+pnpm dev      # http://localhost:4321
+pnpm check    # astro check
+pnpm build    # main verification gate for SSR/Vercel output
+pnpm preview
 ```
 
-No tests configured. No linter/formatter config in repo.
-
-Type checking:
-```sh
-pnpm check
-```
+- There are no tests, linter, formatter, task runner, or pre-commit hooks in this repo.
+- In practice, `pnpm check` + `pnpm build` are the only real validation steps.
 
 ## Environment
 
-| Variable | Required | Purpose |
-|----------|----------|---------|
-| `SUPABASE_URL` | yes | Supabase project URL |
-| `SUPABASE_KEY` | yes | Supabase anon/publishable key |
-| `SITE_URL` | yes (production) | OAuth redirect + canonical URLs (set by Vercel) |
+- Required app vars: `SUPABASE_URL`, `SUPABASE_KEY`.
+- `SITE_URL` matters for production OAuth redirects/canonicals.
+- `package.json` allows Node `>=22.12.0`, but local `pnpm build` warns that Vercel functions target Node 24, not Node 25.
 
-## Architecture
+## Architecture that matters
 
-### Data flow
+- `/` is not the main UI; `src/pages/index.astro` redirects to `/groups` or `/bracket`.
+- Main user flows:
+  - `src/pages/groups/index.astro` → group-stage predictions
+  - `src/pages/bracket.astro` → knockout bracket predictions
+  - `src/pages/resultados.astro` → public results timeline
+  - `src/pages/companions.astro` → ranking + player detail modal
+- Hardcoded tournament data lives in `src/data/site.ts` (groups) and `src/data/knockout.ts` (bracket).
+- FIFA syncing logic is in `src/lib/fifa-results.ts` + `src/lib/results-sync.ts`.
+- Ranking is server-side in `src/lib/ranking.ts` and now combines group predictions and bracket predictions.
 
-1. **Fixtures** — hardcoded in `src/data/site.ts` (72 matches, groups A–L, Chilean broadcast info)
-2. **Results** — polled from FIFA API (`api.fifa.com`) every 60s, stored in `matches` table, throttled per-session
-3. **Predictions** — user-submitted scores per match, upserted to `predictions` table
-4. **Ranking** — computed server-side in `src/lib/ranking.ts` from predictions + match results
+## API surface to not misread
 
-### Routes
+- Group stage:
+  - `/api/bootstrap`
+  - `/api/predictions`
+  - `/api/results/group-stage`
+  - `/api/results/refresh`
+- Bracket:
+  - `/api/bracket/bootstrap`
+  - `/api/bracket/predictions`
+- Player/auth/admin:
+  - `/api/players` returns ranking list and player detail by query params
+  - `/api/player` is profile save/update, not ranking detail fetch
+  - `/api/auth/*` handles Google OAuth/session/favorite team
+  - `/api/admin/results` and `/api/admin/results/fifa-sync` are admin-only result tools
 
-| Path | Purpose |
-|------|---------|
-| `/` | Home — prediction sheet + standings + ranking sidebar |
-| `/companions` | Full ranking table with player detail modal |
-| `/matches/1` | Per-player match view |
-| `/admin/results` | Admin: import FIFA results manually |
-| `/api/bootstrap` | Load matches, player, predictions (authenticated or browser-key) |
-| `/api/players` | Full ranked player list |
-| `/api/player` | Single player detail + predictions |
-| `/api/predictions` | Save/clear predictions |
-| `/api/results/refresh` | Trigger FIFA results sync |
-| `/api/auth/*` | OAuth signin, callback, signout, session, favorite-team |
+## Database / setup gotchas
 
-### Auth
+- `supabase/schema.sql` is not the full setup story.
+- Real setup order is: `schema.sql` → `seed.sql` → required migrations in `supabase/`.
+- Important migrations include:
+  - `migration_is_admin.sql` for `players.is_admin`
+  - `migration_knockout_bracket.sql` for `knockout_matches` and `bracket_predictions`
+- Current app data is not just `players`, `matches`, `predictions`; knockout tables are part of normal operation.
 
-- Google OAuth via Supabase. Session stored in HTTP cookies.
-- `getSessionContext(Astro.request)` in `src/lib/session.ts` — returns `{ user, isAdmin, rankingPosition }`
-- Admin flag: `players.is_admin` column in Supabase
+## Behavior gotchas
 
-### Scoring
-
-| Type | Points | Condition |
-|------|--------|-----------|
-| Exact | 5 | Home and away scores match exactly |
-| Winner | 3 | Sign (win/loss/draw) matches but not exact |
-| Favorite bonus | +1 | If the player's favorite team played and the prediction scored |
-| Miss | 0 | Sign doesn't match |
-
-Calculated in `src/lib/ranking.ts` — `calculatePoints()`.
-
-### Database (Supabase)
-
-**Tables**: `players`, `matches`, `predictions`
-- Predictions use `ON CONFLICT (player_id, match_id)` for upsert
-- Player identity: `auth_user_id` (Google) or `browser_key` (anonymous legacy)
-- Match IDs: stable keys like `A1`, `B3` — shared between `src/data/site.ts` and DB
-
-Schema in `supabase/schema.sql`. Migration files in `supabase/`.
-
-### Match ID format
-
-`{group_letter}{number}` — e.g. `A1`, `B3`, `L6`. First char is the group letter (A–L), rest is a sequential number unique within the group.
-
-## Styling
-
-- `src/styles/global.css` — all global styles, mobile at 960px and 640px
-- Mobile breakpoints: `960px` (layout collapse, table columns hidden) and `640px` (further column reduction, smaller padding)
-- Prediction table: 4 columns desktop → 2 columns on mobile (hide Sede at ≤960px, hide Chile at ≤640px)
-- Companion ranking: 9 columns → 5 on small mobile (hide Exactos/Ganador/Bonus at ≤960px, hide Favorito at ≤640px)
+- Group-stage persistence still supports legacy anonymous `browser_key` players.
+- Bracket persistence is auth-gated in the UI.
+- Bracket editing is phase-gated: each round opens after the dependency finishes and locks 10 minutes before that round's first kickoff.
+- The bracket page uses one save action in the UI, but the backend still validates/saves phase by phase.

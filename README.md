@@ -1,8 +1,23 @@
 # ⚽ Pronósticos del Mundial 2026
 
-App de pronósticos para el Mundial 2026 — grupos privados, puntaje transparente, bonus por equipo favorito y planilla para toda la fase de grupos.
+App de pronósticos del Mundial 2026 construida con **Astro SSR + Supabase + Vercel**.
 
-**Stack**: Astro 6.4 (SSR) + Supabase (auth + DB) + Vercel
+Incluye:
+- fase de grupos (`/groups`)
+- llave eliminatoria (`/bracket`)
+- resultados públicos (`/resultados`)
+- ranking y detalle de jugadores (`/companions`)
+
+> `src/pages/index.astro` no es la UI principal: redirige a `/groups` o `/bracket`.
+
+---
+
+## Stack
+
+- Astro 6 SSR (`@astrojs/vercel`)
+- TypeScript strict
+- Supabase SSR/auth/database
+- pnpm `11.6.0`
 
 ---
 
@@ -11,159 +26,165 @@ App de pronósticos para el Mundial 2026 — grupos privados, puntaje transparen
 ```sh
 corepack enable
 pnpm install
-cp .env.example .env   # llena SUPABASE_URL y SUPABASE_KEY
+cp .env.example .env
 ```
 
-### Base de datos
+Completa al menos:
+- `SUPABASE_URL`
+- `SUPABASE_KEY`
 
-Las tablas **no se crean automáticamente**. Corre en el SQL Editor de Supabase:
+`SITE_URL` importa en producción para OAuth y canonicals.
 
-1. `supabase/schema.sql` — estructura (players, matches, predictions)
-2. `supabase/seed.sql` — 72 partidos de fase de grupos
+---
 
-### Autenticación Google OAuth
+## Base de datos
 
-1. **Google Cloud Console** → credenciales OAuth 2.0 → redirect URI: `https://YOUR_PROJECT.supabase.co/auth/v1/callback`
-2. **Supabase Dashboard** → Authentication → Providers → Google → pega Client ID/Secret
-3. Agrega a redirect URLs: `https://tu-dominio.vercel.app/api/auth/callback` y `http://localhost:4321/api/auth/callback`
+Las tablas no se crean solas. El orden real de setup es:
 
-### Variables de entorno
+1. `supabase/schema.sql`
+2. `supabase/seed.sql`
+3. migraciones necesarias dentro de `supabase/`
 
-| Variable | ¿Requerida? | Uso |
-|----------|-------------|-----|
-| `SUPABASE_URL` | sí | URL del proyecto Supabase |
-| `SUPABASE_KEY` | sí | Key anónima/publicable |
-| `SITE_URL` | sí (prod) | Redirect OAuth + canonical (lo setea Vercel) |
+Importantes:
+- `migration_is_admin.sql` → agrega `players.is_admin`
+- `migration_knockout_bracket.sql` → agrega `knockout_matches` y `bracket_predictions`
+
+La app actual no usa solo `players`, `matches` y `predictions`; la llave eliminatoria forma parte normal de la operación.
+
+---
+
+## Google OAuth
+
+1. En Google Cloud Console crea credenciales OAuth 2.0.
+2. En Supabase activa Google en **Authentication → Providers**.
+3. Usa como callback Supabase:
+   - `https://YOUR_PROJECT.supabase.co/auth/v1/callback`
+4. Agrega redirect URLs de la app:
+   - `http://localhost:4321/api/auth/callback`
+   - `https://tu-dominio.vercel.app/api/auth/callback`
 
 ---
 
 ## Desarrollo
 
 ```sh
-pnpm dev       # → http://localhost:4321
-pnpm build     # build SSR para Vercel
-pnpm preview   # preview local del build
-pnpm check     # type checking
+pnpm dev      # http://localhost:4321
+pnpm check    # astro check
+pnpm build    # verificación principal SSR/Vercel
+pnpm preview
 ```
 
-No hay tests, linter ni formateador configurados en el repo.
+No hay tests, linter, formatter, task runner ni hooks en este repo.
 
-### Verificar conexión Supabase
+En la práctica, los únicos gates reales son:
+- `pnpm check`
+- `pnpm build`
+
+> `package.json` permite Node `>=22.12.0`, pero `pnpm build` advierte que Vercel Functions apunta a Node 24 si corres localmente con Node 25.
+
+---
+
+## Arquitectura útil
+
+### Páginas principales
+
+- `/groups` → pronósticos de fase de grupos
+- `/bracket` → pronósticos de llave eliminatoria
+- `/resultados` → timeline público de resultados
+- `/companions` → ranking + modal de detalle del jugador
+- `/admin/results` → edición/admin de resultados
+
+### Datos y lógica
+
+- `src/data/site.ts` → partidos y metadata de fase de grupos
+- `src/data/knockout.ts` → metadata fija de la llave
+- `src/lib/fifa-results.ts` + `src/lib/results-sync.ts` → sync con FIFA
+- `src/lib/ranking.ts` → ranking server-side
+- `src/lib/knockout.ts` → ventanas, bloqueo y scoring de llave
+- `src/lib/group-standings.ts` → tabla de grupos reutilizable para lógica de cruces probables
+
+### Comportamientos importantes
+
+- La fase de grupos todavía soporta jugadores legacy por `browser_key`.
+- La llave eliminatoria requiere login para persistir pronósticos.
+- `/bracket` muestra cruces probables de 16vos antes de FIFA usando la tabla local de grupos.
+- Si FIFA o la base ya tienen el cruce oficial, eso tiene prioridad sobre el cruce probable.
+- La edición de cada ronda de la llave se abre cuando termina la fase anterior y se cierra **10 minutos antes** del primer partido de esa ronda.
+- En la UI de llaves hay un solo botón **Guardar llave**, pero el backend sigue validando/guardando fase por fase.
+
+---
+
+## APIs que conviene no confundir
+
+### Fase de grupos
+
+- `GET /api/bootstrap`
+- `POST /api/predictions`
+- `DELETE /api/predictions`
+- `GET /api/results/group-stage`
+- `GET /api/results/refresh`
+
+### Llave
+
+- `GET /api/bracket/bootstrap`
+- `POST /api/bracket/predictions`
+
+### Jugador / auth / admin
+
+- `GET /api/players` → ranking y detalle por query params
+- `POST /api/player` → guardar/actualizar perfil
+- `GET|POST /api/auth/*` → signin, callback, session, signout, favorite-team
+- `GET|POST /api/admin/results`
+- `GET /api/admin/results/fifa-sync`
+- `GET /api/supabase-status`
+
+---
+
+## Verificación manual útil
+
+### Estado de Supabase
 
 ```sh
 curl http://localhost:4321/api/supabase-status
 ```
 
----
-
-## Arquitectura
-
-### Flujo de datos
-
-```
-src/data/site.ts (72 partidos hardcodeados)
-       ↓
-   FIFA API (api.fifa.com) → polling cada 60s → tabla matches
-       ↓
-   Usuarios ingresan pronósticos → tabla predictions (upsert)
-       ↓
-   src/lib/ranking.ts → cálculo server-side de puntajes
-```
-
-- **Fixtures**: Hardcodeados en `src/data/site.ts` (grupos A–L, info de broadcast chileno)
-- **Resultados**: Polling desde FIFA API cada 60s, throttle por sesión (caché de 60s)
-- **Pronósticos**: Upsert por `player_id + match_id`
-- **Ranking**: Calculado en cada request desde `src/lib/ranking.ts`
-
-### Puntaje
-
-| Tipo | Ptos | Condición |
-|------|------|-----------|
-| Exacto | 5 | Marcador exacto |
-| Ganador | 3 | Signo (gana/pierde/empata) acertado |
-| Bonus favorito | +1 | Si juega tu equipo favorito y el pronóstico sumó puntos |
-| Falla | 0 | Signo no acertado |
-
-### Auth
-
-- Google OAuth vía Supabase. Sesión en cookies HTTP.
-- `getSessionContext(Astro.request)` → `{ user, isAdmin, rankingPosition }`
-- Admin: columna `players.is_admin` en Supabase
-- Usuarios pueden jugar sin auth (legacy `browser_key`) pero la experiencia completa requiere login
-
-### Mobile
-
-- Breakpoints: **960px** (layout columnar) y **640px** (columnas ocultas, padding reducido)
-- Tabla de pronósticos: 4 columnas desktop → 2 en mobile (se oculta Sede a ≤960px, Chile a ≤640px)
-- Ranking: 9 columnas desktop → 5 en mobile (se ocultan Exactos/Ganador/Bonus a ≤960px, Favorito a ≤640px)
-
----
-
-## API
-
-| Endpoint | Método | Descripción |
-|----------|--------|-------------|
-| `/api/bootstrap` | GET | Matches + player + predictions (auth o browser-key) |
-| `/api/players` | GET | Lista completa de jugadores rankeados |
-| `/api/player` | POST | Guardar perfil |
-| `/api/predictions` | POST/DELETE | Guardar/limpiar pronósticos |
-| `/api/results/refresh` | GET | Forzar sync con FIFA (throttle 60s) |
-| `/api/auth/signin` | GET | Iniciar Google OAuth |
-| `/api/auth/callback` | GET | Callback OAuth |
-| `/api/auth/session` | GET | Sesión actual |
-| `/api/auth/signout` | POST | Cerrar sesión |
-| `/api/auth/favorite-team` | POST | Elegir equipo favorito (irreversible) |
-
----
-
-## Admin
-
-Los usuarios con `players.is_admin = true` ven un link "Admin" en la navegación y pueden acceder a `/admin/results` para importar resultados FIFA manualmente.
-
----
-
-## Flujo completo de prueba
+### Flujo rápido
 
 1. `pnpm dev`
-2. Abrir `http://localhost:4321`
-3. "Iniciar sesión con Google" en el header
-4. Primer login → elegir país favorito (⚠️ irreversible)
-5. Ingresar pronósticos → "Guardar todo"
-6. Recargar → los pronósticos persisten desde el servidor
-
-### Reset para testing
-
-```sql
--- en Supabase SQL Editor
-UPDATE players SET favorite_team = '', favorite_flag = '', name = ''
-WHERE email = 'user@example.com';
-```
-
-O usa `supabase/reset_player.sql`.
+2. abrir `http://localhost:4321/groups`
+3. probar login Google
+4. guardar pronósticos de grupos
+5. abrir `/bracket`
+6. guardar la llave
+7. abrir `/companions` para revisar ranking/detalle
 
 ---
 
-## Estructura del proyecto
+## Estructura corta
 
-```
+```text
 src/
-├── data/site.ts          — fixtures, reglas, ejemplos de puntaje
-├── lib/
-│   ├── supabase.ts       — clientes browser/server para Supabase
-│   ├── session.ts        — lectura de sesión desde cookies
-│   ├── ranking.ts        — cálculo de puntajes y ranking
-│   ├── fifa-results.ts   — fetch de resultados desde FIFA API
-│   ├── results-sync.ts   — sincronización con throttle y caché
-│   └── flags.ts          — mapeo país → emoji (vía Twemoji SVG)
-├── layouts/Layout.astro  — layout global con nav y auth slot
-├── pages/
-│   ├── index.astro       — home: planilla + standings + ranking
-│   ├── companions.astro  — ranking completo con detalle de jugador
-│   ├── admin/results.astro — importación manual de resultados FIFA
-│   └── api/*             — endpoints REST
-└── styles/global.css     — todos los estilos globales
+  data/
+    site.ts
+    knockout.ts
+  lib/
+    fifa-results.ts
+    results-sync.ts
+    ranking.ts
+    knockout.ts
+    group-standings.ts
+    supabase.ts
+    session.ts
+  pages/
+    index.astro
+    groups/index.astro
+    bracket.astro
+    resultados.astro
+    companions.astro
+    admin/results.astro
+    api/**
 supabase/
-├── schema.sql            — esquema de base de datos
-├── seed.sql              — datos de fixtures
-└── migration_*.sql       — migraciones
+  schema.sql
+  seed.sql
+  migration_*.sql
 ```
