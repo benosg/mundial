@@ -26,7 +26,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
 <Layout
   title="Llaves"
   currentPath="/bracket"
-  description="Pronósticos del cuadro eliminatorio del Mundial 2026, fase por fase y con definición por penales cuando corresponde."
+  description="Pronósticos del cuadro eliminatorio del Mundial 2026 con guardado único, bloqueo por ronda y definición por penales cuando corresponde."
 >
   <div class="simple-main bracket-page">
     <section class="simple-top" aria-labelledby="bracket-title">
@@ -34,12 +34,12 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
         <div class="hero-copy-block bracket-hero-copy">
           <span class="eyebrow">Cuadro eliminatorio</span>
           <h1 class="simple-title" id="bracket-title">Pronóstico de llaves</h1>
-          <p class="section-copy section-copy-tight">Arma tu cuadro fase por fase en un formato horizontal clásico. La llave mantiene los bloqueos por horario, edición de marcadores y definición por penales cuando hay empate.</p>
+          <p class="section-copy section-copy-tight">Arma tu cuadro completo en un formato horizontal clásico. La llave agrupa y guarda automáticamente tus pronósticos por ronda, con bloqueo por horario y definición por penales cuando hay empate.</p>
         </div>
 
         <div class="hero-badges bracket-hero-badges" aria-label="Aspectos clave de la llave">
           <span class="hero-badge">Desliza por fases</span>
-          <span class="hero-badge">Guarda cada columna</span>
+          <span class="hero-badge">Guardado único por ronda</span>
           <span class="hero-badge">Penales obligatorios en empates</span>
         </div>
 
@@ -47,7 +47,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
           <article class="summary-box highlight">
             <div class="muted">Jugador</div>
             <strong data-player-name-display>Inicia sesión para jugar</strong>
-            <span data-player-fav-display class="muted">Elige fase por fase y define penales en los empates</span>
+            <span data-player-fav-display class="muted">Completa la llave y define penales en los empates</span>
           </article>
           <article class="summary-box">
             <div class="muted">Fases</div>
@@ -71,7 +71,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
           <div class="auth-gate-inner">
             <span class="eyebrow">Acceso requerido</span>
             <h2 class="section-title">Inicia sesión para guardar tu llave</h2>
-            <p class="muted" style="margin-bottom:1.2rem">Necesitás una cuenta de Google para persistir tus pronósticos fase por fase.</p>
+            <p class="muted" style="margin-bottom:1.2rem">Necesitás una cuenta de Google para persistir tu llave completa.</p>
             <a class="button" href="/api/auth/signin">Iniciar sesión con Google</a>
           </div>
         </article>
@@ -94,13 +94,8 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
               ))}
             </div>
 
-            <div class="bracket-save-row" aria-label="Guardar pronosticos por fase">
-              <button class="button button-compact bracket-save-button" type="button" data-phase-save="16avos">Guardar 16avos</button>
-              <button class="button button-compact bracket-save-button" type="button" data-phase-save="8vos">Guardar 8vos</button>
-              <button class="button button-compact bracket-save-button" type="button" data-phase-save="4tos">Guardar 4tos</button>
-              <button class="button button-compact bracket-save-button" type="button" data-phase-save="semis">Guardar semis</button>
-              <button class="button button-compact bracket-save-button" type="button" data-phase-save="3er/4to lugar">Guardar 3er/4to lugar</button>
-              <button class="button button-compact bracket-save-button" type="button" data-phase-save="final">Guardar final</button>
+            <div class="bracket-save-row" aria-label="Guardar pronósticos de la llave">
+              <button class="button button-compact bracket-save-button" type="button" data-phase-save="all">Guardar llave</button>
             </div>
             <p class="save-status" data-bracket-save-status role="status"></p>
           </div>
@@ -170,7 +165,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
               </ul>
             </div>
 
-            <p class="fair-note">Cada fase abre cuando termina la anterior y se bloquea una hora antes del primer partido de esa fase. Los puntos de la llave se suman al ranking general.</p>
+            <p class="fair-note">Cada fase abre cuando termina la anterior y se bloquea 10 minutos antes del primer partido de esa fase. El botón Guardar llave agrupa automáticamente tus pronósticos por ronda. Los puntos de la llave se suman al ranking general.</p>
 
             <div class="inline-actions">
               <a class="button-secondary" href="/groups">Ver fase de grupos</a>
@@ -400,14 +395,15 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       }
     }
 
+    function hasEditablePhase() {
+      return phasesData.some((phaseBlock) => phaseStates[phaseBlock.phase]?.editable);
+    }
+
     function render() {
       phasesData.forEach((phaseBlock) => {
         const phase = phaseBlock.phase;
         const state = phaseStates[phase];
         const editable = !!state?.editable;
-        document.querySelectorAll(`[data-phase-save="${phase}"]`).forEach((saveButton) => {
-          saveButton.disabled = !editable;
-        });
 
         document.querySelectorAll(`[data-phase-matches="${phase}"]`).forEach((container) => {
           const matchIds = (container.dataset.matchIds || "")
@@ -427,6 +423,10 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
 
       document.querySelectorAll("[data-match-score]").forEach((input) => {
         input.addEventListener("input", () => updatePenaltiesVisibility(input.dataset.matchScore));
+      });
+
+      document.querySelectorAll('[data-phase-save="all"]').forEach((saveButton) => {
+        saveButton.disabled = !hasEditablePhase();
       });
     }
 
@@ -453,34 +453,52 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       }).filter(Boolean);
     }
 
-    async function savePhase(phase) {
-      const rows = collectPhasePredictions(phase);
-      const buttons = Array.from(document.querySelectorAll(`[data-phase-save="${phase}"]`));
+    async function savePhase() {
+      const buttons = Array.from(document.querySelectorAll('[data-phase-save="all"]'));
       buttons.forEach((button) => {
         button.disabled = true;
         button.dataset.saving = "true";
       });
-      setBracketStatus(`Guardando ${phase}...`, "loading");
+      setBracketStatus("Guardando llave...", "loading");
       try {
-        const response = await fetch("/api/bracket/predictions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phase, player_id: currentPlayerKey, predictions: rows }),
-        });
-        const data = await response.json();
-        if (!data.ok) {
-          setBracketStatus(data.error || "No se pudo guardar esta fase.", "error");
-          return;
+        const phasesToSave = phasesData
+          .map((phaseBlock) => phaseBlock.phase)
+          .filter((phaseName) => phaseStates[phaseName]?.editable);
+
+        let savedRows = 0;
+        const savedPhases = [];
+
+        for (const editablePhase of phasesToSave) {
+          const phaseRows = collectPhasePredictions(editablePhase);
+          const response = await fetch("/api/bracket/predictions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phase: editablePhase, player_id: currentPlayerKey, predictions: phaseRows }),
+          });
+          const data = await response.json();
+          if (!data.ok) {
+            const prefix = savedPhases.length > 0
+              ? `Se guardó ${savedPhases.join(", ")}, pero `
+              : "";
+            setBracketStatus(`${prefix}${data.error || "no se pudo guardar la llave."}`, "error");
+            return;
+          }
+
+          savedRows += Number(data.saved) || 0;
+          if (phaseRows.length > 0) {
+            savedPhases.push(editablePhase);
+          }
         }
+
         await loadBracket({ preserveDraft: true });
-        setBracketStatus(`Listo: ${data.saved} pronóstico${data.saved === 1 ? "" : "s"} guardado${data.saved === 1 ? "" : "s"} en ${phase}.`, "success");
+        const savedPhasesLabel = savedPhases.length > 0 ? savedPhases.join(", ") : "las rondas habilitadas";
+        setBracketStatus(`Listo: ${savedRows} pronóstico${savedRows === 1 ? "" : "s"} guardado${savedRows === 1 ? "" : "s"} en ${savedPhasesLabel}.`, "success");
       } catch {
         setBracketStatus("Error de red al guardar la llave.", "error");
       } finally {
         buttons.forEach((button) => {
           button.dataset.saving = "false";
-          const state = phaseStates[phase];
-          button.disabled = !state?.editable;
+          button.disabled = !hasEditablePhase();
         });
       }
     }
@@ -543,7 +561,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
         });
 
         document.querySelectorAll("[data-phase-save]").forEach((button) => {
-          button.addEventListener("click", () => savePhase(button.dataset.phaseSave));
+          button.addEventListener("click", () => savePhase());
         });
       } catch {
         if (authGate) authGate.style.display = "";

@@ -138,7 +138,7 @@ export function buildKnockoutPhaseStates(
       const dependencyComplete =
         dependency === "groups" ? areGroupsComplete(groupMatches) : arePhaseMatchesComplete(dependency, knockoutMatches);
       const firstKickoffAt = getFirstKickoffAt(phase, knockoutMatches);
-      const cutoffAt = new Date(firstKickoffAt.getTime() - 60 * 60 * 1000);
+      const cutoffAt = new Date(firstKickoffAt.getTime() - 10 * 60 * 1000);
       const completed = arePhaseMatchesComplete(phase, knockoutMatches);
       const editable = dependencyComplete && now < cutoffAt;
       const status = completed ? "completed" : editable ? "open" : dependencyComplete ? "locked" : "pending";
