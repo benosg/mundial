@@ -191,11 +191,9 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
     let currentServerPlayer = null;
     let matchesById = new Map();
     let predictionsById = new Map();
-    let phaseStates = {};
     let refreshEveryMs = 60000;
     let bracketRefreshTimer = null;
     let bracketLoadInFlight = null;
-    const phaseByMatchId = new Map(phasesData.flatMap((phaseBlock) => phaseBlock.matches.map((match) => [match.id, phaseBlock.phase])));
 
     function getPlayerId() {
       let id = localStorage.getItem(STORAGE_KEY);
@@ -293,8 +291,8 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
 
     function restoreDraftPredictions(draft) {
       draft.forEach((prediction, matchId) => {
-        const phase = phaseByMatchId.get(matchId);
-        if (!phaseStates[phase]?.editable) return;
+        const match = matchesById.get(matchId);
+        if (!isMatchEditable(match)) return;
 
         const homeInput = document.querySelector(`[data-match-score="${matchId}"][data-side="home"]`);
         const awayInput = document.querySelector(`[data-match-score="${matchId}"][data-side="away"]`);
@@ -322,6 +320,21 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
           await loadBracket({ preserveDraft: true, silentErrors: true });
         } catch {}
       }, refreshEveryMs);
+    }
+
+    function isMatchDefined(match) {
+      return !!match
+        && match.home_team !== match.home_slot
+        && match.away_team !== match.away_slot
+        && !match.home_provisional
+        && !match.away_provisional;
+    }
+
+    function isMatchEditable(match) {
+      if (!isMatchDefined(match)) return false;
+
+      const kickoffTime = Date.parse(match.kickoff_at);
+      return !Number.isNaN(kickoffTime) && Date.now() < kickoffTime - 10 * 60 * 1000;
     }
 
     function renderMatch(match, prediction, editable, phase, slot) {
@@ -396,15 +409,12 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
     }
 
     function hasEditablePhase() {
-      return phasesData.some((phaseBlock) => phaseStates[phaseBlock.phase]?.editable);
+      return phasesData.some((phaseBlock) => phaseBlock.matches.some((fixture) => isMatchEditable(matchesById.get(fixture.id))));
     }
 
     function render() {
       phasesData.forEach((phaseBlock) => {
         const phase = phaseBlock.phase;
-        const state = phaseStates[phase];
-        const editable = !!state?.editable;
-
         document.querySelectorAll(`[data-phase-matches="${phase}"]`).forEach((container) => {
           const matchIds = (container.dataset.matchIds || "")
             .split(",")
@@ -416,7 +426,10 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
 
           const side = container.dataset.bracketSide || "left";
           container.innerHTML = fixtures
-            .map((fixture, index) => renderMatch(matchesById.get(fixture.id), predictionsById.get(fixture.id), editable, phase, getBracketSlot(index, fixtures.length, side, container.dataset.centerIndex)))
+            .map((fixture, index) => {
+              const match = matchesById.get(fixture.id);
+              return renderMatch(match, predictionsById.get(fixture.id), isMatchEditable(match), phase, getBracketSlot(index, fixtures.length, side, container.dataset.centerIndex));
+            })
             .join("");
         });
       });
@@ -435,6 +448,8 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       if (!phaseBlock) return [];
 
       return phaseBlock.matches.map((fixture) => {
+        if (!isMatchEditable(matchesById.get(fixture.id))) return null;
+
         const homeInput = document.querySelector(`[data-match-score="${fixture.id}"][data-side="home"]`);
         const awayInput = document.querySelector(`[data-match-score="${fixture.id}"][data-side="away"]`);
         const pensInput = document.querySelector(`input[name="pens-${fixture.id}"]:checked`);
@@ -463,7 +478,10 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       try {
         const phasesToSave = phasesData
           .map((phaseBlock) => phaseBlock.phase)
-          .filter((phaseName) => phaseStates[phaseName]?.editable);
+          .filter((phaseName) => {
+            const phaseBlock = phasesData.find((item) => item.phase === phaseName);
+            return phaseBlock?.matches.some((fixture) => isMatchEditable(matchesById.get(fixture.id)));
+          });
 
         let savedRows = 0;
         const savedPhases = [];
@@ -522,7 +540,6 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
         currentServerPlayer = data.player;
         matchesById = new Map((data.matches || []).map((match) => [match.id, match]));
         predictionsById = new Map((data.predictions || []).map((prediction) => [prediction.match_id, prediction]));
-        phaseStates = data.phaseStates || {};
         refreshEveryMs = Number.isFinite(data.refreshEveryMs) ? data.refreshEveryMs : refreshEveryMs;
 
         if (playerNameDisplay) playerNameDisplay.textContent = currentServerPlayer?.name || "Jugador registrado";
