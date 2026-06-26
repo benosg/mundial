@@ -57,6 +57,10 @@ function renderGoalTypeSuffix(type: string) {
   if (type === "own_goal") return " (AG)";
   return "";
 }
+
+function matchHasScore(match: { homeResult: number | null; awayResult: number | null }) {
+  return Number.isInteger(match.homeResult) && Number.isInteger(match.awayResult);
+}
 ---
 
 <Layout
@@ -116,7 +120,7 @@ function renderGoalTypeSuffix(type: string) {
                             <span class="flag-inline"><img class="flag-icon" src={getFlagImageUrlFromEmoji(match.homeFlag)} alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>{match.home}</span></span>
                           </div>
                           <div class="results-score-box" aria-label={`Marcador ${match.home} vs ${match.away}`}>
-                            {match.isFinal ? (
+                            {matchHasScore(match) ? (
                               <>
                                 <strong>{match.homeResult}</strong>
                                 <span>-</span>
@@ -213,6 +217,10 @@ function renderGoalTypeSuffix(type: string) {
       return "";
     }
 
+    function matchHasScore(match) {
+      return Number.isInteger(match?.homeResult) && Number.isInteger(match?.awayResult);
+    }
+
     function emojiToCdn(flag) {
       return `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${Array.from(flag || "🏳️").map((char) => char.codePointAt(0).toString(16)).join("-")}.svg`;
     }
@@ -289,9 +297,9 @@ function renderGoalTypeSuffix(type: string) {
                     <span class="flag-inline"><img class="flag-icon" src="${emojiToCdn(match.homeFlag)}" alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>${escapeHtml(match.home)}</span></span>
                   </div>
                   <div class="results-score-box" aria-label="Marcador ${escapeHtml(match.home)} vs ${escapeHtml(match.away)}">
-                    ${match.isFinal
-                      ? `<strong>${match.homeResult}</strong><span>-</span><strong>${match.awayResult}</strong>`
-                      : '<span class="muted">vs</span>'}
+                    ${matchHasScore(match)
+                       ? `<strong>${match.homeResult}</strong><span>-</span><strong>${match.awayResult}</strong>`
+                       : '<span class="muted">vs</span>'}
                   </div>
                   <div class="results-team results-team--away">
                     <span class="flag-inline"><img class="flag-icon" src="${emojiToCdn(match.awayFlag)}" alt="" aria-hidden="true" loading="lazy" decoding="async" /><span>${escapeHtml(match.away)}</span></span>
