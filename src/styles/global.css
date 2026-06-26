@@ -576,12 +576,6 @@ img {
   margin-top: 0.6rem;
 }
 
-.bracket-provisional-note {
-  margin-top: 0.45rem;
-  padding-top: 0.45rem;
-  border-top: 1px dashed rgba(245, 158, 11, 0.35);
-}
-
 .bracket-phase-actions {
   margin-top: 0.1rem;
 }

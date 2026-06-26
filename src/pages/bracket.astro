@@ -227,10 +227,18 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
         .join("-");
     }
 
-    function flagImage(flag) {
-      if (!flag || flag === "🏳️") return "";
+    function resolveFlagValue(flag, teamOrLabel = "") {
+      const team = String(teamOrLabel).replace(/^Favorito:\s*/, "").trim();
+      if (team === "Inglaterra") return "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}";
+      if (team === "Escocia") return "\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}";
+      return flag || "🏳️";
+    }
 
-      return `<img class="flag-icon bracket-team-flag" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${flagCodePoints(flag)}.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" />`;
+    function flagImage(flag, teamOrLabel = "") {
+      const resolvedFlag = resolveFlagValue(flag, teamOrLabel);
+      if (!resolvedFlag || resolvedFlag === "🏳️") return "";
+
+      return `<img class="flag-icon bracket-team-flag" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${flagCodePoints(resolvedFlag)}.svg" alt="" aria-hidden="true" loading="lazy" decoding="async" />`;
     }
 
     function formatChileDate(iso) {
@@ -336,9 +344,6 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       const broadcasters = Array.isArray(match.broadcasters) && match.broadcasters.length > 0
         ? `<div class="bracket-broadcasters muted small-note">${escapeHtml(match.broadcasters.join(" · "))}</div>`
         : "";
-      const provisionalNote = match.home_provisional || match.away_provisional
-        ? '<div class="bracket-provisional-note muted small-note">Equipos probables según la tabla actual.</div>'
-        : "";
       const homeBadge = match.home_provisional ? '<span class="bracket-team-badge">Provisorio</span>' : "";
       const awayBadge = match.away_provisional ? '<span class="bracket-team-badge">Provisorio</span>' : "";
 
@@ -372,9 +377,6 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
               </div>
             </div>
           </div>
-
-          ${provisionalNote}
-
           <div class="bracket-penalties" data-match-penalties="${match.id}" style="display:${showPens ? "grid" : "none"}">
             <span class="muted">Penales si termina empate:</span>
             <label><input type="radio" name="pens-${match.id}" value="home" ${prediction?.penalties_winner === "home" ? "checked" : ""} ${editable ? "" : "disabled"} /> ${escapeHtml(match.home_team)}</label>
