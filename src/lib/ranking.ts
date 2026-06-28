@@ -1,3 +1,5 @@
+import { fetchFifaKnockoutMatchUpdates } from "./fifa-results";
+import { knockoutFixtures } from "../data/knockout";
 import { calculateKnockoutPoints, type WinnerSide } from "./knockout";
 import type { createServerClient } from "./supabase";
 
@@ -167,7 +169,7 @@ export async function getRankedPlayers(supabase: SupabaseClient): Promise<{
   let allKnockoutMatches: KnockoutMatchRow[] = [];
 
   if (playerIds.length > 0) {
-    const [predictionsResult, matchesResult, bracketPredictionsResult, knockoutMatchesResult] = await Promise.all([
+    const [predictionsResult, matchesResult, bracketPredictionsResult, knockoutMatchesResult, fifaKnockoutUpdates] = await Promise.all([
       supabase
         .from("predictions")
         .select("player_id, match_id, home_score, away_score")
@@ -182,6 +184,7 @@ export async function getRankedPlayers(supabase: SupabaseClient): Promise<{
       supabase
         .from("knockout_matches")
         .select("id, home_team, away_team, home_slot, away_slot, home_result, away_result, penalties_winner"),
+      fetchFifaKnockoutMatchUpdates().catch(() => []),
     ]);
 
     if (predictionsResult.error) {
@@ -203,7 +206,25 @@ export async function getRankedPlayers(supabase: SupabaseClient): Promise<{
     allPredictions = (predictionsResult.data ?? []) as PredictionRow[];
     allMatches = (matchesResult.data ?? []) as MatchRow[];
     allBracketPredictions = (bracketPredictionsResult.data ?? []) as BracketPredictionRow[];
-    allKnockoutMatches = (knockoutMatchesResult.data ?? []) as KnockoutMatchRow[];
+    const fifaUpdatesById = new Map(fifaKnockoutUpdates.map((match) => [match.id, match]));
+    const knockoutMatchesById = new Map(
+      ((knockoutMatchesResult.data ?? []) as KnockoutMatchRow[]).map((match) => [match.id, match])
+    );
+    allKnockoutMatches = knockoutFixtures.map((fixture) => {
+      const match = knockoutMatchesById.get(fixture.id);
+      const fifaMatch = fifaUpdatesById.get(fixture.id);
+
+      return {
+        id: fixture.id,
+        home_team: match?.home_team || fifaMatch?.home_team || null,
+        away_team: match?.away_team || fifaMatch?.away_team || null,
+        home_slot: match?.home_slot || fixture.homeSlot,
+        away_slot: match?.away_slot || fixture.awaySlot,
+        home_result: match?.home_result ?? fifaMatch?.home_result ?? null,
+        away_result: match?.away_result ?? fifaMatch?.away_result ?? null,
+        penalties_winner: match?.penalties_winner ?? fifaMatch?.penalties_winner ?? null,
+      };
+    });
   }
 
   const matchesMap: Record<string, MatchRow> = {};

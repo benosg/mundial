@@ -1,5 +1,7 @@
 import type { APIRoute } from "astro";
-import { calculateKnockoutPoints, type WinnerSide } from "../../lib/knockout";
+import { fetchFifaKnockoutMatchUpdates } from "../../lib/fifa-results";
+import { getFlag } from "../../lib/flags";
+import { calculateKnockoutPoints, getKnockoutMatchFallback, type WinnerSide } from "../../lib/knockout";
 import { calculatePoints, getRankedPlayers } from "../../lib/ranking";
 import { createServerClient } from "../../lib/supabase";
 
@@ -32,10 +34,13 @@ export const GET: APIRoute = async ({ request, url }) => {
       .select("match_id, home_score, away_score")
       .eq("player_id", playerId);
 
-    const { data: bracketPredictions, error: bracketPredErr } = await supabase
-      .from("bracket_predictions")
-      .select("match_id, home_score, away_score, penalties_winner")
-      .eq("player_id", playerId);
+    const [{ data: bracketPredictions, error: bracketPredErr }, fifaKnockoutUpdates] = await Promise.all([
+      supabase
+        .from("bracket_predictions")
+        .select("match_id, home_score, away_score, penalties_winner")
+        .eq("player_id", playerId),
+      fetchFifaKnockoutMatchUpdates().catch(() => []),
+    ]);
 
     if (predErr) {
       return json({ ok: false, error: predErr.message }, 502);
@@ -61,19 +66,44 @@ export const GET: APIRoute = async ({ request, url }) => {
 
     const bracketMatchIds = (bracketPredictions ?? []).map((prediction) => prediction.match_id);
     const knockoutMatchesMap: Record<string, any> = {};
+    const fifaUpdatesById = new Map(fifaKnockoutUpdates.map((match) => [match.id, match]));
 
     if (bracketMatchIds.length > 0) {
       const { data: knockoutMatches, error: knockoutMatchesErr } = await supabase
         .from("knockout_matches")
-        .select("id, phase, label, home_team, away_team, home_slot, away_slot, home_result, away_result, penalties_winner")
+        .select("id, phase, label, home_team, away_team, home_slot, away_slot, kickoff_at, home_result, away_result, penalties_winner")
         .in("id", bracketMatchIds);
 
       if (knockoutMatchesErr) {
         return json({ ok: false, error: knockoutMatchesErr.message }, 502);
       }
 
-      (knockoutMatches ?? []).forEach((match) => {
-        knockoutMatchesMap[match.id] = match;
+      const knockoutMatchesById = new Map((knockoutMatches ?? []).map((match) => [match.id, match]));
+
+      bracketMatchIds.forEach((matchId) => {
+        const match = knockoutMatchesById.get(matchId);
+        const fifaMatch = fifaUpdatesById.get(matchId);
+        const fallback = getKnockoutMatchFallback(matchId);
+        const homeSlot = match?.home_slot || fallback?.homeSlot || "";
+        const awaySlot = match?.away_slot || fallback?.awaySlot || "";
+        const homeTeam = match?.home_team || fifaMatch?.home_team || homeSlot || "Por definir";
+        const awayTeam = match?.away_team || fifaMatch?.away_team || awaySlot || "Por definir";
+
+        knockoutMatchesMap[matchId] = {
+          id: matchId,
+          phase: match?.phase || fallback?.phase || null,
+          label: match?.label || fallback?.label || matchId,
+          home_slot: homeSlot,
+          away_slot: awaySlot,
+          kickoff_at: match?.kickoff_at || fallback?.kickoffAt || null,
+          home_team: homeTeam,
+          away_team: awayTeam,
+          home_result: match?.home_result ?? fifaMatch?.home_result ?? null,
+          away_result: match?.away_result ?? fifaMatch?.away_result ?? null,
+          penalties_winner: match?.penalties_winner ?? fifaMatch?.penalties_winner ?? null,
+          home_flag: getFlag(homeTeam),
+          away_flag: getFlag(awayTeam),
+        };
       });
     }
 
@@ -119,6 +149,9 @@ export const GET: APIRoute = async ({ request, url }) => {
           label: match?.label ?? prediction.match_id,
           home: match?.home_team || match?.home_slot || "Por definir",
           away: match?.away_team || match?.away_slot || "Por definir",
+          home_flag: match?.home_flag ?? getFlag(match?.home_team || match?.home_slot || "Por definir"),
+          away_flag: match?.away_flag ?? getFlag(match?.away_team || match?.away_slot || "Por definir"),
+          kickoff_at: match?.kickoff_at ?? null,
           points: 0,
           type: "pending" as const,
         };
@@ -142,6 +175,9 @@ export const GET: APIRoute = async ({ request, url }) => {
         label: match.label,
         home: match.home_team || match.home_slot,
         away: match.away_team || match.away_slot,
+        home_flag: match.home_flag,
+        away_flag: match.away_flag,
+        kickoff_at: match.kickoff_at,
         actual_home_result: match.home_result,
         actual_away_result: match.away_result,
         actual_penalties_winner: match.penalties_winner,
@@ -156,7 +192,7 @@ export const GET: APIRoute = async ({ request, url }) => {
         id: player.id,
         name: player.name || "Sin nombre",
         favorite_team: player.favorite_team || null,
-        favorite_flag: player.favorite_flag || "🏳️",
+        favorite_flag: player.favorite_flag || getFlag(player.favorite_team || "") || "🏳️",
         joined: player.created_at,
       },
       predictions: predictionsWithPoints,

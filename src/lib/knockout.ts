@@ -160,10 +160,39 @@ export function buildKnockoutPhaseStates(
   ) as Record<KnockoutPhase, PhaseState>;
 }
 
+export function getActiveKnockoutPhaseState(
+  groupMatches: GroupResultLike[],
+  knockoutMatches: KnockoutMatchLike[],
+  now = new Date()
+) {
+  const states = buildKnockoutPhaseStates(groupMatches, knockoutMatches, now);
+
+  for (const phase of knockoutPhaseOrder) {
+    const state = states[phase];
+    if (state.status !== "completed" && state.dependencyComplete) {
+      return state;
+    }
+  }
+
+  return knockoutPhaseOrder.every((phase) => states[phase].status === "completed")
+    ? states.final
+    : null;
+}
+
 export function shouldUseKnockoutAsDefaultView(groupMatches: GroupResultLike[], knockoutMatches: KnockoutMatchLike[]) {
-  const states = buildKnockoutPhaseStates(groupMatches, knockoutMatches);
-  const firstKickoff = new Date(states["16avos"].firstKickoffAt);
-  return states["16avos"].dependencyComplete || new Date() >= firstKickoff;
+  const now = new Date();
+  const activePhase = getActiveKnockoutPhaseState(groupMatches, knockoutMatches, now);
+
+  if (!activePhase) {
+    return false;
+  }
+
+  if (activePhase.status === "completed") {
+    return true;
+  }
+
+  const switchAt = new Date(new Date(activePhase.firstKickoffAt).getTime() - 60 * 60 * 1000);
+  return now >= switchAt;
 }
 
 export function getKnockoutMatchFallback(matchId: string) {

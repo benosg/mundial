@@ -122,6 +122,7 @@ const allMatchesJson = JSON.stringify(allMatches).replace(/</g, "\\u003c");
     const playerModalClose = document.querySelector("[data-player-modal-close]");
     const playerPredictionsContent = document.querySelector("[data-player-predictions-content]");
     const AUTO_REFRESH_MS = 30000;
+    const knockoutPhaseOrder = ["16avos", "8vos", "4tos", "semis", "3er/4to lugar", "final"];
 
     let currentUserPromise = null;
     let currentPlayerModalId = null;
@@ -350,7 +351,50 @@ const allMatchesJson = JSON.stringify(allMatches).replace(/</g, "\\u003c");
             .filter(Boolean)
         );
 
-        if (hasGroupPredictions) {
+        const phaseStarted = (predictions = []) => predictions.some((prediction) => {
+          if (Number.isInteger(prediction.actual_home_result) && Number.isInteger(prediction.actual_away_result)) {
+            return true;
+          }
+
+          const kickoffTime = prediction.kickoff_at ? new Date(prediction.kickoff_at).getTime() : Number.NaN;
+          return !Number.isNaN(kickoffTime) && kickoffTime <= Date.now();
+        });
+
+        const bracketPhaseGroups = (() => {
+          if (!hasBracketPredictions) return [];
+
+          const groupedBracket = {};
+          data.bracketPredictions.forEach((pred) => {
+            const phase = pred.phase || "Otras";
+            if (!groupedBracket[phase]) groupedBracket[phase] = [];
+            groupedBracket[phase].push(pred);
+          });
+
+          return Object.keys(groupedBracket)
+            .map((phase) => ({
+              phase,
+              predictions: groupedBracket[phase],
+              started: phaseStarted(groupedBracket[phase]),
+              phaseIndex: knockoutPhaseOrder.indexOf(phase),
+            }))
+            .sort((left, right) => {
+              if (left.started !== right.started) {
+                return left.started ? -1 : 1;
+              }
+
+              if (left.started) {
+                return right.phaseIndex - left.phaseIndex;
+              }
+
+              return left.phaseIndex - right.phaseIndex;
+            });
+        })();
+
+        const showBracketFirst = bracketPhaseGroups.some((group) => group.started);
+
+        function renderGroupPredictions() {
+          if (!hasGroupPredictions) return;
+
           const grouped = {};
           data.predictions.forEach((pred) => {
             const group = pred.match_id.charAt(0);
@@ -362,7 +406,7 @@ const allMatchesJson = JSON.stringify(allMatches).replace(/</g, "\\u003c");
 
           sortedGroups.forEach((group, i) => {
             const preds = grouped[group];
-            const shouldOpen = hasPreviousGroupState ? openGroups.has(group) : i < 2;
+            const shouldOpen = hasPreviousGroupState ? openGroups.has(group) : !showBracketFirst && i < 2;
             const openAttr = shouldOpen ? ' open' : '';
             html += `<details class="group-collapsible player-group-card" data-group="${group}"${openAttr}>
               <summary class="group-head"><span>Grupo ${group}</span></summary>
@@ -400,18 +444,13 @@ const allMatchesJson = JSON.stringify(allMatches).replace(/</g, "\\u003c");
           });
         }
 
-        if (hasBracketPredictions) {
-          const phaseOrder = ["16avos", "8vos", "4tos", "semis", "3er/4to lugar", "final"];
-          const groupedBracket = {};
-          data.bracketPredictions.forEach((pred) => {
-            const phase = pred.phase || "Otras";
-            if (!groupedBracket[phase]) groupedBracket[phase] = [];
-            groupedBracket[phase].push(pred);
-          });
+        function renderBracketPredictions() {
+          if (!hasBracketPredictions) return;
 
-          phaseOrder.filter((phase) => groupedBracket[phase]).forEach((phase, i) => {
-            const preds = groupedBracket[phase];
-            const shouldOpen = hasPreviousGroupState ? openGroups.has(phase) : !hasGroupPredictions && i < 2;
+          bracketPhaseGroups.forEach((group, i) => {
+            const phase = group.phase;
+            const preds = group.predictions;
+            const shouldOpen = hasPreviousGroupState ? openGroups.has(phase) : i === 0;
             html += `<details class="group-collapsible player-group-card" data-phase="${phase}"${shouldOpen ? " open" : ""}>
               <summary class="group-head"><span>${phase}</span></summary>
               <div class="readonly-list">`;
@@ -433,9 +472,9 @@ const allMatchesJson = JSON.stringify(allMatches).replace(/</g, "\\u003c");
                 <div class="readonly-row readonly-row--stacked">
                   <div class="fixture-cell" style="min-width:auto">
                     <strong>${escapeHtml(pred.label)}</strong>
-                    <span>${escapeHtml(pred.home)}</span>
+                    <span>${flagWithLabel(pred.home_flag || '🏳️', pred.home)}</span>
                     <span class="muted">vs</span>
-                    <span>${escapeHtml(pred.away)}</span>
+                    <span>${flagWithLabel(pred.away_flag || '🏳️', pred.away)}</span>
                   </div>
                   <div class="readonly-score">
                     <span class="readonly-pill">${homeScore}</span>
@@ -449,6 +488,14 @@ const allMatchesJson = JSON.stringify(allMatches).replace(/</g, "\\u003c");
 
             html += `</div></details>`;
           });
+        }
+
+        if (showBracketFirst) {
+          renderBracketPredictions();
+          renderGroupPredictions();
+        } else {
+          renderGroupPredictions();
+          renderBracketPredictions();
         }
 
         playerPredictionsContent.innerHTML = html;
