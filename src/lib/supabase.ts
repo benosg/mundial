@@ -2,7 +2,11 @@ import { createBrowserClient } from "@supabase/ssr";
 import { createServerClient as createSupabaseServerClient } from "@supabase/ssr";
 
 function readEnv(name: "SUPABASE_URL" | "SUPABASE_KEY") {
-  return import.meta.env[name] ?? process.env[name];
+  const processEnv = typeof globalThis === "object" && "process" in globalThis
+    ? (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
+    : undefined;
+
+  return import.meta.env[name] ?? processEnv?.[name];
 }
 
 const supabaseUrl = readEnv("SUPABASE_URL");

@@ -245,6 +245,24 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       }).format(new Date(iso)).replace(",", " ·");
     }
 
+    function hasIntegerScore(value) {
+      return Number.isInteger(value);
+    }
+
+    function parseScoreValue(value) {
+      if (hasIntegerScore(value)) return value;
+      if (typeof value !== "string" || value.trim() === "") return null;
+
+      const parsed = Number.parseInt(value, 10);
+      return Number.isInteger(parsed) ? parsed : null;
+    }
+
+    function getWinnerSide(homeScore, awayScore, penaltiesWinner = null) {
+      if (homeScore > awayScore) return "home";
+      if (awayScore > homeScore) return "away";
+      return penaltiesWinner === "home" || penaltiesWinner === "away" ? penaltiesWinner : null;
+    }
+
     function phaseClassName(phase) {
       return phase
         .normalize("NFD")
@@ -266,6 +284,114 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       const normalizedTeam = normalizeReferenceLabel(team);
 
       return /^(W|RU)\d+$/.test(normalizedSlot) && normalizedTeam !== "" && normalizedTeam !== normalizedSlot;
+    }
+
+    function parseReferenceSlot(slot) {
+      const match = normalizeReferenceLabel(slot).match(/^(W|RU)(\d+)$/);
+      if (!match) return null;
+
+      return {
+        type: match[1] === "W" ? "winner" : "runner-up",
+        matchId: match[2],
+      };
+    }
+
+    function getPredictionOutcome(prediction) {
+      const homeScore = parseScoreValue(prediction?.home_score);
+      const awayScore = parseScoreValue(prediction?.away_score);
+      if (!prediction || homeScore === null || awayScore === null) {
+        return null;
+      }
+
+      if (homeScore === awayScore
+        && prediction.penalties_winner !== "home"
+        && prediction.penalties_winner !== "away") {
+        return null;
+      }
+
+      const winnerSide = getWinnerSide(homeScore, awayScore, prediction.penalties_winner);
+      return winnerSide ? { winnerSide } : null;
+    }
+
+    function getOfficialMatchOutcome(match) {
+      if (!match || !hasIntegerScore(match.home_result) || !hasIntegerScore(match.away_result)) {
+        return null;
+      }
+
+      if (match.home_result === match.away_result
+        && match.penalties_winner !== "home"
+        && match.penalties_winner !== "away") {
+        return null;
+      }
+
+      const winnerSide = getWinnerSide(match.home_result, match.away_result, match.penalties_winner);
+      return winnerSide ? { winnerSide } : null;
+    }
+
+    function resolveReferenceTeam(slot, displayMatchesById, activePredictionsById) {
+      const reference = parseReferenceSlot(slot);
+      if (!reference) return null;
+
+      const sourceDisplayMatch = displayMatchesById.get(reference.matchId);
+      const sourceBaseMatch = matchesById.get(reference.matchId);
+      if (!sourceDisplayMatch || !sourceBaseMatch) return null;
+
+      const officialOutcome = getOfficialMatchOutcome(sourceBaseMatch);
+      const predictedOutcome = getPredictionOutcome(activePredictionsById.get(reference.matchId));
+      const resolvedOutcome = officialOutcome || predictedOutcome;
+      if (!resolvedOutcome) return null;
+
+      const resolvedSide = reference.type === "winner"
+        ? resolvedOutcome.winnerSide
+        : resolvedOutcome.winnerSide === "home"
+          ? "away"
+          : "home";
+      const team = sourceDisplayMatch[`${resolvedSide}_team`];
+      const sourceSlot = sourceDisplayMatch[`${resolvedSide}_slot`];
+      if (!team || team === sourceSlot) return null;
+
+      return {
+        team,
+        flag: sourceDisplayMatch[`${resolvedSide}_flag`],
+        provisional: !officialOutcome,
+      };
+    }
+
+    function buildDisplayMatches(draftPredictions = null) {
+      const activePredictionsById = new Map(predictionsById);
+      if (draftPredictions) {
+        draftPredictions.forEach((prediction, matchId) => {
+          activePredictionsById.set(matchId, prediction);
+        });
+      }
+
+      const displayMatchesById = new Map();
+
+      phasesData.forEach((phaseBlock) => {
+        phaseBlock.matches.forEach((fixture) => {
+          const baseMatch = matchesById.get(fixture.id);
+          if (!baseMatch) return;
+
+          const homeReferenceTeam = baseMatch.home_team === baseMatch.home_slot
+            ? resolveReferenceTeam(baseMatch.home_slot, displayMatchesById, activePredictionsById)
+            : null;
+          const awayReferenceTeam = baseMatch.away_team === baseMatch.away_slot
+            ? resolveReferenceTeam(baseMatch.away_slot, displayMatchesById, activePredictionsById)
+            : null;
+
+          displayMatchesById.set(fixture.id, {
+            ...baseMatch,
+            home_team: homeReferenceTeam?.team || baseMatch.home_team,
+            away_team: awayReferenceTeam?.team || baseMatch.away_team,
+            home_flag: homeReferenceTeam?.flag || baseMatch.home_flag,
+            away_flag: awayReferenceTeam?.flag || baseMatch.away_flag,
+            home_display_provisional: Boolean(baseMatch.home_provisional || homeReferenceTeam?.provisional),
+            away_display_provisional: Boolean(baseMatch.away_provisional || awayReferenceTeam?.provisional),
+          });
+        });
+      });
+
+      return displayMatchesById;
     }
 
     function getBracketSlot(index, total, side, centerIndex) {
@@ -366,8 +492,8 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       const broadcasters = Array.isArray(match.broadcasters) && match.broadcasters.length > 0
         ? `<div class="bracket-broadcasters muted small-note">${escapeHtml(match.broadcasters.join(" · "))}</div>`
         : "";
-      const homeBadge = match.home_provisional ? '<span class="bracket-team-badge">Provisorio</span>' : "";
-      const awayBadge = match.away_provisional ? '<span class="bracket-team-badge">Provisorio</span>' : "";
+      const homeBadge = match.home_display_provisional ? '<span class="bracket-team-badge">Provisorio</span>' : "";
+      const awayBadge = match.away_display_provisional ? '<span class="bracket-team-badge">Provisorio</span>' : "";
       const homeSlotLabel = shouldHideResolvedReferenceSlot(match.home_slot, match.home_team)
         ? ""
         : `<span class="bracket-slot">${escapeHtml(match.home_slot)}</span>`;
@@ -432,7 +558,18 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       return phasesData.some((phaseBlock) => phaseBlock.matches.some((fixture) => isMatchEditable(matchesById.get(fixture.id))));
     }
 
-    function render() {
+    function rerenderFromDraft(focusSelector = "") {
+      const draftPredictions = captureDraftPredictions();
+      render(draftPredictions);
+      restoreDraftPredictions(draftPredictions);
+      if (focusSelector) {
+        document.querySelector(focusSelector)?.focus();
+      }
+    }
+
+    function render(draftPredictions = null) {
+      const displayMatchesById = buildDisplayMatches(draftPredictions);
+
       phasesData.forEach((phaseBlock) => {
         const phase = phaseBlock.phase;
         document.querySelectorAll(`[data-phase-matches="${phase}"]`).forEach((container) => {
@@ -447,15 +584,26 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
           const side = container.dataset.bracketSide || "left";
           container.innerHTML = fixtures
             .map((fixture, index) => {
-              const match = matchesById.get(fixture.id);
-              return renderMatch(match, predictionsById.get(fixture.id), isMatchEditable(match), phase, getBracketSlot(index, fixtures.length, side, container.dataset.centerIndex));
+              const baseMatch = matchesById.get(fixture.id);
+              const displayMatch = displayMatchesById.get(fixture.id) || baseMatch;
+              return renderMatch(displayMatch, (draftPredictions?.get(fixture.id) || predictionsById.get(fixture.id)), isMatchEditable(baseMatch), phase, getBracketSlot(index, fixtures.length, side, container.dataset.centerIndex));
             })
             .join("");
         });
       });
 
       document.querySelectorAll("[data-match-score]").forEach((input) => {
-        input.addEventListener("input", () => updatePenaltiesVisibility(input.dataset.matchScore));
+        input.addEventListener("input", () => {
+          updatePenaltiesVisibility(input.dataset.matchScore);
+          rerenderFromDraft(`[data-match-score="${input.dataset.matchScore}"][data-side="${input.dataset.side}"]`);
+        });
+      });
+
+      document.querySelectorAll('[data-match-penalties] input[type="radio"]').forEach((input) => {
+        input.addEventListener("change", () => {
+          const matchId = input.name.replace("pens-", "");
+          rerenderFromDraft(`input[name="pens-${matchId}"][value="${input.value}"]`);
+        });
       });
 
       document.querySelectorAll('[data-phase-save="all"]').forEach((saveButton) => {
@@ -565,10 +713,8 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
         if (playerNameDisplay) playerNameDisplay.textContent = currentServerPlayer?.name || "Jugador registrado";
         if (playerFavDisplay) playerFavDisplay.textContent = currentServerPlayer?.favorite_team ? `Favorito: ${currentServerPlayer.favorite_team}` : "Sin favorito cargado";
 
-        render();
-        if (draft) {
-          restoreDraftPredictions(draft);
-        }
+        render(draft);
+        if (draft) restoreDraftPredictions(draft);
         scheduleBracketRefresh();
       })().finally(() => {
         bracketLoadInFlight = null;
