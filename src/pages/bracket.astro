@@ -232,6 +232,14 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       return Number.isInteger(value);
     }
 
+    function parseScoreInputValue(value) {
+      const normalized = String(value ?? "").trim();
+      if (!/^\d+$/.test(normalized)) return null;
+
+      const parsed = Number.parseInt(normalized, 10);
+      return Number.isInteger(parsed) ? parsed : null;
+    }
+
     function getWinnerSide(homeScore, awayScore, penaltiesWinner = null) {
       if (homeScore > awayScore) return "home";
       if (awayScore > homeScore) return "away";
@@ -429,8 +437,10 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
     function renderMatch(match, prediction, editable, phase, slot) {
       const homeValue = Number.isInteger(prediction?.home_score) ? prediction.home_score : "";
       const awayValue = Number.isInteger(prediction?.away_score) ? prediction.away_score : "";
-      const needsPens = prediction && prediction.home_score === prediction.away_score;
-      const showPens = needsPens || (match.home_result !== null && match.home_result === match.away_result);
+      const needsPens = hasIntegerScore(prediction?.home_score)
+        && hasIntegerScore(prediction?.away_score)
+        && prediction.home_score === prediction.away_score;
+      const showPens = needsPens;
       const classes = [
         "bracket-match-card",
         `bracket-match-card--${phaseClassName(phase)}`,
@@ -496,7 +506,10 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       const awayInput = document.querySelector(`[data-match-score="${matchId}"][data-side="away"]`);
       const penalties = document.querySelector(`[data-match-penalties="${matchId}"]`);
       if (!homeInput || !awayInput || !penalties) return;
-      const show = homeInput.value !== "" && awayInput.value !== "" && homeInput.value === awayInput.value;
+
+      const homeScore = parseScoreInputValue(homeInput.value);
+      const awayScore = parseScoreInputValue(awayInput.value);
+      const show = homeScore !== null && awayScore !== null && homeScore === awayScore;
       penalties.style.display = show ? "grid" : "none";
       if (!show) {
         penalties.querySelectorAll('input[type="radio"]').forEach((input) => { input.checked = false; });
@@ -572,12 +585,16 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
         const homeInput = document.querySelector(`[data-match-score="${fixture.id}"][data-side="home"]`);
         const awayInput = document.querySelector(`[data-match-score="${fixture.id}"][data-side="away"]`);
         const pensInput = document.querySelector(`input[name="pens-${fixture.id}"]:checked`);
-        if (!homeInput || !awayInput || homeInput.value === "" || awayInput.value === "") {
+        if (!homeInput || !awayInput) {
           return null;
         }
 
-        const homeScore = Number.parseInt(homeInput.value, 10);
-        const awayScore = Number.parseInt(awayInput.value, 10);
+        const homeScore = parseScoreInputValue(homeInput.value);
+        const awayScore = parseScoreInputValue(awayInput.value);
+        if (homeScore === null || awayScore === null) {
+          return null;
+        }
+
         return {
           match_id: fixture.id,
           home_score: homeScore,
