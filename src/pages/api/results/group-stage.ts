@@ -1,4 +1,6 @@
 import type { APIRoute } from "astro";
+import { fetchFifaKnockoutMatchUpdates } from "../../../lib/fifa-results";
+import { resolveKnockoutMatches } from "../../../lib/knockout";
 import { buildResultsTimeline } from "../../../lib/results-timeline";
 import { getResultsSyncIntervalMs, syncFifaResults } from "../../../lib/results-sync";
 import { createServerClient, isSupabaseConfigured } from "../../../lib/supabase";
@@ -41,14 +43,20 @@ export const GET: APIRoute = async ({ request }) => {
 
   try {
     const supabase = createServerClient(request, new Headers());
-    const { data, error } = await supabase.from("matches").select("id, home_result, away_result");
+    const [{ data: groupMatches, error: groupError }, { data: knockoutRows, error: knockoutError }, fifaKnockoutUpdates] = await Promise.all([
+      supabase.from("matches").select("id, home_result, away_result"),
+      supabase
+        .from("knockout_matches")
+        .select("id, phase, label, home_slot, away_slot, home_team, away_team, kickoff_at, venue, city, home_result, away_result, penalties_winner"),
+      fetchFifaKnockoutMatchUpdates().catch(() => []),
+    ]);
 
-    if (error) {
-      return json({ ok: false, error: error.message }, 502);
+    if (groupError) {
+      return json({ ok: false, error: groupError.message }, 502);
     }
 
     const resultsById = Object.fromEntries(
-      (data ?? []).map((match) => [
+      (groupMatches ?? []).map((match) => [
         match.id,
         {
           home_result: match.home_result,
@@ -63,7 +71,14 @@ export const GET: APIRoute = async ({ request }) => {
       syncResult?.goalScorers ?? {},
       syncResult?.redCards ?? {},
       syncResult?.statusesByMatch ?? {},
+      resolveKnockoutMatches(knockoutError ? [] : knockoutRows ?? [], fifaKnockoutUpdates),
     );
+
+    const timelineSyncError = knockoutError
+      ? syncError
+        ? `${syncError} Además, no se pudieron cargar algunos datos guardados del cuadro final: ${knockoutError.message}`
+        : `No se pudieron cargar algunos datos guardados del cuadro final: ${knockoutError.message}`
+      : syncError;
 
     return json({
       ok: true,
@@ -73,7 +88,7 @@ export const GET: APIRoute = async ({ request }) => {
       lastSyncAt: syncResult?.lastSyncAt ?? null,
       nextSyncAt: syncResult?.nextSyncAt ?? null,
       suspiciousGroups: syncResult?.suspiciousGroups ?? [],
-      syncError,
+      syncError: timelineSyncError,
       refreshEveryMs: 30_000,
       upstreamThrottleMs: getResultsSyncIntervalMs(),
     });

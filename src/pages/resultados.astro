@@ -1,6 +1,8 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { fetchFifaKnockoutMatchUpdates } from "../lib/fifa-results";
 import { getFlagImageUrlFromEmoji } from "../lib/flags";
+import { resolveKnockoutMatches } from "../lib/knockout";
 import { getResultsSyncIntervalMs } from "../lib/results-sync";
 import { buildResultsTimeline, type ResultsTimelineSection } from "../lib/results-timeline";
 import { createServerClient, isSupabaseConfigured } from "../lib/supabase";
@@ -21,11 +23,17 @@ let pageState: PageState = {
 if (isSupabaseConfigured) {
   try {
     const supabase = createServerClient(Astro.request, new Headers());
-    const { data, error } = await supabase.from("matches").select("id, home_result, away_result");
+    const [{ data: groupMatches, error: groupError }, { data: knockoutRows, error: knockoutError }, fifaKnockoutUpdates] = await Promise.all([
+      supabase.from("matches").select("id, home_result, away_result"),
+      supabase
+        .from("knockout_matches")
+        .select("id, phase, label, home_slot, away_slot, home_team, away_team, kickoff_at, venue, city, home_result, away_result, penalties_winner"),
+      fetchFifaKnockoutMatchUpdates().catch(() => []),
+    ]);
 
-    if (!error) {
+    if (!groupError) {
       const resultsById = Object.fromEntries(
-        (data ?? []).map((match) => [
+        (groupMatches ?? []).map((match) => [
           match.id,
           {
             home_result: match.home_result,
@@ -35,11 +43,22 @@ if (isSupabaseConfigured) {
       );
 
       pageState = {
-        ...buildResultsTimeline(resultsById),
+        ...buildResultsTimeline(
+          resultsById,
+          new Date(),
+          {},
+          {},
+          {},
+          resolveKnockoutMatches(knockoutError ? [] : knockoutRows ?? [], fifaKnockoutUpdates),
+        ),
         loadError: null,
       };
+
+      if (knockoutError) {
+        pageState.loadError = `Datos del cuadro final incompletos: ${knockoutError.message}`;
+      }
     } else {
-      pageState.loadError = error.message;
+      pageState.loadError = groupError.message;
     }
   } catch (error) {
     pageState.loadError = error instanceof Error ? error.message : "No se pudieron cargar los resultados.";
@@ -66,7 +85,7 @@ function matchHasScore(match: { homeResult: number | null; awayResult: number | 
 <Layout
   title="Resultados"
   currentPath="/resultados"
-  description="Resultados oficiales de la fase de grupos del Mundial 2026, ordenados por día y actualizados automáticamente."
+  description="Resultados oficiales del Mundial 2026, ordenados por día y actualizados automáticamente."
 >
   <div class="simple-main">
     <section class="simple-top results-top" aria-labelledby="resultados-title">
@@ -74,7 +93,7 @@ function matchHasScore(match: { homeResult: number | null; awayResult: number | 
         <div class="hero-copy-block results-hero-copy">
           <span class="eyebrow">Resultados oficiales</span>
           <h1 class="simple-title" id="resultados-title">Resultados</h1>
-          <p class="section-copy section-copy-tight">Fase de grupos completa, en orden cronológico y con refresco automático cada 30 segundos.</p>
+          <p class="section-copy section-copy-tight">Fase de grupos y cuadro final, en orden cronológico y con refresco automático cada 30 segundos.</p>
         </div>
 
       </div>
@@ -85,7 +104,7 @@ function matchHasScore(match: { homeResult: number | null; awayResult: number | 
         <article class="panel results-panel">
           <div class="table-row-head results-panel-head">
             <div>
-              <span class="eyebrow">Fase de grupos A–L</span>
+              <span class="eyebrow">Mundial 2026 completo</span>
               <h2 class="section-title section-title-compact">Cronología oficial</h2>
             </div>
             <span class="muted" data-results-refresh-note>
@@ -109,7 +128,7 @@ function matchHasScore(match: { homeResult: number | null; awayResult: number | 
                       <article class="results-match-card">
                         <div class="results-match-topline">
                           <div class="results-match-tags">
-                            <span class="tag">Grupo {match.group}</span>
+                            <span class="tag">{match.stageLabel}</span>
                             <span class={renderStatusClass(match.statusLabel)}>{match.statusLabel}</span>
                           </div>
                           <strong class="results-kickoff">{match.kickoffChile}</strong>
@@ -287,7 +306,7 @@ function matchHasScore(match: { homeResult: number | null; awayResult: number | 
               <article class="results-match-card">
                 <div class="results-match-topline">
                   <div class="results-match-tags">
-                    <span class="tag">Grupo ${escapeHtml(match.group)}</span>
+                    <span class="tag">${escapeHtml(match.stageLabel)}</span>
                     <span class="${statusClass(match.statusLabel)}">${escapeHtml(match.statusLabel)}</span>
                   </div>
                   <strong class="results-kickoff">${escapeHtml(match.kickoffChile)}</strong>

@@ -1,7 +1,6 @@
 import type { APIRoute } from "astro";
-import { knockoutFixtures } from "../../../data/knockout";
 import { fetchFifaKnockoutMatchUpdates } from "../../../lib/fifa-results";
-import type { WinnerSide } from "../../../lib/knockout";
+import { resolveKnockoutMatches, type WinnerSide } from "../../../lib/knockout";
 import { clearRankingCache } from "../../../lib/ranking";
 import { createServerClient } from "../../../lib/supabase";
 
@@ -22,29 +21,16 @@ function isIntegerScore(value: unknown): value is number {
   return Number.isInteger(value);
 }
 
-function getOfficialTeamName(slot: string, ...candidates: Array<string | null | undefined>) {
-  for (const candidate of candidates) {
-    const trimmed = candidate?.trim();
-    if (trimmed && trimmed !== slot) return trimmed;
-  }
-
-  return "";
-}
-
 function isEditableDefinedMatch(match: {
   kickoff_at: string;
   home_slot: string;
   away_slot: string;
-  home_team: string | null;
-  away_team: string | null;
-}, fifaMatch: { home_team: string | null; away_team: string | null } | undefined, fixture: { homeSlot: string; awaySlot: string } | undefined) {
-  const homeSlot = match.home_slot || fixture?.homeSlot || "";
-  const awaySlot = match.away_slot || fixture?.awaySlot || "";
-  const homeTeam = getOfficialTeamName(homeSlot, match.home_team, fifaMatch?.home_team);
-  const awayTeam = getOfficialTeamName(awaySlot, match.away_team, fifaMatch?.away_team);
+  home_team: string;
+  away_team: string;
+}) {
   const kickoffTime = Date.parse(match.kickoff_at);
 
-  return homeTeam !== "" && awayTeam !== "" && !Number.isNaN(kickoffTime) && Date.now() < kickoffTime - 10 * 60 * 1000;
+  return match.home_team !== match.home_slot && match.away_team !== match.away_slot && !Number.isNaN(kickoffTime) && Date.now() < kickoffTime - 10 * 60 * 1000;
 }
 
 async function resolvePlayer(request: Request, parsedBody?: Record<string, unknown>) {
@@ -106,18 +92,15 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (knockoutMatchesResult.error) return json({ ok: false, error: knockoutMatchesResult.error.message }, 502);
 
-  const dbMatches = knockoutMatchesResult.data ?? [];
-  const phaseMatches = dbMatches.filter((match) => match.phase === phase);
+  const phaseMatches = resolveKnockoutMatches(knockoutMatchesResult.data ?? [], fifaKnockoutUpdates).filter((match) => match.phase === phase);
   if (phaseMatches.length === 0) {
     return json({ ok: false, error: `La fase ${phase} no existe.` }, 400);
   }
 
-  const fifaById = new Map(fifaKnockoutUpdates.map((match) => [match.id, match]));
-  const fixturesById = new Map(knockoutFixtures.map((fixture) => [fixture.id, fixture]));
   const phaseMatchIds = new Set(phaseMatches.map((match) => match.id));
   const editableMatchIds = new Set(
     phaseMatches
-      .filter((match) => isEditableDefinedMatch(match, fifaById.get(match.id), fixturesById.get(match.id)))
+      .filter((match) => isEditableDefinedMatch(match))
       .map((match) => match.id)
   );
   const rows = [];

@@ -1,9 +1,8 @@
 import type { APIRoute } from "astro";
-import { knockoutFixtures } from "../../../data/knockout";
 import { fetchFifaKnockoutMatchUpdates } from "../../../lib/fifa-results";
 import { getFlag } from "../../../lib/flags";
 import { buildStandingsByGroup } from "../../../lib/group-standings";
-import { buildKnockoutPhaseStates, resolveProbableRoundOf32Slot, shouldUseKnockoutAsDefaultView } from "../../../lib/knockout";
+import { buildKnockoutPhaseStates, resolveKnockoutMatches, resolveProbableRoundOf32Slot, shouldUseKnockoutAsDefaultView } from "../../../lib/knockout";
 import { getResultsSyncIntervalMs, syncFifaResults } from "../../../lib/results-sync";
 import { createServerClient } from "../../../lib/supabase";
 
@@ -85,7 +84,6 @@ export const GET: APIRoute = async ({ request, url }) => {
   if (groupMatchesResult.error) return json({ ok: false, error: groupMatchesResult.error.message }, 502);
   if (knockoutMatchesResult.error) return json({ ok: false, error: knockoutMatchesResult.error.message }, 502);
 
-  const fifaUpdatesById = new Map(fifaKnockoutUpdates.map((match) => [match.id, match]));
   const standingsByGroup = buildStandingsByGroup(groupMatchesResult.data ?? []);
 
   function getOfficialTeamName(slot: string, ...candidates: Array<string | null | undefined>) {
@@ -97,41 +95,37 @@ export const GET: APIRoute = async ({ request, url }) => {
     return "";
   }
 
-  const knockoutMatches = knockoutFixtures.map((fixture) => {
-    const dbMatch = (knockoutMatchesResult.data ?? []).find((match) => match.id === fixture.id);
-    const fifaMatch = fifaUpdatesById.get(fixture.id);
-    const homeSlot = dbMatch?.home_slot || fixture.homeSlot;
-    const awaySlot = dbMatch?.away_slot || fixture.awaySlot;
-    const homeOfficialTeam = getOfficialTeamName(homeSlot, dbMatch?.home_team, fifaMatch?.home_team);
-    const awayOfficialTeam = getOfficialTeamName(awaySlot, dbMatch?.away_team, fifaMatch?.away_team);
-    const homeProbableTeam = fixture.phase === "16avos" && !homeOfficialTeam
-      ? resolveProbableRoundOf32Slot(homeSlot, standingsByGroup)
+  const knockoutMatches = resolveKnockoutMatches(knockoutMatchesResult.data ?? [], fifaKnockoutUpdates).map((match) => {
+    const homeOfficialTeam = getOfficialTeamName(match.home_slot, match.home_team);
+    const awayOfficialTeam = getOfficialTeamName(match.away_slot, match.away_team);
+    const homeProbableTeam = match.phase === "16avos" && !homeOfficialTeam
+      ? resolveProbableRoundOf32Slot(match.home_slot, standingsByGroup)
       : null;
-    const awayProbableTeam = fixture.phase === "16avos" && !awayOfficialTeam
-      ? resolveProbableRoundOf32Slot(awaySlot, standingsByGroup)
+    const awayProbableTeam = match.phase === "16avos" && !awayOfficialTeam
+      ? resolveProbableRoundOf32Slot(match.away_slot, standingsByGroup)
       : null;
-    const homeTeam = homeOfficialTeam || homeProbableTeam?.team || homeSlot;
-    const awayTeam = awayOfficialTeam || awayProbableTeam?.team || awaySlot;
+    const homeTeam = homeOfficialTeam || homeProbableTeam?.team || match.home_slot;
+    const awayTeam = awayOfficialTeam || awayProbableTeam?.team || match.away_slot;
 
     return {
-      id: fixture.id,
-      phase: fixture.phase,
-      label: dbMatch?.label || fixture.label,
-      home_slot: homeSlot,
-      away_slot: awaySlot,
+      id: match.id,
+      phase: match.phase,
+      label: match.label,
+      home_slot: match.home_slot,
+      away_slot: match.away_slot,
       home_team: homeTeam,
       away_team: awayTeam,
       home_flag: homeProbableTeam?.flag || getFlag(homeTeam),
       away_flag: awayProbableTeam?.flag || getFlag(awayTeam),
       home_provisional: !homeOfficialTeam && !!homeProbableTeam,
       away_provisional: !awayOfficialTeam && !!awayProbableTeam,
-      kickoff_at: dbMatch?.kickoff_at || fixture.kickoffAt,
-      venue: dbMatch?.venue || fixture.venue,
-      city: dbMatch?.city || fixture.city,
-      broadcasters: fixture.broadcasters,
-      home_result: dbMatch?.home_result ?? fifaMatch?.home_result ?? null,
-      away_result: dbMatch?.away_result ?? fifaMatch?.away_result ?? null,
-      penalties_winner: dbMatch?.penalties_winner ?? fifaMatch?.penalties_winner ?? null,
+      kickoff_at: match.kickoff_at,
+      venue: match.venue,
+      city: match.city,
+      broadcasters: match.broadcasters,
+      home_result: match.home_result,
+      away_result: match.away_result,
+      penalties_winner: match.penalties_winner,
     };
   });
 

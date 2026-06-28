@@ -28,6 +28,40 @@ export interface KnockoutPredictionLike {
   penalties_winner?: WinnerSide | null;
 }
 
+export interface KnockoutMatchSourceLike {
+  id: string;
+  phase?: KnockoutPhase | null;
+  label?: string | null;
+  home_slot?: string | null;
+  away_slot?: string | null;
+  home_team?: string | null;
+  away_team?: string | null;
+  kickoff_at?: string | null;
+  venue?: string | null;
+  city?: string | null;
+  broadcasters?: string[] | null;
+  home_result?: number | null;
+  away_result?: number | null;
+  penalties_winner?: WinnerSide | null;
+}
+
+export interface ResolvedKnockoutMatch {
+  id: string;
+  phase: KnockoutPhase;
+  label: string;
+  home_slot: string;
+  away_slot: string;
+  home_team: string;
+  away_team: string;
+  kickoff_at: string;
+  venue: string;
+  city: string;
+  broadcasters: string[];
+  home_result: number | null;
+  away_result: number | null;
+  penalties_winner: WinnerSide | null;
+}
+
 export interface KnockoutPointsResult {
   points: number;
   type: "exact" | "winner" | "none";
@@ -197,6 +231,98 @@ export function shouldUseKnockoutAsDefaultView(groupMatches: GroupResultLike[], 
 
 export function getKnockoutMatchFallback(matchId: string) {
   return knockoutFixtures.find((match) => match.id === matchId) ?? null;
+}
+
+function getOfficialTeamName(slot: string, ...candidates: Array<string | null | undefined>) {
+  for (const candidate of candidates) {
+    const trimmed = candidate?.trim();
+    if (trimmed && trimmed !== slot) return trimmed;
+  }
+
+  return "";
+}
+
+function parseKnockoutReferenceSlot(slot: string) {
+  const match = slot.match(/^(W|RU)(\d+)$/);
+  if (!match) return null;
+
+  return {
+    type: match[1] === "W" ? "winner" as const : "runner-up" as const,
+    matchId: match[2],
+  };
+}
+
+function resolveTeamFromReferenceSlot(slot: string, resolvedMatchesById: Map<string, ResolvedKnockoutMatch>) {
+  const reference = parseKnockoutReferenceSlot(slot);
+  if (!reference) return null;
+
+  const sourceMatch = resolvedMatchesById.get(reference.matchId);
+  if (!sourceMatch || !isKnockoutMatchComplete(sourceMatch)) {
+    return null;
+  }
+
+  if (!hasScore(sourceMatch.home_result) || !hasScore(sourceMatch.away_result)) {
+    return null;
+  }
+
+  const winnerSide = getWinnerFromScores(sourceMatch.home_result, sourceMatch.away_result, sourceMatch.penalties_winner);
+  if (!winnerSide) {
+    return null;
+  }
+
+  const resolvedSide = reference.type === "winner"
+    ? winnerSide
+    : winnerSide === "home"
+      ? "away"
+      : "home";
+
+  const resolvedTeam = resolvedSide === "home" ? sourceMatch.home_team : sourceMatch.away_team;
+  const resolvedSlot = resolvedSide === "home" ? sourceMatch.home_slot : sourceMatch.away_slot;
+  return resolvedTeam && resolvedTeam !== resolvedSlot ? resolvedTeam : null;
+}
+
+export function resolveKnockoutMatches(
+  sourceMatches: KnockoutMatchSourceLike[] = [],
+  fifaUpdates: Array<Pick<KnockoutMatchSourceLike, "id" | "home_team" | "away_team" | "home_result" | "away_result" | "penalties_winner">> = []
+): ResolvedKnockoutMatch[] {
+  const sourceMatchesById = new Map(sourceMatches.map((match) => [match.id, match]));
+  const fifaUpdatesById = new Map(fifaUpdates.map((match) => [match.id, match]));
+  const resolvedMatchesById = new Map<string, ResolvedKnockoutMatch>();
+
+  return knockoutFixtures.map((fixture) => {
+    const sourceMatch = sourceMatchesById.get(fixture.id);
+    const fifaMatch = fifaUpdatesById.get(fixture.id);
+    const homeSlot = sourceMatch?.home_slot || fixture.homeSlot;
+    const awaySlot = sourceMatch?.away_slot || fixture.awaySlot;
+    const homeTeam =
+      getOfficialTeamName(homeSlot, sourceMatch?.home_team, fifaMatch?.home_team) ||
+      resolveTeamFromReferenceSlot(homeSlot, resolvedMatchesById) ||
+      homeSlot;
+    const awayTeam =
+      getOfficialTeamName(awaySlot, sourceMatch?.away_team, fifaMatch?.away_team) ||
+      resolveTeamFromReferenceSlot(awaySlot, resolvedMatchesById) ||
+      awaySlot;
+
+    const resolvedMatch = {
+      id: fixture.id,
+      phase: sourceMatch?.phase || fixture.phase,
+      label: sourceMatch?.label || fixture.label,
+      home_slot: homeSlot,
+      away_slot: awaySlot,
+      home_team: homeTeam,
+      away_team: awayTeam,
+      kickoff_at: sourceMatch?.kickoff_at || fixture.kickoffAt,
+      venue: sourceMatch?.venue || fixture.venue,
+      city: sourceMatch?.city || fixture.city,
+      broadcasters: sourceMatch?.broadcasters || fixture.broadcasters,
+      home_result: sourceMatch?.home_result ?? fifaMatch?.home_result ?? null,
+      away_result: sourceMatch?.away_result ?? fifaMatch?.away_result ?? null,
+      penalties_winner: sourceMatch?.penalties_winner ?? fifaMatch?.penalties_winner ?? null,
+    } satisfies ResolvedKnockoutMatch;
+
+    resolvedMatchesById.set(fixture.id, resolvedMatch);
+    return resolvedMatch;
+  });
 }
 
 export interface ProbableKnockoutTeam {

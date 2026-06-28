@@ -1,4 +1,6 @@
 import { groupedMatches, isChvBroadcastMatch } from "../data/site";
+import { knockoutPhaseLabels } from "../data/knockout";
+import { getFlag } from "./flags";
 import type {
   FifaGoalScorer,
   FifaGoalScorersByMatch,
@@ -6,6 +8,7 @@ import type {
   FifaRedCard,
   FifaRedCardsByMatch,
 } from "./fifa-results";
+import { isKnockoutMatchComplete, resolveKnockoutMatches, type ResolvedKnockoutMatch } from "./knockout";
 
 const TOURNAMENT_YEAR = 2026;
 const CHILE_TIME_ZONE = "Etc/GMT+4";
@@ -34,7 +37,7 @@ const LIVE_MATCH_WINDOW_MS = 3 * 60 * 60 * 1000;
 
 export type ResultsTimelineMatch = {
   id: string;
-  group: string;
+  stageLabel: string;
   dayKey: string;
   home: string;
   homeFlag: string;
@@ -91,6 +94,34 @@ function parseKickoffChile(value: string) {
     kickoffTime: `${hourText.padStart(2, "0")}:${minuteText}`,
     sortValue: Date.UTC(TOURNAMENT_YEAR, month, day, hour, minute),
     kickoffUtcMs: Date.UTC(TOURNAMENT_YEAR, month, day, hour + 4, minute),
+  };
+}
+
+function getChileDatePartsFromUtc(value: string) {
+  const date = new Date(value);
+  const labelFormatter = new Intl.DateTimeFormat("es-CL", {
+    timeZone: CHILE_TIME_ZONE,
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const dayKeyFormatter = new Intl.DateTimeFormat("en", {
+    timeZone: CHILE_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = Object.fromEntries(labelFormatter.formatToParts(date).map((part) => [part.type, part.value]));
+  const dayKeyParts = Object.fromEntries(dayKeyFormatter.formatToParts(date).map((part) => [part.type, part.value]));
+  const month = (parts.month || "").replace(".", "").toLowerCase();
+
+  return {
+    dayKey: `${dayKeyParts.year}-${dayKeyParts.month}-${dayKeyParts.day}`,
+    kickoffChile: `${Number(parts.day)} ${month} · ${parts.hour}:${parts.minute}`,
+    kickoffTime: `${parts.hour}:${parts.minute}`,
+    kickoffUtcMs: date.getTime(),
   };
 }
 
@@ -160,6 +191,7 @@ export function buildResultsTimeline(
   goalScorersByMatch: FifaGoalScorersByMatch = {},
   redCardsByMatch: FifaRedCardsByMatch = {},
   fifaStatusesByMatch: FifaMatchStatusesByMatch = {},
+  knockoutMatches: ResolvedKnockoutMatch[] = resolveKnockoutMatches(),
 ): ResultsTimelineData {
   const todayKey = getChileDayKey(referenceDate);
   const dayMap = new Map<string, ResultsTimelineMatch[]>();
@@ -185,7 +217,7 @@ export function buildResultsTimeline(
 
       return {
         id: match.id,
-        group: groupBlock.group,
+        stageLabel: `Grupo ${groupBlock.group}`,
         dayKey: parsedKickoff.dayKey,
         sortValue: parsedKickoff.sortValue,
         home: match.home,
@@ -205,9 +237,50 @@ export function buildResultsTimeline(
         isFinal,
       };
     }),
-  ).sort((left, right) => left.sortValue - right.sortValue || left.id.localeCompare(right.id));
+  );
 
-  flattenedMatches.forEach(({ sortValue: _sortValue, ...match }) => {
+  const flattenedKnockoutMatches = knockoutMatches.map((match) => {
+    const parsedKickoff = getChileDatePartsFromUtc(match.kickoff_at);
+    const hasScore = Number.isInteger(match.home_result) && Number.isInteger(match.away_result);
+    const isFinal = hasScore && isKnockoutMatchComplete(match);
+    const isLive = hasScore && !isFinal && isLikelyLiveMatch(referenceDate, parsedKickoff.kickoffUtcMs, hasScore);
+    const statusLabel = isFinal
+      ? "Final"
+      : isLive
+        ? "En juego"
+        : parsedKickoff.dayKey < todayKey
+          ? "Esperando oficial"
+          : parsedKickoff.dayKey === todayKey
+            ? "Hoy"
+            : "Programado";
+
+    return {
+      id: match.id,
+      stageLabel: match.label || knockoutPhaseLabels[match.phase],
+      dayKey: parsedKickoff.dayKey,
+      sortValue: parsedKickoff.kickoffUtcMs,
+      home: match.home_team,
+      homeFlag: getFlag(match.home_team),
+      away: match.away_team,
+      awayFlag: getFlag(match.away_team),
+      kickoffChile: parsedKickoff.kickoffChile,
+      kickoffTime: parsedKickoff.kickoffTime,
+      venue: match.venue,
+      city: match.city,
+      broadcasters: match.broadcasters,
+      homeResult: hasScore ? match.home_result : null,
+      awayResult: hasScore ? match.away_result : null,
+      goalScorers: [],
+      redCards: [],
+      statusLabel,
+      isFinal,
+    };
+  });
+
+  const allMatches = [...flattenedMatches, ...flattenedKnockoutMatches]
+    .sort((left, right) => left.sortValue - right.sortValue || left.id.localeCompare(right.id));
+
+  allMatches.forEach(({ sortValue: _sortValue, ...match }) => {
     const dayMatches = dayMap.get(match.dayKey) ?? [];
     dayMatches.push(match);
     dayMap.set(match.dayKey, dayMatches);
@@ -217,14 +290,14 @@ export function buildResultsTimeline(
   const sections = dayKeys.map((dayKey) => ({
     id: `results-day-${dayKey}`,
     dayKey,
-    label: `Fase de grupos · ${describeDay(dayKey, todayKey)}`,
+    label: `Mundial 2026 · ${describeDay(dayKey, todayKey)}`,
     matches: dayMap.get(dayKey) ?? [],
   }));
 
   return {
     sections,
     focusSectionId: resolveFocusSectionId(dayKeys, todayKey),
-    completedMatches: flattenedMatches.filter((match) => match.isFinal).length,
-    totalMatches: flattenedMatches.length,
+    completedMatches: allMatches.filter((match) => match.isFinal).length,
+    totalMatches: allMatches.length,
   };
 }

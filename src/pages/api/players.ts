@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { fetchFifaKnockoutMatchUpdates } from "../../lib/fifa-results";
 import { getFlag } from "../../lib/flags";
-import { calculateKnockoutPoints, getKnockoutMatchFallback, type WinnerSide } from "../../lib/knockout";
+import { calculateKnockoutPoints, resolveKnockoutMatches, type WinnerSide } from "../../lib/knockout";
 import { calculatePoints, getRankedPlayers } from "../../lib/ranking";
 import { createServerClient } from "../../lib/supabase";
 
@@ -78,24 +78,27 @@ export const GET: APIRoute = async ({ request, url }) => {
         return json({ ok: false, error: knockoutMatchesErr.message }, 502);
       }
 
-      const knockoutMatchesById = new Map((knockoutMatches ?? []).map((match) => [match.id, match]));
+      const knockoutMatchesById = new Map(
+        resolveKnockoutMatches(knockoutMatches ?? [], fifaKnockoutUpdates)
+          .filter((match) => bracketMatchIds.includes(match.id))
+          .map((match) => [match.id, match])
+      );
 
       bracketMatchIds.forEach((matchId) => {
         const match = knockoutMatchesById.get(matchId);
         const fifaMatch = fifaUpdatesById.get(matchId);
-        const fallback = getKnockoutMatchFallback(matchId);
-        const homeSlot = match?.home_slot || fallback?.homeSlot || "";
-        const awaySlot = match?.away_slot || fallback?.awaySlot || "";
+        const homeSlot = match?.home_slot || "";
+        const awaySlot = match?.away_slot || "";
         const homeTeam = match?.home_team || fifaMatch?.home_team || homeSlot || "Por definir";
         const awayTeam = match?.away_team || fifaMatch?.away_team || awaySlot || "Por definir";
 
         knockoutMatchesMap[matchId] = {
           id: matchId,
-          phase: match?.phase || fallback?.phase || null,
-          label: match?.label || fallback?.label || matchId,
+          phase: match?.phase || null,
+          label: match?.label || matchId,
           home_slot: homeSlot,
           away_slot: awaySlot,
-          kickoff_at: match?.kickoff_at || fallback?.kickoffAt || null,
+          kickoff_at: match?.kickoff_at || null,
           home_team: homeTeam,
           away_team: awayTeam,
           home_result: match?.home_result ?? fifaMatch?.home_result ?? null,
