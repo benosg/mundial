@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { fetchFifaKnockoutMatchUpdates } from "../../../lib/fifa-results";
 import { getFlag } from "../../../lib/flags";
 import { buildStandingsByGroup } from "../../../lib/group-standings";
-import { buildKnockoutPhaseStates, resolveKnockoutMatches, resolveProbableRoundOf32Slot, shouldUseKnockoutAsDefaultView } from "../../../lib/knockout";
+import { buildKnockoutPhaseStates, getOfficialKnockoutTeamName, resolveKnockoutMatches, resolveProbableRoundOf32Slot, shouldUseKnockoutAsDefaultView } from "../../../lib/knockout";
 import { getResultsSyncIntervalMs, syncFifaResults } from "../../../lib/results-sync";
 import { createServerClient } from "../../../lib/supabase";
 
@@ -86,18 +86,9 @@ export const GET: APIRoute = async ({ request, url }) => {
 
   const standingsByGroup = buildStandingsByGroup(groupMatchesResult.data ?? []);
 
-  function getOfficialTeamName(slot: string, ...candidates: Array<string | null | undefined>) {
-    for (const candidate of candidates) {
-      const trimmed = candidate?.trim();
-      if (trimmed && trimmed !== slot) return trimmed;
-    }
-
-    return "";
-  }
-
   const knockoutMatches = resolveKnockoutMatches(knockoutMatchesResult.data ?? [], fifaKnockoutUpdates).map((match) => {
-    const homeOfficialTeam = getOfficialTeamName(match.home_slot, match.home_team);
-    const awayOfficialTeam = getOfficialTeamName(match.away_slot, match.away_team);
+    const homeOfficialTeam = getOfficialKnockoutTeamName(match.home_slot, match.home_team);
+    const awayOfficialTeam = getOfficialKnockoutTeamName(match.away_slot, match.away_team);
     const homeProbableTeam = match.phase === "16avos" && !homeOfficialTeam
       ? resolveProbableRoundOf32Slot(match.home_slot, standingsByGroup)
       : null;

@@ -233,23 +233,52 @@ export function getKnockoutMatchFallback(matchId: string) {
   return knockoutFixtures.find((match) => match.id === matchId) ?? null;
 }
 
-function getOfficialTeamName(slot: string, ...candidates: Array<string | null | undefined>) {
-  for (const candidate of candidates) {
-    const trimmed = candidate?.trim();
-    if (trimmed && trimmed !== slot) return trimmed;
-  }
-
-  return "";
+function normalizeKnockoutReferenceValue(value: string) {
+  return value
+    .trim()
+    .toUpperCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
 }
 
 function parseKnockoutReferenceSlot(slot: string) {
-  const match = slot.match(/^(W|RU)(\d+)$/);
+  const normalized = normalizeKnockoutReferenceValue(slot).replaceAll(" ", "");
+  const match = normalized.match(/^(W|RU)(\d+)$/);
   if (!match) return null;
 
   return {
     type: match[1] === "W" ? "winner" as const : "runner-up" as const,
     matchId: match[2],
   };
+}
+
+function isUnresolvedKnockoutTeamPlaceholder(slot: string, candidate: string) {
+  const normalizedCandidate = normalizeKnockoutReferenceValue(candidate);
+  const normalizedSlot = normalizeKnockoutReferenceValue(slot);
+
+  if (normalizedCandidate === normalizedSlot) {
+    return true;
+  }
+
+  if (parseKnockoutReferenceSlot(candidate)) {
+    return true;
+  }
+
+  if (["POR DEFINIR", "PENDIENTE", "SIN DEFINIR", "TBD", "TO BE DETERMINED"].includes(normalizedCandidate)) {
+    return true;
+  }
+
+  return /^(GANADOR|WINNER|RUNNER UP|RUNNERUP|SUBCAMPEON|SUBCAMPEÓN|PERDEDOR)\b(?:\s+(?:DE\s+)?)?\d+$/.test(normalizedCandidate);
+}
+
+export function getOfficialKnockoutTeamName(slot: string, ...candidates: Array<string | null | undefined>) {
+  for (const candidate of candidates) {
+    const trimmed = candidate?.trim();
+    if (!trimmed || isUnresolvedKnockoutTeamPlaceholder(slot, trimmed)) continue;
+    return trimmed;
+  }
+
+  return "";
 }
 
 function resolveTeamFromReferenceSlot(slot: string, resolvedMatchesById: Map<string, ResolvedKnockoutMatch>) {
@@ -295,11 +324,11 @@ export function resolveKnockoutMatches(
     const homeSlot = sourceMatch?.home_slot || fixture.homeSlot;
     const awaySlot = sourceMatch?.away_slot || fixture.awaySlot;
     const homeTeam =
-      getOfficialTeamName(homeSlot, sourceMatch?.home_team, fifaMatch?.home_team) ||
+      getOfficialKnockoutTeamName(homeSlot, sourceMatch?.home_team, fifaMatch?.home_team) ||
       resolveTeamFromReferenceSlot(homeSlot, resolvedMatchesById) ||
       homeSlot;
     const awayTeam =
-      getOfficialTeamName(awaySlot, sourceMatch?.away_team, fifaMatch?.away_team) ||
+      getOfficialKnockoutTeamName(awaySlot, sourceMatch?.away_team, fifaMatch?.away_team) ||
       resolveTeamFromReferenceSlot(awaySlot, resolvedMatchesById) ||
       awaySlot;
 
