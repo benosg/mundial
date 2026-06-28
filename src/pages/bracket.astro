@@ -1,25 +1,8 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { knockoutFixturesByPhase, knockoutPhaseOrder } from "../data/knockout";
+import { knockoutBracketColumns, knockoutFixturesByPhase, knockoutPhaseOrder } from "../data/knockout";
 
-const bracketColumns = {
-  left: [
-    { phase: "16avos", label: "16avos 1-8", matchIds: ["73", "74", "75", "76", "77", "78", "79", "80"] },
-    { phase: "8vos", label: "8vos 1-4", matchIds: ["89", "90", "91", "92"] },
-    { phase: "4tos", label: "4tos 1-2", matchIds: ["97", "98"] },
-    { phase: "semis", label: "Semi 1", matchIds: ["101"] },
-  ],
-  center: [
-    { phase: "final", label: "Final", matchIds: ["104"] },
-    { phase: "3er/4to lugar", label: "3er y 4to lugar", matchIds: ["103"] },
-  ],
-  right: [
-    { phase: "semis", label: "Semi 2", matchIds: ["102"] },
-    { phase: "4tos", label: "4tos 3-4", matchIds: ["99", "100"] },
-    { phase: "8vos", label: "8vos 5-8", matchIds: ["93", "94", "95", "96"] },
-    { phase: "16avos", label: "16avos 9-16", matchIds: ["81", "82", "83", "84", "85", "86", "87", "88"] },
-  ],
-} as const;
+const bracketColumns = knockoutBracketColumns;
 const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003c");
 ---
 
@@ -249,14 +232,6 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       return Number.isInteger(value);
     }
 
-    function parseScoreValue(value) {
-      if (hasIntegerScore(value)) return value;
-      if (typeof value !== "string" || value.trim() === "") return null;
-
-      const parsed = Number.parseInt(value, 10);
-      return Number.isInteger(parsed) ? parsed : null;
-    }
-
     function getWinnerSide(homeScore, awayScore, penaltiesWinner = null) {
       if (homeScore > awayScore) return "home";
       if (awayScore > homeScore) return "away";
@@ -296,23 +271,6 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       };
     }
 
-    function getPredictionOutcome(prediction) {
-      const homeScore = parseScoreValue(prediction?.home_score);
-      const awayScore = parseScoreValue(prediction?.away_score);
-      if (!prediction || homeScore === null || awayScore === null) {
-        return null;
-      }
-
-      if (homeScore === awayScore
-        && prediction.penalties_winner !== "home"
-        && prediction.penalties_winner !== "away") {
-        return null;
-      }
-
-      const winnerSide = getWinnerSide(homeScore, awayScore, prediction.penalties_winner);
-      return winnerSide ? { winnerSide } : null;
-    }
-
     function getOfficialMatchOutcome(match) {
       if (!match || !hasIntegerScore(match.home_result) || !hasIntegerScore(match.away_result)) {
         return null;
@@ -328,7 +286,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       return winnerSide ? { winnerSide } : null;
     }
 
-    function resolveReferenceTeam(slot, displayMatchesById, activePredictionsById) {
+    function resolveReferenceTeam(slot, displayMatchesById) {
       const reference = parseReferenceSlot(slot);
       if (!reference) return null;
 
@@ -337,13 +295,11 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       if (!sourceDisplayMatch || !sourceBaseMatch) return null;
 
       const officialOutcome = getOfficialMatchOutcome(sourceBaseMatch);
-      const predictedOutcome = getPredictionOutcome(activePredictionsById.get(reference.matchId));
-      const resolvedOutcome = officialOutcome || predictedOutcome;
-      if (!resolvedOutcome) return null;
+      if (!officialOutcome) return null;
 
       const resolvedSide = reference.type === "winner"
-        ? resolvedOutcome.winnerSide
-        : resolvedOutcome.winnerSide === "home"
+        ? officialOutcome.winnerSide
+        : officialOutcome.winnerSide === "home"
           ? "away"
           : "home";
       const team = sourceDisplayMatch[`${resolvedSide}_team`];
@@ -353,18 +309,11 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       return {
         team,
         flag: sourceDisplayMatch[`${resolvedSide}_flag`],
-        provisional: !officialOutcome,
+        provisional: false,
       };
     }
 
-    function buildDisplayMatches(draftPredictions = null) {
-      const activePredictionsById = new Map(predictionsById);
-      if (draftPredictions) {
-        draftPredictions.forEach((prediction, matchId) => {
-          activePredictionsById.set(matchId, prediction);
-        });
-      }
-
+    function buildDisplayMatches() {
       const displayMatchesById = new Map();
 
       phasesData.forEach((phaseBlock) => {
@@ -373,10 +322,10 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
           if (!baseMatch) return;
 
           const homeReferenceTeam = baseMatch.home_team === baseMatch.home_slot
-            ? resolveReferenceTeam(baseMatch.home_slot, displayMatchesById, activePredictionsById)
+            ? resolveReferenceTeam(baseMatch.home_slot, displayMatchesById)
             : null;
           const awayReferenceTeam = baseMatch.away_team === baseMatch.away_slot
-            ? resolveReferenceTeam(baseMatch.away_slot, displayMatchesById, activePredictionsById)
+            ? resolveReferenceTeam(baseMatch.away_slot, displayMatchesById)
             : null;
 
           displayMatchesById.set(fixture.id, {
@@ -568,7 +517,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
     }
 
     function render(draftPredictions = null) {
-      const displayMatchesById = buildDisplayMatches(draftPredictions);
+      const displayMatchesById = buildDisplayMatches();
 
       phasesData.forEach((phaseBlock) => {
         const phase = phaseBlock.phase;
@@ -578,7 +527,9 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
             .map((id) => id.trim())
             .filter(Boolean);
           const fixtures = matchIds.length > 0
-            ? phaseBlock.matches.filter((fixture) => matchIds.includes(fixture.id))
+            ? matchIds
+                .map((matchId) => phaseBlock.matches.find((fixture) => fixture.id === matchId))
+                .filter(Boolean)
             : phaseBlock.matches;
 
           const side = container.dataset.bracketSide || "left";

@@ -78,3 +78,22 @@ export const knockoutFixturesByPhase = knockoutPhaseOrder.map((phase) => ({
   label: knockoutPhaseLabels[phase],
   matches: knockoutFixtures.filter((match) => match.phase === phase),
 }));
+
+export const knockoutBracketColumns = {
+  left: [
+    { phase: "16avos", label: "16avos 1-8", matchIds: ["74", "77", "73", "75", "83", "84", "81", "82"] },
+    { phase: "8vos", label: "8vos 1-4", matchIds: ["89", "90", "93", "94"] },
+    { phase: "4tos", label: "4tos 1-2", matchIds: ["97", "98"] },
+    { phase: "semis", label: "Semi 1", matchIds: ["101"] },
+  ],
+  center: [
+    { phase: "final", label: "Final", matchIds: ["104"] },
+    { phase: "3er/4to lugar", label: "3er y 4to lugar", matchIds: ["103"] },
+  ],
+  right: [
+    { phase: "semis", label: "Semi 2", matchIds: ["102"] },
+    { phase: "4tos", label: "4tos 3-4", matchIds: ["99", "100"] },
+    { phase: "8vos", label: "8vos 5-8", matchIds: ["91", "92", "95", "96"] },
+    { phase: "16avos", label: "16avos 9-16", matchIds: ["76", "78", "79", "80", "86", "88", "85", "87"] },
+  ],
+} as const;
