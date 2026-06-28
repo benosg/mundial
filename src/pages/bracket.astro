@@ -254,6 +254,20 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
         .toLowerCase();
     }
 
+    function normalizeReferenceLabel(value) {
+      return String(value || "")
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, "");
+    }
+
+    function shouldHideResolvedReferenceSlot(slot, team) {
+      const normalizedSlot = normalizeReferenceLabel(slot);
+      const normalizedTeam = normalizeReferenceLabel(team);
+
+      return /^(W|RU)\d+$/.test(normalizedSlot) && normalizedTeam !== "" && normalizedTeam !== normalizedSlot;
+    }
+
     function getBracketSlot(index, total, side, centerIndex) {
       if (side === "center") {
         return { start: centerIndex === "1" ? 10 : 7, span: 3 };
@@ -354,6 +368,12 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
         : "";
       const homeBadge = match.home_provisional ? '<span class="bracket-team-badge">Provisorio</span>' : "";
       const awayBadge = match.away_provisional ? '<span class="bracket-team-badge">Provisorio</span>' : "";
+      const homeSlotLabel = shouldHideResolvedReferenceSlot(match.home_slot, match.home_team)
+        ? ""
+        : `<span class="bracket-slot">${escapeHtml(match.home_slot)}</span>`;
+      const awaySlotLabel = shouldHideResolvedReferenceSlot(match.away_slot, match.away_team)
+        ? ""
+        : `<span class="bracket-slot">${escapeHtml(match.away_slot)}</span>`;
 
       return `
         <div class="bracket-match-slot" style="--slot-start:${slot.start}; --slot-span:${slot.span}">
@@ -368,7 +388,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
           <div class="bracket-teams-grid">
             <div class="bracket-team-row">
               <div class="bracket-team-copy">
-                <span class="bracket-slot">${escapeHtml(match.home_slot)}</span>
+                ${homeSlotLabel}
                 <strong class="bracket-team-name">${flagImage(match.home_flag, match.home_team)}<span>${escapeHtml(match.home_team)}</span>${homeBadge}</strong>
               </div>
               <div class="bracket-score-inputs">
@@ -377,7 +397,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
             </div>
             <div class="bracket-team-row">
               <div class="bracket-team-copy">
-                <span class="bracket-slot">${escapeHtml(match.away_slot)}</span>
+                ${awaySlotLabel}
                 <strong class="bracket-team-name">${flagImage(match.away_flag, match.away_team)}<span>${escapeHtml(match.away_team)}</span>${awayBadge}</strong>
               </div>
               <div class="bracket-score-inputs">
