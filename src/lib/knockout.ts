@@ -126,6 +126,10 @@ export function calculateKnockoutPoints(
     prediction.penalties_winner
   );
 
+  if (prediction.home_score === prediction.away_score && actualHome !== actualAway) {
+    return { points: 0, type: "none" };
+  }
+
   const exact =
     actualHome === prediction.home_score &&
     actualAway === prediction.away_score &&
