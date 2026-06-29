@@ -65,6 +65,13 @@ export interface ResolvedKnockoutMatch {
 export interface KnockoutPointsResult {
   points: number;
   type: "exact" | "winner" | "none";
+  favoriteBonus: boolean;
+}
+
+interface KnockoutFavoriteContext {
+  favoriteTeam: string | null;
+  homeTeam: string | null;
+  awayTeam: string | null;
 }
 
 export interface PhaseState {
@@ -109,14 +116,22 @@ function getWinnerFromScores(homeScore: number, awayScore: number, penaltiesWinn
   return penaltiesWinner ?? null;
 }
 
+function getFavoriteBonus(winner: WinnerSide | null, context: KnockoutFavoriteContext) {
+  if (!winner || !context.favoriteTeam) return 0;
+
+  const winnerTeam = winner === "home" ? context.homeTeam : context.awayTeam;
+  return winnerTeam === context.favoriteTeam ? 1 : 0;
+}
+
 export function calculateKnockoutPoints(
   actualHome: number | null,
   actualAway: number | null,
   actualPenaltiesWinner: WinnerSide | null | undefined,
-  prediction: KnockoutPredictionLike
+  prediction: KnockoutPredictionLike,
+  favoriteContext: KnockoutFavoriteContext
 ): KnockoutPointsResult {
   if (!hasScore(actualHome) || !hasScore(actualAway)) {
-    return { points: 0, type: "none" };
+    return { points: 0, type: "none", favoriteBonus: false };
   }
 
   const actualWinner = getWinnerFromScores(actualHome, actualAway, actualPenaltiesWinner);
@@ -127,8 +142,10 @@ export function calculateKnockoutPoints(
   );
 
   if (prediction.home_score === prediction.away_score && actualHome !== actualAway) {
-    return { points: 0, type: "none" };
+    return { points: 0, type: "none", favoriteBonus: false };
   }
+
+  const favoriteBonus = getFavoriteBonus(actualWinner, favoriteContext);
 
   const exact =
     actualHome === prediction.home_score &&
@@ -136,14 +153,14 @@ export function calculateKnockoutPoints(
     (actualHome !== actualAway || actualPenaltiesWinner === prediction.penalties_winner);
 
   if (exact) {
-    return { points: 5, type: "exact" };
+    return { points: 5 + favoriteBonus, type: "exact", favoriteBonus: favoriteBonus > 0 };
   }
 
   if (actualWinner && predictedWinner && actualWinner === predictedWinner) {
-    return { points: 3, type: "winner" };
+    return { points: 3 + favoriteBonus, type: "winner", favoriteBonus: favoriteBonus > 0 };
   }
 
-  return { points: 0, type: "none" };
+  return { points: 0, type: "none", favoriteBonus: false };
 }
 
 function areGroupsComplete(matches: GroupResultLike[]) {

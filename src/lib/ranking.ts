@@ -292,7 +292,12 @@ export async function getRankedPlayers(supabase: SupabaseClient): Promise<{
         match.home_result,
         match.away_result,
         match.penalties_winner,
-        prediction
+        prediction,
+        {
+          favoriteTeam: player.favorite_team,
+          homeTeam: match.home_team,
+          awayTeam: match.away_team,
+        }
       );
 
       if (match.home_result === null || match.away_result === null) return;
@@ -303,6 +308,7 @@ export async function getRankedPlayers(supabase: SupabaseClient): Promise<{
       bracketPoints += points.points;
       if (points.type === "exact") exactCount++;
       else if (points.type === "winner") winnerCount++;
+      if (points.favoriteBonus) favoriteBonusCount++;
     });
 
     return {

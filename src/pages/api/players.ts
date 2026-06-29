@@ -165,12 +165,18 @@ export const GET: APIRoute = async ({ request, url }) => {
         match.home_result,
         match.away_result,
         match.penalties_winner as WinnerSide | null,
-        prediction
+        prediction,
+        {
+          favoriteTeam: player.favorite_team,
+          homeTeam: match.home_team,
+          awayTeam: match.away_team,
+        }
       );
 
       totalPoints += result.points;
       if (result.type === "exact") exactCount++;
       else if (result.type === "winner") winnerCount++;
+      if (result.favoriteBonus) favoriteBonusCount++;
 
       return {
         ...prediction,
@@ -186,6 +192,7 @@ export const GET: APIRoute = async ({ request, url }) => {
         actual_penalties_winner: match.penalties_winner,
         points: result.points,
         type: result.type,
+        favoriteBonus: result.favoriteBonus,
       };
     });
 

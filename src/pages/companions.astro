@@ -460,7 +460,7 @@ const allMatchesJson = JSON.stringify(allMatches).replace(/</g, "\\u003c");
               const homeScore = safeNumber(pred.home_score);
               const awayScore = safeNumber(pred.away_score);
               const pointsInfo = predPoints > 0
-                ? `<span class="tag ${pred.type === 'exact' ? 'success' : ''}" style="font-size:0.75rem; margin-left:0.5rem;">+${predPoints}</span>`
+                ? `<span class="tag ${pred.type === 'exact' ? 'success' : ''}" style="font-size:0.75rem; margin-left:0.5rem;">+${predPoints} ${pred.favoriteBonus ? '★' : ''}</span>`
                 : pred.type === "pending"
                 ? '<span class="muted" style="font-size:0.75rem; margin-left:0.5rem;">Pendiente</span>'
                 : '<span class="muted" style="font-size:0.75rem; margin-left:0.5rem;">0 pts</span>';
