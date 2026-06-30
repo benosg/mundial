@@ -30,6 +30,11 @@ function isEditableDefinedMatch(match: {
   return match.home_team !== match.home_slot && match.away_team !== match.away_slot;
 }
 
+function isBeforeMatchCutoff(match: { kickoff_at: string }) {
+  const kickoffTime = Date.parse(match.kickoff_at);
+  return !Number.isNaN(kickoffTime) && Date.now() < kickoffTime - 10 * 60 * 1000;
+}
+
 async function resolvePlayer(request: Request, parsedBody?: Record<string, unknown>) {
   const supabase = createServerClient(request, new Headers());
   const { data: { session } } = await supabase.auth.getSession();
@@ -99,8 +104,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   const phaseStates = buildKnockoutPhaseStates(groupMatchesResult.data ?? [], knockoutMatches);
   const phaseState = phaseStates[phase as keyof typeof phaseStates];
-  const cutoffTime = phaseState?.cutoffAt ? Date.parse(phaseState.cutoffAt) : Number.NaN;
-  if (!phaseState || Number.isNaN(cutoffTime) || Date.now() >= cutoffTime) {
+  if (!phaseState?.dependencyComplete) {
     return json({ ok: false, error: `La fase ${phase} no está habilitada para editar.` }, 403);
   }
 
@@ -116,7 +120,7 @@ export const POST: APIRoute = async ({ request }) => {
   const existingPredictionMatchIds = new Set((existingPredictions ?? []).map((prediction) => prediction.match_id));
   const editableMatchIds = new Set(
     phaseMatches
-      .filter((match) => isEditableDefinedMatch(match) && !existingPredictionMatchIds.has(match.id))
+      .filter((match) => isEditableDefinedMatch(match) && isBeforeMatchCutoff(match) && !existingPredictionMatchIds.has(match.id))
       .map((match) => match.id)
   );
   const rows = [];

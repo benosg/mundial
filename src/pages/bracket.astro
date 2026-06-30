@@ -434,6 +434,10 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
 
     function isPhaseEditable(phase) {
       const phaseState = phaseStatesByName?.[phase];
+      if (phaseState && typeof phaseState.dependencyComplete === "boolean") {
+        return phaseState.dependencyComplete;
+      }
+
       if (phaseState?.cutoffAt) {
         const cutoffTime = Date.parse(phaseState.cutoffAt);
         return !Number.isNaN(cutoffTime) && Date.now() < cutoffTime;
@@ -446,10 +450,15 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       return kickoffTimes.length > 0 && Date.now() < Math.min(...kickoffTimes) - 10 * 60 * 1000;
     }
 
+    function isMatchBeforeCutoff(match) {
+      const kickoffTime = Date.parse(match?.kickoff_at || "");
+      return !Number.isNaN(kickoffTime) && Date.now() < kickoffTime - 10 * 60 * 1000;
+    }
+
     function isMatchEditable(match) {
       if (!isMatchDefined(match)) return false;
       if (hasSavedPrediction(match.id)) return false;
-      return isPhaseEditable(match.phase);
+      return isPhaseEditable(match.phase) && isMatchBeforeCutoff(match);
     }
 
     function renderMatch(match, prediction, editable, phase, slot) {
