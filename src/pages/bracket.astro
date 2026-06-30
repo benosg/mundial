@@ -453,11 +453,13 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
     }
 
     function renderMatch(match, prediction, editable, phase, slot) {
-      const homeValue = Number.isInteger(prediction?.home_score) ? prediction.home_score : "";
-      const awayValue = Number.isInteger(prediction?.away_score) ? prediction.away_score : "";
-      const needsPens = hasIntegerScore(prediction?.home_score)
-        && hasIntegerScore(prediction?.away_score)
-        && prediction.home_score === prediction.away_score;
+      const homeScore = parseScoreInputValue(prediction?.home_score ?? "");
+      const awayScore = parseScoreInputValue(prediction?.away_score ?? "");
+      const homeValue = homeScore ?? "";
+      const awayValue = awayScore ?? "";
+      const needsPens = homeScore !== null
+        && awayScore !== null
+        && homeScore === awayScore;
       const showPens = needsPens;
       const classes = [
         "bracket-match-card",
