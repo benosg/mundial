@@ -295,22 +295,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       return winnerSide ? { winnerSide } : null;
     }
 
-    function getPredictionOutcome(prediction) {
-      if (!hasIntegerScore(prediction?.home_score) || !hasIntegerScore(prediction?.away_score)) {
-        return null;
-      }
-
-      if (prediction.home_score === prediction.away_score
-        && prediction.penalties_winner !== "home"
-        && prediction.penalties_winner !== "away") {
-        return null;
-      }
-
-      const winnerSide = getWinnerSide(prediction.home_score, prediction.away_score, prediction.penalties_winner);
-      return winnerSide ? { winnerSide } : null;
-    }
-
-    function resolveReferenceTeam(slot, displayMatchesById, activePredictions) {
+    function resolveReferenceTeam(slot, displayMatchesById) {
       const reference = parseReferenceSlot(slot);
       if (!reference) return null;
 
@@ -319,13 +304,11 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       if (!sourceDisplayMatch || !sourceBaseMatch) return null;
 
       const officialOutcome = getOfficialMatchOutcome(sourceBaseMatch);
-      const predictionOutcome = getPredictionOutcome(activePredictions.get(reference.matchId));
-      const outcome = officialOutcome || predictionOutcome;
-      if (!outcome) return null;
+      if (!officialOutcome) return null;
 
       const resolvedSide = reference.type === "winner"
-        ? outcome.winnerSide
-        : outcome.winnerSide === "home"
+        ? officialOutcome.winnerSide
+        : officialOutcome.winnerSide === "home"
           ? "away"
           : "home";
       const team = sourceDisplayMatch[`${resolvedSide}_team`];
@@ -335,13 +318,12 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       return {
         team,
         flag: sourceDisplayMatch[`${resolvedSide}_flag`],
-        provisional: !officialOutcome,
+        provisional: false,
       };
     }
 
-    function buildDisplayMatches(draftPredictions = null) {
+    function buildDisplayMatches() {
       const displayMatchesById = new Map();
-      const activePredictions = draftPredictions || predictionsById;
 
       phasesData.forEach((phaseBlock) => {
         phaseBlock.matches.forEach((fixture) => {
@@ -349,10 +331,10 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
           if (!baseMatch) return;
 
           const homeReferenceTeam = baseMatch.home_team === baseMatch.home_slot
-            ? resolveReferenceTeam(baseMatch.home_slot, displayMatchesById, activePredictions)
+            ? resolveReferenceTeam(baseMatch.home_slot, displayMatchesById)
             : null;
           const awayReferenceTeam = baseMatch.away_team === baseMatch.away_slot
-            ? resolveReferenceTeam(baseMatch.away_slot, displayMatchesById, activePredictions)
+            ? resolveReferenceTeam(baseMatch.away_slot, displayMatchesById)
             : null;
 
           displayMatchesById.set(fixture.id, {
@@ -558,7 +540,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
     }
 
     function render(draftPredictions = null) {
-      const displayMatchesById = buildDisplayMatches(draftPredictions);
+      const displayMatchesById = buildDisplayMatches();
 
       phasesData.forEach((phaseBlock) => {
         const phase = phaseBlock.phase;

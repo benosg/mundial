@@ -1,8 +1,7 @@
 import type { APIRoute } from "astro";
 import { fetchFifaKnockoutMatchUpdates } from "../../../lib/fifa-results";
 import { getFlag } from "../../../lib/flags";
-import { buildStandingsByGroup } from "../../../lib/group-standings";
-import { buildKnockoutPhaseStates, getOfficialKnockoutTeamName, resolveKnockoutMatches, resolveProbableRoundOf32Slot, shouldUseKnockoutAsDefaultView } from "../../../lib/knockout";
+import { buildKnockoutPhaseStates, getOfficialKnockoutTeamName, resolveKnockoutMatches, shouldUseKnockoutAsDefaultView } from "../../../lib/knockout";
 import { getResultsSyncIntervalMs, syncFifaResults } from "../../../lib/results-sync";
 import { createServerClient } from "../../../lib/supabase";
 
@@ -84,19 +83,11 @@ export const GET: APIRoute = async ({ request, url }) => {
   if (groupMatchesResult.error) return json({ ok: false, error: groupMatchesResult.error.message }, 502);
   if (knockoutMatchesResult.error) return json({ ok: false, error: knockoutMatchesResult.error.message }, 502);
 
-  const standingsByGroup = buildStandingsByGroup(groupMatchesResult.data ?? []);
-
   const knockoutMatches = resolveKnockoutMatches(knockoutMatchesResult.data ?? [], fifaKnockoutUpdates).map((match) => {
     const homeOfficialTeam = getOfficialKnockoutTeamName(match.home_slot, match.home_team);
     const awayOfficialTeam = getOfficialKnockoutTeamName(match.away_slot, match.away_team);
-    const homeProbableTeam = match.phase === "16avos" && !homeOfficialTeam
-      ? resolveProbableRoundOf32Slot(match.home_slot, standingsByGroup)
-      : null;
-    const awayProbableTeam = match.phase === "16avos" && !awayOfficialTeam
-      ? resolveProbableRoundOf32Slot(match.away_slot, standingsByGroup)
-      : null;
-    const homeTeam = homeOfficialTeam || homeProbableTeam?.team || match.home_slot;
-    const awayTeam = awayOfficialTeam || awayProbableTeam?.team || match.away_slot;
+    const homeTeam = homeOfficialTeam || match.home_slot;
+    const awayTeam = awayOfficialTeam || match.away_slot;
 
     return {
       id: match.id,
@@ -106,10 +97,10 @@ export const GET: APIRoute = async ({ request, url }) => {
       away_slot: match.away_slot,
       home_team: homeTeam,
       away_team: awayTeam,
-      home_flag: homeProbableTeam?.flag || getFlag(homeTeam),
-      away_flag: awayProbableTeam?.flag || getFlag(awayTeam),
-      home_provisional: !homeOfficialTeam && !!homeProbableTeam,
-      away_provisional: !awayOfficialTeam && !!awayProbableTeam,
+      home_flag: getFlag(homeTeam),
+      away_flag: getFlag(awayTeam),
+      home_provisional: false,
+      away_provisional: false,
       kickoff_at: match.kickoff_at,
       venue: match.venue,
       city: match.city,
