@@ -135,29 +135,26 @@ export function calculateKnockoutPoints(
   }
 
   const actualWinner = getWinnerFromScores(actualHome, actualAway, actualPenaltiesWinner);
-  const predictedWinner = getWinnerFromScores(
-    prediction.home_score,
-    prediction.away_score,
-    prediction.penalties_winner
-  );
-
-  if (prediction.home_score === prediction.away_score && actualHome !== actualAway) {
-    return { points: 0, type: "none", favoriteBonus: false };
-  }
-
+  const predictedWinner = getWinnerFromScores(prediction.home_score, prediction.away_score, prediction.penalties_winner);
+  const resultSign = Math.sign(actualHome - actualAway);
+  const predictionSign = Math.sign(prediction.home_score - prediction.away_score);
   const favoriteBonus = getFavoriteBonus(actualWinner, favoriteContext);
+  const penaltiesBonus =
+    actualHome === actualAway &&
+    actualPenaltiesWinner &&
+    prediction.home_score === prediction.away_score &&
+    prediction.penalties_winner === actualPenaltiesWinner
+      ? 2
+      : 0;
 
-  const exact =
-    actualHome === prediction.home_score &&
-    actualAway === prediction.away_score &&
-    (actualHome !== actualAway || actualPenaltiesWinner === prediction.penalties_winner);
+  const exact = actualHome === prediction.home_score && actualAway === prediction.away_score;
 
   if (exact) {
-    return { points: 5 + favoriteBonus, type: "exact", favoriteBonus: favoriteBonus > 0 };
+    return { points: 5 + penaltiesBonus + favoriteBonus, type: "exact", favoriteBonus: favoriteBonus > 0 };
   }
 
-  if (actualWinner && predictedWinner && actualWinner === predictedWinner) {
-    return { points: 3 + favoriteBonus, type: "winner", favoriteBonus: favoriteBonus > 0 };
+  if (resultSign === predictionSign && (resultSign === 0 || (actualWinner && predictedWinner && actualWinner === predictedWinner))) {
+    return { points: 3 + penaltiesBonus + favoriteBonus, type: "winner", favoriteBonus: favoriteBonus > 0 };
   }
 
   return { points: 0, type: "none", favoriteBonus: false };
