@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { fetchFifaKnockoutMatchUpdates } from "../../../lib/fifa-results";
-import { resolveKnockoutMatches, type WinnerSide } from "../../../lib/knockout";
+import { buildKnockoutPhaseStates, resolveKnockoutMatches, type WinnerSide } from "../../../lib/knockout";
 import { clearRankingCache } from "../../../lib/ranking";
 import { createServerClient } from "../../../lib/supabase";
 
@@ -22,15 +22,12 @@ function isIntegerScore(value: unknown): value is number {
 }
 
 function isEditableDefinedMatch(match: {
-  kickoff_at: string;
   home_slot: string;
   away_slot: string;
   home_team: string;
   away_team: string;
 }) {
-  const kickoffTime = Date.parse(match.kickoff_at);
-
-  return match.home_team !== match.home_slot && match.away_team !== match.away_slot && !Number.isNaN(kickoffTime) && Date.now() < kickoffTime - 10 * 60 * 1000;
+  return match.home_team !== match.home_slot && match.away_team !== match.away_slot;
 }
 
 async function resolvePlayer(request: Request, parsedBody?: Record<string, unknown>) {
@@ -85,16 +82,25 @@ export const POST: APIRoute = async ({ request }) => {
   const { supabase, player } = await resolvePlayer(request, body);
   if (!player) return json({ ok: false, error: "Player not found" }, 404);
 
-  const [knockoutMatchesResult, fifaKnockoutUpdates] = await Promise.all([
+  const [groupMatchesResult, knockoutMatchesResult, fifaKnockoutUpdates] = await Promise.all([
+    supabase.from("matches").select("home_result, away_result"),
     supabase.from("knockout_matches").select("id, phase, home_slot, away_slot, home_team, away_team, kickoff_at"),
     fetchFifaKnockoutMatchUpdates().catch(() => []),
   ]);
 
+  if (groupMatchesResult.error) return json({ ok: false, error: groupMatchesResult.error.message }, 502);
   if (knockoutMatchesResult.error) return json({ ok: false, error: knockoutMatchesResult.error.message }, 502);
 
-  const phaseMatches = resolveKnockoutMatches(knockoutMatchesResult.data ?? [], fifaKnockoutUpdates).filter((match) => match.phase === phase);
+  const knockoutMatches = resolveKnockoutMatches(knockoutMatchesResult.data ?? [], fifaKnockoutUpdates);
+  const phaseMatches = knockoutMatches.filter((match) => match.phase === phase);
   if (phaseMatches.length === 0) {
     return json({ ok: false, error: `La fase ${phase} no existe.` }, 400);
+  }
+
+  const phaseStates = buildKnockoutPhaseStates(groupMatchesResult.data ?? [], knockoutMatches);
+  const phaseState = phaseStates[phase as keyof typeof phaseStates];
+  if (!phaseState?.editable) {
+    return json({ ok: false, error: `La fase ${phase} no está habilitada para editar.` }, 403);
   }
 
   const phaseMatchIds = new Set(phaseMatches.map((match) => match.id));

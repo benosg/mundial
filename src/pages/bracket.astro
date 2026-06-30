@@ -174,6 +174,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
     let currentServerPlayer = null;
     let matchesById = new Map();
     let predictionsById = new Map();
+    let phaseStatesByName = {};
     let refreshEveryMs = 60000;
     let bracketRefreshTimer = null;
     let bracketLoadInFlight = null;
@@ -294,7 +295,22 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       return winnerSide ? { winnerSide } : null;
     }
 
-    function resolveReferenceTeam(slot, displayMatchesById) {
+    function getPredictionOutcome(prediction) {
+      if (!hasIntegerScore(prediction?.home_score) || !hasIntegerScore(prediction?.away_score)) {
+        return null;
+      }
+
+      if (prediction.home_score === prediction.away_score
+        && prediction.penalties_winner !== "home"
+        && prediction.penalties_winner !== "away") {
+        return null;
+      }
+
+      const winnerSide = getWinnerSide(prediction.home_score, prediction.away_score, prediction.penalties_winner);
+      return winnerSide ? { winnerSide } : null;
+    }
+
+    function resolveReferenceTeam(slot, displayMatchesById, activePredictions) {
       const reference = parseReferenceSlot(slot);
       if (!reference) return null;
 
@@ -303,11 +319,13 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       if (!sourceDisplayMatch || !sourceBaseMatch) return null;
 
       const officialOutcome = getOfficialMatchOutcome(sourceBaseMatch);
-      if (!officialOutcome) return null;
+      const predictionOutcome = getPredictionOutcome(activePredictions.get(reference.matchId));
+      const outcome = officialOutcome || predictionOutcome;
+      if (!outcome) return null;
 
       const resolvedSide = reference.type === "winner"
-        ? officialOutcome.winnerSide
-        : officialOutcome.winnerSide === "home"
+        ? outcome.winnerSide
+        : outcome.winnerSide === "home"
           ? "away"
           : "home";
       const team = sourceDisplayMatch[`${resolvedSide}_team`];
@@ -317,12 +335,13 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       return {
         team,
         flag: sourceDisplayMatch[`${resolvedSide}_flag`],
-        provisional: false,
+        provisional: !officialOutcome,
       };
     }
 
-    function buildDisplayMatches() {
+    function buildDisplayMatches(draftPredictions = null) {
       const displayMatchesById = new Map();
+      const activePredictions = draftPredictions || predictionsById;
 
       phasesData.forEach((phaseBlock) => {
         phaseBlock.matches.forEach((fixture) => {
@@ -330,10 +349,10 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
           if (!baseMatch) return;
 
           const homeReferenceTeam = baseMatch.home_team === baseMatch.home_slot
-            ? resolveReferenceTeam(baseMatch.home_slot, displayMatchesById)
+            ? resolveReferenceTeam(baseMatch.home_slot, displayMatchesById, activePredictions)
             : null;
           const awayReferenceTeam = baseMatch.away_team === baseMatch.away_slot
-            ? resolveReferenceTeam(baseMatch.away_slot, displayMatchesById)
+            ? resolveReferenceTeam(baseMatch.away_slot, displayMatchesById, activePredictions)
             : null;
 
           displayMatchesById.set(fixture.id, {
@@ -427,11 +446,20 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
         && !match.away_provisional;
     }
 
+    function isPhaseEditable(phase) {
+      const phaseState = phaseStatesByName?.[phase];
+      if (phaseState) return Boolean(phaseState.editable);
+
+      const phaseMatches = phasesData.find((phaseBlock) => phaseBlock.phase === phase)?.matches || [];
+      const kickoffTimes = phaseMatches
+        .map((fixture) => Date.parse(matchesById.get(fixture.id)?.kickoff_at || fixture.kickoffAt))
+        .filter((time) => !Number.isNaN(time));
+      return kickoffTimes.length > 0 && Date.now() < Math.min(...kickoffTimes) - 10 * 60 * 1000;
+    }
+
     function isMatchEditable(match) {
       if (!isMatchDefined(match)) return false;
-
-      const kickoffTime = Date.parse(match.kickoff_at);
-      return !Number.isNaN(kickoffTime) && Date.now() < kickoffTime - 10 * 60 * 1000;
+      return isPhaseEditable(match.phase);
     }
 
     function renderMatch(match, prediction, editable, phase, slot) {
@@ -530,7 +558,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
     }
 
     function render(draftPredictions = null) {
-      const displayMatchesById = buildDisplayMatches();
+      const displayMatchesById = buildDisplayMatches(draftPredictions);
 
       phasesData.forEach((phaseBlock) => {
         const phase = phaseBlock.phase;
@@ -676,6 +704,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
         currentServerPlayer = data.player;
         matchesById = new Map((data.matches || []).map((match) => [match.id, match]));
         predictionsById = new Map((data.predictions || []).map((prediction) => [prediction.match_id, prediction]));
+        phaseStatesByName = data.phaseStates || {};
         refreshEveryMs = Number.isFinite(data.refreshEveryMs) ? data.refreshEveryMs : refreshEveryMs;
 
         if (playerNameDisplay) playerNameDisplay.textContent = currentServerPlayer?.name || "Jugador registrado";
