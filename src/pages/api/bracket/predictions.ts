@@ -99,14 +99,24 @@ export const POST: APIRoute = async ({ request }) => {
 
   const phaseStates = buildKnockoutPhaseStates(groupMatchesResult.data ?? [], knockoutMatches);
   const phaseState = phaseStates[phase as keyof typeof phaseStates];
-  if (!phaseState?.editable) {
+  const cutoffTime = phaseState?.cutoffAt ? Date.parse(phaseState.cutoffAt) : Number.NaN;
+  if (!phaseState || Number.isNaN(cutoffTime) || Date.now() >= cutoffTime) {
     return json({ ok: false, error: `La fase ${phase} no está habilitada para editar.` }, 403);
   }
 
   const phaseMatchIds = new Set(phaseMatches.map((match) => match.id));
+  const { data: existingPredictions, error: existingPredictionsError } = await supabase
+    .from("bracket_predictions")
+    .select("match_id")
+    .eq("player_id", player.id)
+    .in("match_id", Array.from(phaseMatchIds));
+
+  if (existingPredictionsError) return json({ ok: false, error: existingPredictionsError.message }, 502);
+
+  const existingPredictionMatchIds = new Set((existingPredictions ?? []).map((prediction) => prediction.match_id));
   const editableMatchIds = new Set(
     phaseMatches
-      .filter((match) => isEditableDefinedMatch(match))
+      .filter((match) => isEditableDefinedMatch(match) && !existingPredictionMatchIds.has(match.id))
       .map((match) => match.id)
   );
   const rows = [];
@@ -126,7 +136,9 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     if (!editableMatchIds.has(matchId)) {
-      return json({ ok: false, error: `El partido ${matchId} no está habilitado para editar.` }, 403);
+      return json({ ok: false, error: existingPredictionMatchIds.has(matchId)
+        ? `El partido ${matchId} ya tiene un pronóstico guardado y no se puede editar.`
+        : `El partido ${matchId} no está habilitado para editar.` }, 403);
     }
 
     if (!isIntegerScore(homeScore) || !isIntegerScore(awayScore)) {

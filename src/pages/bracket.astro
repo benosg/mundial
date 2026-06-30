@@ -428,9 +428,16 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
         && !match.away_provisional;
     }
 
+    function hasSavedPrediction(matchId) {
+      return predictionsById.has(matchId);
+    }
+
     function isPhaseEditable(phase) {
       const phaseState = phaseStatesByName?.[phase];
-      if (phaseState) return Boolean(phaseState.editable);
+      if (phaseState?.cutoffAt) {
+        const cutoffTime = Date.parse(phaseState.cutoffAt);
+        return !Number.isNaN(cutoffTime) && Date.now() < cutoffTime;
+      }
 
       const phaseMatches = phasesData.find((phaseBlock) => phaseBlock.phase === phase)?.matches || [];
       const kickoffTimes = phaseMatches
@@ -441,6 +448,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
 
     function isMatchEditable(match) {
       if (!isMatchDefined(match)) return false;
+      if (hasSavedPrediction(match.id)) return false;
       return isPhaseEditable(match.phase);
     }
 
