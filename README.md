@@ -25,8 +25,16 @@ Incluye:
 
 ```sh
 corepack enable
+nvm use 24
 pnpm install
 cp .env.example .env
+```
+
+Si no tienes Node 24 activo todavía:
+
+```sh
+nvm install 24
+nvm use 24
 ```
 
 Completa al menos:
@@ -80,7 +88,13 @@ En la práctica, los únicos gates reales son:
 - `pnpm check`
 - `pnpm build`
 
-> `package.json` permite Node `>=22.12.0`, pero `pnpm build` advierte que Vercel Functions apunta a Node 24 si corres localmente con Node 25.
+> `package.json` permite Node `>=22.12.0`, pero para evitar warnings del adapter de Vercel conviene correr localmente con **Node 24**. El repo ya incluye `.nvmrc` con `24`.
+
+### Node / nvm
+
+- Usa `nvm use 24` antes de `pnpm check` o `pnpm build` si tu shell no cambia automáticamente.
+- Si ves un warning tipo "Vercel Functions target Node 24" mientras localmente usas Node 25, revisa `node -v` y vuelve a cargar `nvm`.
+- `@types/node` puede estar en versión 25 sin afectar el runtime; lo importante para build es la versión real de `node`.
 
 ---
 

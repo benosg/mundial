@@ -10,6 +10,7 @@
 
 ```sh
 corepack enable
+nvm use 24
 pnpm install
 pnpm dev      # http://localhost:4321
 pnpm check    # astro check
@@ -24,7 +25,9 @@ pnpm preview
 
 - Required app vars: `SUPABASE_URL`, `SUPABASE_KEY`.
 - `SITE_URL` matters for production OAuth redirects/canonicals.
-- `package.json` allows Node `>=22.12.0`, but local `pnpm build` warns that Vercel functions target Node 24, not Node 25.
+- `package.json` allows Node `>=22.12.0`, but for local parity with Vercel Functions you should run **Node 24**.
+- The repo has `.nvmrc` with `24`; if build warnings mention local Node 25 vs Vercel Node 24, run `nvm use 24` before `pnpm check`/`pnpm build`.
+- `@types/node` being on v25 does not control the runtime; only `node -v` matters for the Vercel warning.
 
 ## Architecture that matters
 
