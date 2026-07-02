@@ -10,27 +10,29 @@ export interface SessionContext {
   };
   isAdmin: boolean;
   rankingPosition: number | null;
+  favoriteTeam: string | null;
+  favoriteFlag: string | null;
 }
 
 /**
  * Reads the Supabase session from the request cookies and looks up
  * whether the logged-in user is an admin (players.is_admin = true).
- * Also returns the player's current ranking position when available.
+ * Also returns the player's current ranking position and favorite team when available.
  *
- * Returns user=null, isAdmin=false, rankingPosition=null when no session is present.
+ * Returns user=null, isAdmin=false, rankingPosition=null, favoriteTeam=null, favoriteFlag=null when no session is present.
  */
 export async function getSessionContext(request: Request): Promise<SessionContext> {
   const supabase = createServerClient(request, new Headers());
   const { data: { session } } = await supabase.auth.getSession();
 
   if (!session?.user) {
-    return { user: null, isAdmin: false, rankingPosition: null };
+    return { user: null, isAdmin: false, rankingPosition: null, favoriteTeam: null, favoriteFlag: null };
   }
 
   const [{ data: player }, rankingPosition] = await Promise.all([
     supabase
     .from("players")
-    .select("is_admin")
+    .select("is_admin, favorite_team, favorite_flag")
     .eq("auth_user_id", session.user.id)
     .maybeSingle(),
     getRankingPositionForAuthUser(supabase, session.user.id),
@@ -45,5 +47,7 @@ export async function getSessionContext(request: Request): Promise<SessionContex
     },
     isAdmin: Boolean(player?.is_admin),
     rankingPosition,
+    favoriteTeam: player?.favorite_team || null,
+    favoriteFlag: player?.favorite_flag || null,
   };
 }

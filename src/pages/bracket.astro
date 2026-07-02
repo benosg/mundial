@@ -1,6 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { knockoutBracketColumns, knockoutFixturesByPhase, knockoutPhaseOrder } from "../data/knockout";
+import { knockoutBracketColumns, knockoutFixturesByPhase } from "../data/knockout";
 
 const bracketColumns = knockoutBracketColumns;
 const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003c");
@@ -17,33 +17,6 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
         <div class="hero-copy-block bracket-hero-copy">
           <span class="eyebrow">Cuadro eliminatorio</span>
           <h1 class="simple-title" id="bracket-title">Pronóstico de llaves</h1>
-          <p class="section-copy section-copy-tight">Arma tu cuadro completo en un formato horizontal clásico. La llave agrupa y guarda automáticamente tus pronósticos por ronda, con bloqueo por horario y definición por penales cuando hay empate.</p>
-        </div>
-
-        <div class="hero-badges bracket-hero-badges" aria-label="Aspectos clave de la llave">
-          <span class="hero-badge">Desliza por fases</span>
-          <span class="hero-badge">Guardado único por ronda</span>
-          <span class="hero-badge">Penales obligatorios en empates</span>
-        </div>
-
-        <div class="summary-grid">
-          <article class="summary-box highlight">
-            <div class="muted">Jugador</div>
-            <strong data-player-name-display>Inicia sesión para jugar</strong>
-            <span data-player-fav-display class="muted">Completa la llave y define penales en los empates</span>
-          </article>
-          <article class="summary-box">
-            <div class="muted">Fases</div>
-            <strong>{knockoutPhaseOrder.length}</strong>
-          </article>
-          <article class="summary-box">
-            <div class="muted">Partidos</div>
-            <strong>32</strong>
-          </article>
-          <article class="summary-box">
-            <div class="muted">Modo</div>
-            <strong>Cuadro separado</strong>
-          </article>
         </div>
       </div>
     </section>
@@ -167,11 +140,8 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
     const STORAGE_KEY = "mundial-2026-player-id";
     const authGate = document.querySelector("[data-auth-gate]");
     const workspaceSection = document.querySelector("[data-workspace-section]");
-    const playerNameDisplay = document.querySelector("[data-player-name-display]");
-    const playerFavDisplay = document.querySelector("[data-player-fav-display]");
     const bracketSaveStatus = document.querySelector("[data-bracket-save-status]");
     let currentPlayerKey = null;
-    let currentServerPlayer = null;
     let matchesById = new Map();
     let predictionsById = new Map();
     let refreshEveryMs = 60000;
@@ -683,13 +653,9 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
           throw new Error(data.error || "No se pudo cargar la llave");
         }
 
-        currentServerPlayer = data.player;
         matchesById = new Map((data.matches || []).map((match) => [match.id, match]));
         predictionsById = new Map((data.predictions || []).map((prediction) => [prediction.match_id, prediction]));
         refreshEveryMs = Number.isFinite(data.refreshEveryMs) ? data.refreshEveryMs : refreshEveryMs;
-
-        if (playerNameDisplay) playerNameDisplay.textContent = currentServerPlayer?.name || "Jugador registrado";
-        if (playerFavDisplay) playerFavDisplay.textContent = currentServerPlayer?.favorite_team ? `Favorito: ${currentServerPlayer.favorite_team}` : "Sin favorito cargado";
 
         render(draft);
         if (draft) restoreDraftPredictions(draft);

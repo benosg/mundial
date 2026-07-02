@@ -130,6 +130,7 @@ const structuredData = {
     </footer>
 
     <script>
+      import { getFlagImageUrlFromEmoji } from "../lib/flags";
       import { getSupabaseBrowserClient } from "../lib/supabase";
 
       (async function () {
@@ -152,6 +153,15 @@ const structuredData = {
           } catch {
             return "";
           }
+        }
+
+        function renderFavoriteBadge(team: unknown, flag: unknown) {
+          if (typeof team !== "string" || !team.trim() || typeof flag !== "string" || !flag.trim()) {
+            return "";
+          }
+
+          const safeTeam = escapeHtml(team);
+          return `<span class="auth-favorite-badge" title="Favorito: ${safeTeam}"><img src="${safeImageUrl(getFlagImageUrlFromEmoji(flag))}" alt="" aria-hidden="true" class="flag-icon auth-favorite-flag" loading="lazy" decoding="async" /><span class="visually-hidden">Favorito: ${safeTeam}</span></span>`;
         }
 
         const renderLoginLink = () => {
@@ -184,6 +194,7 @@ const structuredData = {
             const rankingBadge = Number.isInteger(data.rankingPosition)
               ? `<span class="auth-rank-badge" title="Posición actual en el ranking">#${data.rankingPosition}</span>`
               : "";
+            const favoriteBadge = renderFavoriteBadge(data.favoriteTeam, data.favoriteFlag);
             const adminBadge = data.isAdmin
               ? `<span class="auth-admin-badge" title="Administrador">Admin</span>`
               : "";
@@ -192,6 +203,7 @@ const structuredData = {
                 <img src="${safeImageUrl(data.user.avatar)}" alt="" width="24" height="24" class="auth-avatar" referrerpolicy="no-referrer" />
                 <span class="auth-user-name">${escapeHtml(data.user.name || data.user.email)}</span>
                 ${rankingBadge}
+                ${favoriteBadge}
                 ${adminBadge}
               </span>
               <form method="POST" action="/api/auth/signout" style="display:inline">

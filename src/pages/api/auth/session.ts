@@ -4,9 +4,9 @@ import { getSessionContext } from "../../../lib/session";
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request }) => {
-  const { user, isAdmin, rankingPosition } = await getSessionContext(request);
+  const { user, isAdmin, rankingPosition, favoriteTeam, favoriteFlag } = await getSessionContext(request);
 
-  return new Response(JSON.stringify({ ok: true, user, isAdmin, rankingPosition }), {
+  return new Response(JSON.stringify({ ok: true, user, isAdmin, rankingPosition, favoriteTeam, favoriteFlag }), {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
