@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { fetchFifaKnockoutMatchUpdates } from "../../../lib/fifa-results";
-import { buildKnockoutPhaseStates, resolveKnockoutMatches, type WinnerSide } from "../../../lib/knockout";
+import { resolveKnockoutMatches, type WinnerSide } from "../../../lib/knockout";
 import { clearRankingCache } from "../../../lib/ranking";
 import { createServerClient } from "../../../lib/supabase";
 
@@ -87,25 +87,17 @@ export const POST: APIRoute = async ({ request }) => {
   const { supabase, player } = await resolvePlayer(request, body);
   if (!player) return json({ ok: false, error: "Player not found" }, 404);
 
-  const [groupMatchesResult, knockoutMatchesResult, fifaKnockoutUpdates] = await Promise.all([
-    supabase.from("matches").select("home_result, away_result"),
+  const [knockoutMatchesResult, fifaKnockoutUpdates] = await Promise.all([
     supabase.from("knockout_matches").select("id, phase, home_slot, away_slot, home_team, away_team, kickoff_at"),
     fetchFifaKnockoutMatchUpdates().catch(() => []),
   ]);
 
-  if (groupMatchesResult.error) return json({ ok: false, error: groupMatchesResult.error.message }, 502);
   if (knockoutMatchesResult.error) return json({ ok: false, error: knockoutMatchesResult.error.message }, 502);
 
   const knockoutMatches = resolveKnockoutMatches(knockoutMatchesResult.data ?? [], fifaKnockoutUpdates);
   const phaseMatches = knockoutMatches.filter((match) => match.phase === phase);
   if (phaseMatches.length === 0) {
     return json({ ok: false, error: `La fase ${phase} no existe.` }, 400);
-  }
-
-  const phaseStates = buildKnockoutPhaseStates(groupMatchesResult.data ?? [], knockoutMatches);
-  const phaseState = phaseStates[phase as keyof typeof phaseStates];
-  if (!phaseState?.dependencyComplete) {
-    return json({ ok: false, error: `La fase ${phase} no está habilitada para editar.` }, 403);
   }
 
   const phaseMatchIds = new Set(phaseMatches.map((match) => match.id));

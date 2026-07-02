@@ -174,7 +174,6 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
     let currentServerPlayer = null;
     let matchesById = new Map();
     let predictionsById = new Map();
-    let phaseStatesByName = {};
     let refreshEveryMs = 60000;
     let bracketRefreshTimer = null;
     let bracketLoadInFlight = null;
@@ -432,24 +431,6 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
       return predictionsById.has(matchId);
     }
 
-    function isPhaseEditable(phase) {
-      const phaseState = phaseStatesByName?.[phase];
-      if (phaseState && typeof phaseState.dependencyComplete === "boolean") {
-        return phaseState.dependencyComplete;
-      }
-
-      if (phaseState?.cutoffAt) {
-        const cutoffTime = Date.parse(phaseState.cutoffAt);
-        return !Number.isNaN(cutoffTime) && Date.now() < cutoffTime;
-      }
-
-      const phaseMatches = phasesData.find((phaseBlock) => phaseBlock.phase === phase)?.matches || [];
-      const kickoffTimes = phaseMatches
-        .map((fixture) => Date.parse(matchesById.get(fixture.id)?.kickoff_at || fixture.kickoffAt))
-        .filter((time) => !Number.isNaN(time));
-      return kickoffTimes.length > 0 && Date.now() < Math.min(...kickoffTimes) - 10 * 60 * 1000;
-    }
-
     function isMatchBeforeCutoff(match) {
       const kickoffTime = Date.parse(match?.kickoff_at || "");
       return !Number.isNaN(kickoffTime) && Date.now() < kickoffTime - 10 * 60 * 1000;
@@ -458,7 +439,7 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
     function isMatchEditable(match) {
       if (!isMatchDefined(match)) return false;
       if (hasSavedPrediction(match.id)) return false;
-      return isPhaseEditable(match.phase) && isMatchBeforeCutoff(match);
+      return isMatchBeforeCutoff(match);
     }
 
     function renderMatch(match, prediction, editable, phase, slot) {
@@ -705,7 +686,6 @@ const phasesJson = JSON.stringify(knockoutFixturesByPhase).replace(/</g, "\\u003
         currentServerPlayer = data.player;
         matchesById = new Map((data.matches || []).map((match) => [match.id, match]));
         predictionsById = new Map((data.predictions || []).map((prediction) => [prediction.match_id, prediction]));
-        phaseStatesByName = data.phaseStates || {};
         refreshEveryMs = Number.isFinite(data.refreshEveryMs) ? data.refreshEveryMs : refreshEveryMs;
 
         if (playerNameDisplay) playerNameDisplay.textContent = currentServerPlayer?.name || "Jugador registrado";
